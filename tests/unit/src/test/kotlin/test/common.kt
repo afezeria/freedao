@@ -1,9 +1,11 @@
 package test
 
 import com.github.afezeria.freedao.processor.core.MainProcessor
+import com.github.afezeria.freedao.runtime.classic.LogHelper
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.SourceFile
 import org.intellij.lang.annotations.Language
+import org.slf4j.LoggerFactory
 import java.io.File
 import java.sql.Date
 import java.sql.ResultSet
@@ -14,6 +16,9 @@ import javax.sql.DataSource
 /**
  *
  */
+class Common
+
+val logger = LoggerFactory.getLogger(Common::class.java)
 
 fun compile(vararg classNames: String): KotlinCompilation.Result {
     val processor = MainProcessor()
@@ -46,6 +51,8 @@ fun DataSource.execute(
     @Language("sql") sql: String,
     vararg params: Any?,
 ): MutableList<MutableMap<String, Any?>> {
+    LogHelper.logSql(logger,sql)
+    LogHelper.logArgs(logger,params.toList())
     return connection.use { conn ->
         conn.prepareStatement(sql).use { stmt ->
             params.forEachIndexed { index, any ->

@@ -26,7 +26,10 @@ testcontainers-postgresql = { module = "org.testcontainers:postgresql", version 
 
 compileTesting = { module = "com.google.testing.compile:compile-testing", version = "0.19" }
 
+logback = { module = "ch.qos.logback:logback-classic", version = "1.2.10" }
+
+
 [bundles]
 kotlin = ["kotlin-reflect", "kotlin-jdk8"]
 testcontainers = ["testcontainers-bom", "testcontainers-mysql", "testcontainers-postgresql"]
-dbDrivers=["postgresql","mysql","h2"]
+dbDrivers = ["postgresql", "mysql", "h2"]

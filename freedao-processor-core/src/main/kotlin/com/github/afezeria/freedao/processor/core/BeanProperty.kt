@@ -23,12 +23,7 @@ class BeanProperty(
     var valueGenerator: DeclaredType? = null
 
     init {
-        column = ColumnAnn(element.getAnnotation(Column::class.java), name)
-
-//        element.getAnnotation(com.github.afezeria.freedao.runtime.classic.AutoFill::class.java)?.let {
-//            valueGenerator = it.mirroredType { generator }
-//        }
-
+        column = ColumnAnn(element)
     }
 
     fun toSelectItem(tableAlias: String = ""): String {

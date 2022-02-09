@@ -249,10 +249,10 @@ class ClassicBuildMethodService : BuildMethodService {
             } else {
                 "<>"
             }
-            val addInitItemStatement = {
-                addStatement("$itemVar = new \$T$diamondStr()", resultHelper.itemType)
-            }
             if (resultHelper.itemType.isSameType(Map::class)) {
+                val addInitItemStatement = {
+                    addStatement("$itemVar = new \$T$diamondStr()", resultHelper.itemType)
+                }
                 //集合内容为map
                 if (resultHelper.mappings.isNotEmpty()) {
                     beginControlFlow("while ($resultSetVar.next())")
@@ -308,27 +308,60 @@ class ClassicBuildMethodService : BuildMethodService {
                 }
             } else {
                 beginControlFlow("while ($resultSetVar.next())")
-                addInitItemStatement()
+                add("$itemVar = new \$T$diamondStr(\n", resultHelper.itemType)
+                indent()
+                resultHelper.mappings.filter { it.constructorParameterIndex > -1 }
+                    .sortedBy { it.constructorParameterIndex }
+                    .forEachIndexed { index, it ->
+                        if (index > 0) {
+                            add(",")
+                        }
+                        if (!it.typeHandler.isSameType(ResultTypeHandler::class)) {
+                            //有类型转换
+                            add("\$T.handle($resultSetVar.getObject(\$S))",
+                                it.typeHandler,
+                                it.source)
+                        } else {
+                            //无类型转换器
+                            //类型为javabean时targetType必定不为null
+                            requireNotNull(it.targetType).let { type ->
+                                if (type.isSameType(Any::class)) {
+                                    add("$resultSetVar.getObject(\$S)", it.source)
+                                } else {
+                                    add("$resultSetVar.getObject(\$S,\$T.class)",
+                                        it.source,
+                                        it.targetType)
+                                }
+                            }
+                        }
+                        add("\n")
+                    }
+                unindent()
+                add(");\n")
                 //集合项为javabean时mapping必定不为空集合
-                resultHelper.mappings.forEach {
-                    val setter = "set${it.target.replaceFirstChar { it.uppercaseChar() }}"
-                    if (!it.typeHandler.isSameType(ResultTypeHandler::class)) {
-                        //有类型转换
-                        addStatement("$itemVar.$setter(\$T.handle($resultSetVar.getObject(\$S)))",
-                            it.typeHandler,
-                            it.source)
-                    } else {
-                        //无类型转换器
-                        //类型为javabean时targetType必定不为null
-                        requireNotNull(it.targetType).let { type ->
-                            if (type.isSameType(Any::class)) {
-                                addStatement("$itemVar.$setter($resultSetVar.getObject(\$S))", it.source)
-                            } else {
-                                addStatement("$itemVar.$setter($resultSetVar.getObject(\$S,\$T.class))", it.source)
+                resultHelper.mappings
+                    .filter { it.constructorParameterIndex == -1 }
+                    .forEach {
+                        val setter = "set${it.target.replaceFirstChar { it.uppercaseChar() }}"
+                        if (!it.typeHandler.isSameType(ResultTypeHandler::class)) {
+                            //有类型转换
+                            addStatement("$itemVar.$setter(\$T.handle($resultSetVar.getObject(\$S)))",
+                                it.typeHandler,
+                                it.source)
+                        } else {
+                            //无类型转换器
+                            //类型为javabean时targetType必定不为null
+                            requireNotNull(it.targetType).let { type ->
+                                if (type.isSameType(Any::class)) {
+                                    addStatement("$itemVar.$setter($resultSetVar.getObject(\$S))", it.source)
+                                } else {
+                                    addStatement("$itemVar.$setter($resultSetVar.getObject(\$S,\$T.class))",
+                                        it.source,
+                                        it.targetType)
+                                }
                             }
                         }
                     }
-                }
                 if (returnMultipleRow) {
                     addStatement("$containerVar.add($itemVar)")
                 } else {

@@ -49,11 +49,11 @@ class Count(element: ExecutableElement, daoModel: DaoModel) : CrudMethod(element
             throw HandlerException("The return type of count method must be Integer or Long")
         }
         resultHelper.mappings +=
-            ResultHelper.MappingData(source = "_cot",
+            MappingData(source = "_cot",
                 target = "",
                 typeHandler = Long2IntegerResultHandler::class.type,
                 targetType = null,
-                constructorParameter = false
+                constructorParameterIndex = -1
             )
     }
 

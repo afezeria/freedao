@@ -18,5 +18,5 @@ public @interface Mapping {
     /**
      * 传入参数应为ResultTypeHandler的实现类
      */
-    Class<?> typeHandle() default ResultTypeHandler.class;
+    Class<?> typeHandler() default ResultTypeHandler.class;
 }

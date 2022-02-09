@@ -31,34 +31,6 @@ class JpaStyleMethod(
         checkReturnType()
     }
 
-    private fun checkReturnType() {
-        if (!prefix.getReturnType(crudEntity.typeMirror).isSameType(element.returnType)) {
-            throw HandlerException(
-                "The return type of method $name must be ${prefix.getReturnType(crudEntity.typeMirror)}",
-            )
-        }
-    }
-
-    /**
-     * 检查参数类型与数量
-     */
-    private fun checkParameters() {
-        val parameters = element.parameters.mapTo(LinkedList()) { it }
-        conditions.forEach { (property, kw) ->
-            if (property != null) {
-                kw.requiredParameterType(property.type).forEach {
-                    if (parameters.isEmpty()) {
-                        throw HandlerException("Missing parameter of type ${it.typeName}")
-                    }
-                    val parameter = parameters.pop()
-                    if (!parameter.asType().isAssignable(it)) {
-                        throw HandlerException("Parameter ${parameter.simpleName} should be of type ${parameter.asType().typeName}")
-                    }
-                }
-            }
-        }
-    }
-
     /**
      * 解析方法名，分离出查询条件和排序使用的属性
      */
@@ -115,6 +87,35 @@ class JpaStyleMethod(
         }
     }
 
+    /**
+     * 检查参数类型与数量
+     */
+    private fun checkParameters() {
+        val parameters = element.parameters.mapTo(LinkedList()) { it }
+        conditions.forEach { (property, kw) ->
+            if (property != null) {
+                kw.requiredParameterType(property.type).forEach {
+                    if (parameters.isEmpty()) {
+                        throw HandlerException("Missing parameter of type ${it.typeName}")
+                    }
+                    val parameter = parameters.pop()
+                    if (!parameter.asType().isAssignable(it)) {
+                        throw HandlerException("Parameter ${parameter.simpleName} should be of type ${parameter.asType().typeName}")
+                    }
+                }
+            }
+        }
+    }
+
+    private fun checkReturnType() {
+        if (!prefix.getReturnType(crudEntity.typeMirror).isSameType(element.returnType)) {
+            throw HandlerException(
+                "The return type of method $name must be ${prefix.getReturnType(crudEntity.typeMirror)}",
+            )
+        }
+    }
+
+
     override fun getTemplate(): String {
         return when (prefix) {
             PrefixEnum.DeleteBy -> {
@@ -144,15 +145,17 @@ class JpaStyleMethod(
     private fun buildWhereClause(): String {
         val params = element.parameters.mapTo(LinkedList()) { "#{${it.simpleName}}" }
         return conditions.joinToString(separator = " ", prefix = "where ") { (property, keyword) ->
-            keyword.render(listOf(property?.toSelectItem(),
+            keyword.render(listOf(property?.column?.name,
                 *(0 until keyword.numberOfParameter).map { params.pop() }.toTypedArray()))
         }
     }
 
     private fun buildOrderClause(): String {
-        return orderColumns.joinToString(prefix = "order by ") { (prop, enum) ->
+        return orderColumns.joinToString() { (prop, enum) ->
             "${prop.toSelectItem()} ${enum.name.lowercase()}"
-        }
+        }.takeIf { it.isNotBlank() }
+            ?.let { "order by $it" }
+            ?: ""
     }
 
 

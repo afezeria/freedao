@@ -37,7 +37,7 @@ abstract class BaseTest {
             """
                     insert into $table (${fields.joinToString()}) 
                     values 
-                    ${data.joinToString(prefix = "(", postfix = ")") { fields.joinToString { "?" } }}
+                    ${data.joinToString { fields.joinToString(prefix = "(", postfix = ")") { "?" } }}
                  """,
             *data.map { map ->
                 fields.map { k -> map[k] }

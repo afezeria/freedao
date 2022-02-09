@@ -1,5 +1,7 @@
 plugins {
     kotlin("jvm")
+    id("io.freefair.lombok") version "6.3.0"
+
     id("com.bnorm.power.kotlin-power-assert")
 }
 
@@ -17,10 +19,12 @@ configure<com.bnorm.power.PowerAssertGradleExtension> {
 dependencies {
     implementation(projects.freedaoCore)
     implementation(projects.freedaoRuntimeClassic)
+    implementation(libs.springContext)
 
     testImplementation(projects.freedaoProcessorCore)
     testImplementation(projects.freedaoProcessorClassic)
-    testImplementation(projects.freedaoProcessorSpring)
+
+    testImplementation(libs.logback)
 
     testImplementation(libs.kotlin.compile.test)
     testImplementation(libs.kotlin.test)

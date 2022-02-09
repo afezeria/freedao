@@ -61,6 +61,25 @@ fun <T : Annotation> T.mirroredType(block: T.() -> Unit): DeclaredType {
     }
 }
 
+fun DeclaredType.findMethod(name: String, vararg parameters: TypeMirror): ExecutableElement? {
+    return asElement().enclosedElements
+        .find {
+            it is ExecutableElement && it.kind == ElementKind.METHOD && it.simpleName.toString() == name
+                    && it.parameters.mapIndexed { i, e -> e.asType().isSameType(parameters[i]) }.all { it }
+        } as ExecutableElement?
+}
+
+fun DeclaredType.findField(name: String? = null, type: TypeMirror? = null): VariableElement? {
+    if (name == null && type == null) {
+        throw IllegalArgumentException("At least one of name and type cannot be null")
+    }
+    return asElement().enclosedElements
+        .find {
+            it is VariableElement && it.kind == ElementKind.FIELD && (name == null || name == it.simpleName.toString()) && (type == null || type.isSameType(
+                it.asType()))
+        } as VariableElement?
+}
+
 fun Name.getterName(): String = "get" + toString().replaceFirstChar { it.uppercaseChar() }
 fun Name.setterName(): String = "set" + toString().replaceFirstChar { it.uppercaseChar() }
 
