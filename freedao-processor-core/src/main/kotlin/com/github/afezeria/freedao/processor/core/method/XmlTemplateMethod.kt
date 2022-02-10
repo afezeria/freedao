@@ -21,7 +21,7 @@ class XmlTemplateMethod(
     }
 
     companion object {
-        fun match(element: Element): Boolean {
+        fun match(element: ExecutableElement): Boolean {
             return element.getAnnotation(XmlTemplate::class.java) != null
         }
     }

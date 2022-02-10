@@ -4,7 +4,6 @@ import com.github.afezeria.freedao.ResultTypeHandler
 import com.github.afezeria.freedao.annotation.ResultMappings
 import com.github.afezeria.freedao.processor.core.*
 import com.squareup.javapoet.CodeBlock
-import java.util.concurrent.ConcurrentMap
 import javax.lang.model.element.*
 import javax.lang.model.type.DeclaredType
 import javax.lang.model.type.NoType
@@ -56,31 +55,26 @@ class ResultHelper(val element: ExecutableElement) {
                 originalItemType = type
             }
             if (originalItemType.isAbstractType()) {
-                //单行结果的类型为抽象类型必须为Map或ConcurrentMap
-                if (!originalItemType.erasure().isSameType(Map::class) && !originalItemType.erasure()
-                        .isSameType(ConcurrentMap::class)
+                //单行结果的类型为抽象类型必须为Map
+                if (!originalItemType.erasure().isSameType(Map::class)
                 ) {
-                    throw HandlerException("Invalid type argument:$originalItemType")
+                    throw HandlerException("Invalid return type:$originalItemType, the abstract type of single row result can only be Map")
                 }
                 mapKeyType = requireNotNull(type.findTypeArgument(Map::class.type, "K")).run {
                     if (isSameType(Any::class) || isSameType(String::class)) {
                         String::class.type
                     } else {
-                        throw HandlerException("Invalid type argument:$this")
+                        throw HandlerException("Invalid type argument:$this, key type must be String")
                     }
                 }
                 mapValueType = requireNotNull(type.findTypeArgument(Map::class.type, "V")).run {
-                    if (isSameType(Any::class) || isNotAbstractType()) {
+                    if (isNotAbstractType()) {
                         this
                     } else {
-                        throw HandlerException("Invalid type argument:$this")
+                        throw HandlerException("Invalid type argument:$this, value type cannot be abstract")
                     }
                 }
-                itemType = if (originalItemType.erasure().isSameType(Map::class)) {
-                    HashMap::class
-                } else {
-                    ConcurrentMap::class
-                }.type
+                itemType = HashMap::class.type
             } else {
                 itemType = originalItemType
                 when {

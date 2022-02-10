@@ -36,7 +36,7 @@ sealed class MethodModel(
     fun render(): MethodSpec {
         //generate build sql code
         sqlBuildCodeBlock = RootElement(this).buildCodeBlock()
-        if (statementType==StatementType.SELECT&&resultHelper.returnType is PrimitiveType){
+        if (statementType == StatementType.SELECT && resultHelper.returnType is PrimitiveType) {
             throw HandlerException("select method cannot return primitive type")
         }
 
@@ -107,7 +107,7 @@ sealed class MethodModel(
                     XmlTemplateMethod.match(it) -> XmlTemplateMethod(element, daoModel)
                     AnnotationStyleMethod.match(it) -> AnnotationStyleMethod(element, daoModel)
                     CrudMethod.match(it) -> CrudMethod(element, daoModel)
-                    JpaStyleMethod.match(it) -> JpaStyleMethod(element, daoModel)
+                    NamedMethod.match(it) -> NamedMethod(element, daoModel)
                     else -> {
                         throw HandlerException("invalid method declare")
                     }

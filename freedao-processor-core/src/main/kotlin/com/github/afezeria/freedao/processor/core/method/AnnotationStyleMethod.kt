@@ -17,7 +17,7 @@ class AnnotationStyleMethod(
     }
 
     companion object {
-        fun match(element: Element): Boolean {
+        fun match(element: ExecutableElement): Boolean {
             return element.run {
                 getAnnotation(Insert::class.java) != null
                         || getAnnotation(Select::class.java) != null

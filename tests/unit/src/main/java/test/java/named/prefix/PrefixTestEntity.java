@@ -1,4 +1,4 @@
-package test.java.jpa;
+package test.java.named.prefix;
 
 import com.github.afezeria.freedao.annotation.Column;
 import com.github.afezeria.freedao.annotation.Table;
@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
         primaryKeys = "id"
 )
 @Data
-public class PersonQueryById {
+public class PrefixTestEntity {
     @Column(insert = false)
     @AutoFill
     private Long id;

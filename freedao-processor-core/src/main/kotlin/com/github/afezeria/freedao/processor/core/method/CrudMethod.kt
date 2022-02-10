@@ -33,7 +33,7 @@ sealed class CrudMethod(element: ExecutableElement, daoModel: DaoModel) :
             }!!.primaryConstructor!!.call(element, daoModel)
         }
 
-        fun match(element: Element): Boolean {
+        fun match(element: ExecutableElement): Boolean {
             return CrudMethod::class.sealedSubclasses.any {
                 it.simpleName!!.replaceFirstChar { it.lowercase() } == element.simpleName.toString()
             }
