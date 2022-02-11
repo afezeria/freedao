@@ -2,13 +2,12 @@ package test.java.named.prefix;
 
 import com.github.afezeria.freedao.annotation.Dao;
 import org.jetbrains.annotations.NotNull;
-import test.Person;
 
 /**
  *
  */
-@Dao(crudEntity = Person.class)
-public interface FindOneByIdDao {
+@Dao(crudEntity = PrefixTestEntity.class)
+public interface DeleteByNameDao {
 
-    Person findOneById(@NotNull Long id);
+    Integer deleteByName(@NotNull String name);
 }

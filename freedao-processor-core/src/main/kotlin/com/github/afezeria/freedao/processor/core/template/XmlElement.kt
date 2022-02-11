@@ -113,7 +113,6 @@ abstract class XmlElement {
                 }
             }
         }
-
     }
 
     companion object {

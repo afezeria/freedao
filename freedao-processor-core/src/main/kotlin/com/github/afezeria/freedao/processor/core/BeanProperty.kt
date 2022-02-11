@@ -30,7 +30,12 @@ class BeanProperty(
         return "${tableAlias.replace(".+".toRegex()) { it.value + "." }}${column.name.sqlQuote()} as ${column.name.sqlQuote()}"
     }
 
+    override fun toString(): String {
+        return "BeanProperty(name='$name', type=$type)"
+    }
+
     val setterName: String by lazy { "set${name.replaceFirstChar { it.uppercaseChar() }}" }
+
 
 
 }

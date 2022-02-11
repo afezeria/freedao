@@ -2,12 +2,13 @@ package test.java.crud.insert;
 
 import com.github.afezeria.freedao.annotation.Dao;
 import org.jetbrains.annotations.NotNull;
+import test.Person;
 
 /**
  *
  */
-@Dao(crudEntity = PersonInsertSelective.class)
+@Dao(crudEntity = Person.class)
 public interface PersonInsertSelectiveDao {
 
-    int insertSelective(@NotNull PersonInsertSelective entity);
+    int insertSelective(@NotNull Person entity);
 }

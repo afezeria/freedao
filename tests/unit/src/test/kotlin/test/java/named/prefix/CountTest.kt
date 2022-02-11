@@ -10,9 +10,9 @@ import test.BaseTest
 class CountTest : BaseTest() {
     @Test
     fun countByName() {
-        initTable("person", listOf(mapOf("name" to "a"), mapOf("name" to "a")))
+        initTable("person", listOf(mapOf("name" to "a"), mapOf("name" to "b")))
         val impl = getJavaDaoInstance<CountByNameDao>()
         val count = impl.countByName("a")
-        assert(count == 2)
+        assert(count == 1)
     }
 }

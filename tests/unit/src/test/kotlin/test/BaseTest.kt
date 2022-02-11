@@ -1,13 +1,17 @@
 package test
 
+import com.github.afezeria.freedao.annotation.Column
+import com.github.afezeria.freedao.annotation.Table
 import com.github.afezeria.freedao.processor.classic.contextVar
 import com.github.afezeria.freedao.processor.core.MainProcessor
+import com.github.afezeria.freedao.processor.core.toSnakeCase
 import com.github.afezeria.freedao.runtime.classic.DaoContext
 import com.google.testing.compile.Compilation
 import com.google.testing.compile.CompilationSubject
 import com.google.testing.compile.Compiler
 import com.google.testing.compile.JavaFileObjects
 import com.zaxxer.hikari.HikariDataSource
+import org.jetbrains.kotlin.utils.addToStdlib.ifTrue
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameter
@@ -20,6 +24,9 @@ import javax.tools.JavaFileObject
 import javax.tools.JavaFileObject.Kind.CLASS
 import kotlin.io.path.Path
 import kotlin.reflect.KClass
+import kotlin.reflect.full.findAnnotation
+import kotlin.reflect.full.findAnnotations
+import kotlin.reflect.full.memberProperties
 
 
 /**
@@ -29,6 +36,48 @@ import kotlin.reflect.KClass
 abstract class BaseTest {
     @Parameter(0)
     lateinit var env: DbEnv
+
+    fun initDataFillNull(vararg entities: Entity) = initData(true, *entities)
+    fun initData(vararg entities: Entity) = initData(false, *entities)
+
+    @OptIn(ExperimentalStdlibApi::class)
+    private fun initData(fillNull: Boolean, vararg entities: Entity) {
+        entities.isEmpty().ifTrue { throw IllegalArgumentException() }
+        val deletedTable = mutableSetOf<String>()
+        entities.forEach {
+            val testResource = it::class.findAnnotations<DDL>().find { it.dialect == env.name }
+                ?: throw IllegalStateException()
+            val table = it::class.findAnnotation<Table>() ?: throw IllegalStateException()
+            env.dataSource.apply {
+                //每张表只删除一次
+                if (table.name !in deletedTable) {
+                    execute("drop table if exists ${table.name}")
+                    deletedTable += table.name
+                    execute(testResource.value)
+                }
+                val name2value = it::class.memberProperties.mapTo(mutableListOf()) { p ->
+                    (p.findAnnotation<Column>()?.name?.takeIf { it.isNotEmpty() }
+                        ?: p.name.toSnakeCase()) to p.getter.call(it)
+                }.apply {
+                    if (!fillNull) {
+                        removeIf { it.second == null }
+                    }
+                }
+
+                execute(
+                    """
+                    insert into ${table.name} (${name2value.joinToString { it.first }}) 
+                    values (${name2value.joinToString { "?" }})
+                 """,
+                    *name2value.map { it.second }.toTypedArray()
+                )
+            }
+
+
+        }
+
+    }
+
 
     fun initTable(table: String, data: List<Map<String, Any?>>) {
         env.dataSource.execute("delete from $table")

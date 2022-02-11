@@ -2,11 +2,12 @@ package test.java.crud.update;
 
 import com.github.afezeria.freedao.annotation.Dao;
 import org.jetbrains.annotations.NotNull;
+import test.Person;
 
 /**
  */
-@Dao(crudEntity = PersonUpdateSelective.class)
+@Dao(crudEntity = Person.class)
 public interface PersonUpdateSelectiveDao {
 
-    int updateSelective(@NotNull PersonUpdateSelective entity);
+    int updateSelective(@NotNull Person entity);
 }

@@ -2,12 +2,13 @@ package test.java.named.prefix;
 
 import com.github.afezeria.freedao.annotation.Dao;
 import org.jetbrains.annotations.NotNull;
+import test.Person;
 
 /**
  *
  */
-@Dao(crudEntity = PrefixTestEntity.class)
+@Dao(crudEntity = Person.class)
 public interface QueryOneByIdDao {
 
-    PrefixTestEntity queryOneById(@NotNull Long id);
+    Person queryOneById(@NotNull Long id);
 }
