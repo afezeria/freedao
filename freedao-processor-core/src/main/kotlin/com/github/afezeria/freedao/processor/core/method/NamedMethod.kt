@@ -4,8 +4,10 @@ import com.github.afezeria.freedao.Long2IntegerResultHandler
 import com.github.afezeria.freedao.processor.core.*
 import java.util.*
 import javax.lang.model.element.ExecutableElement
+import javax.lang.model.element.VariableElement
 import javax.lang.model.type.DeclaredType
 import javax.lang.model.type.TypeMirror
+import kotlin.reflect.full.primaryConstructor
 
 abstract class NamedMethod private constructor(
     element: ExecutableElement, daoModel: DaoModel,
@@ -18,7 +20,8 @@ abstract class NamedMethod private constructor(
     /**
      * 当关键字为And/Or时pair.first为null
      */
-    var conditions: MutableList<Pair<BeanProperty?, ConditionalKeywordEnum>> = mutableListOf()
+//    var conditions: MutableList<Pair<BeanProperty?, ConditionalKeywordEnum>> = mutableListOf()
+    var conditions: MutableList<Condition> = mutableListOf()
     var orderColumns: MutableList<Pair<BeanProperty, OrderEnum>> = mutableListOf()
 
     /**
@@ -45,63 +48,6 @@ abstract class NamedMethod private constructor(
         checkParameters()
     }
 
-//    /**
-//     * 解析方法名，分离出查询条件和排序使用的属性
-//     */
-//    private fun parseName() {
-//        val (_, _, condAndOrder) = methodNameSplitRegex.matchEntire(name)!!.groupValues
-//        var orderByClause: String? = null
-//        //property name start index
-//        var start = 0
-//        //property name length
-//        var length = 1
-//
-//        var left: String? = null
-//        var right: String?
-//        while (start + length <= condAndOrder.length && start < condAndOrder.length) {
-//            left = condAndOrder.substring(start, start + length).replaceFirstChar { it.lowercase() }
-//            right = condAndOrder.substring(start + length)
-//            val property = dbProperties.find { it.name == left }
-//            val keyword = keywordRegex.find(right)?.groupValues?.run {
-//                get(1).ifEmpty { get(2) }
-//            }
-//            if (property != null && keyword != null) {
-//                if (keyword == "OrderBy") {
-//                    conditions += property to ConditionalKeywordEnum.Is
-//                    orderByClause = right.substring(7)
-//                    left = null
-//                    break
-//                } else {
-//                    when (keyword) {
-//                        "And", "Or" -> {
-//                            conditions += property to ConditionalKeywordEnum.Is
-//                            conditions += null to ConditionalKeywordEnum.valueOf(keyword)
-//                        }
-//                        // 当关键字为空字符串时当作Is处理
-//                        "" -> conditions += property to ConditionalKeywordEnum.Is
-//                        else -> conditions += property to ConditionalKeywordEnum.valueOf(keyword)
-//                    }
-//                    left = null
-//                    start += length + keyword.length
-//                    length = 0
-//                    continue
-//                }
-//            }
-//            length++
-//        }
-//        if (left != null) {
-//            throw HandlerException("missing property ${crudEntity.className}.${left}")
-//        }
-//        if (orderByClause != null) {
-//            orderByItemRegex.findAll(orderByClause).forEach { m ->
-//                left = m.groupValues[1].replaceFirstChar { it.lowercase() }
-//                dbProperties.find { it.name == left }?.let {
-//                    orderColumns += it to OrderEnum.valueOf(m.groupValues[2])
-//                } ?: throw HandlerException("missing property ${crudEntity.className}.${left}")
-//            }
-//        }
-//    }
-
     /**
      * 解析方法名，分离出查询条件和排序使用的属性
      */
@@ -120,19 +66,19 @@ abstract class NamedMethod private constructor(
                 val connectKey = findConnectKey(list)
                 when (connectKey) {
                     "OrderBy" -> {
-                        conditions += property to ConditionalKeywordEnum.valueOf(conditionKey ?: "Is")
+                        conditions += Condition(conditionKey ?: "Is").also { it.property = property }
                         propertyName = ""
                         hasOrderByClause = true
                         break
                     }
                     "And", "Or" -> {
-                        conditions += property to ConditionalKeywordEnum.valueOf(conditionKey ?: "Is")
+                        conditions += Condition(conditionKey ?: "Is").also { it.property = property }
                         propertyName = ""
-                        conditions += null to ConditionalKeywordEnum.valueOf(connectKey)
+                        conditions += Condition(connectKey)
                     }
                     "" -> {
                         if (list.isEmpty()) {
-                            conditions += property to ConditionalKeywordEnum.valueOf(conditionKey ?: "Is")
+                            conditions += Condition(conditionKey ?: "Is").also { it.property = property }
                             propertyName = ""
                             break
                         }
@@ -141,7 +87,7 @@ abstract class NamedMethod private constructor(
             }
         }
         if (propertyName.isNotEmpty()) {
-            throw HandlerException("missing property ${crudEntity.className}.${propertyName}")
+            throw HandlerException("missing property ${crudEntity.className}.${propertyName.replaceFirstChar { it.lowercase() }}")
         }
 
         if (hasOrderByClause) {
@@ -159,7 +105,7 @@ abstract class NamedMethod private constructor(
             }
         }
         if (propertyName.isNotEmpty()) {
-            throw HandlerException("missing order property ${crudEntity.className}.${propertyName}")
+            throw HandlerException("missing order property ${crudEntity.className}.${propertyName.replaceFirstChar { it.lowercase() }}")
         }
     }
 
@@ -189,43 +135,39 @@ abstract class NamedMethod private constructor(
     private fun checkParameters() {
         var parameterIdx = 0
         val parameters = element.parameters.mapTo(LinkedList()) { it }
-        val conditionsThatRequireParameter =
-            conditions
-                .filter { (prop, cond) ->
-                    //过滤And/Or(当关键字为and/or时pair的first为null)和不需要参数的条件
-                    prop != null && cond.requiredParameterType(prop.type).isNotEmpty()
-                }
-        if (conditionsThatRequireParameter.isEmpty()) {
+        val requireParameterConditions = conditions.filter { cond ->
+            //过滤And/Or(当关键字为and/or时pair的first为null)和不需要参数的条件
+            cond.property != null && cond.requiredParameterTypes.isNotEmpty()
+        }
+        if (requireParameterConditions.isEmpty()) {
             return
         }
         //找到方法参数列表中和表达式需要的第一个参数匹配的参数的缩影，并将这之前的参数从parameters中移除
-        conditionsThatRequireParameter
-            .first { (p, kw) -> kw.requiredParameterType(p!!.type).isNotEmpty() }
-            .let { (p, kw) ->
-                val type = kw.requiredParameterType(p!!.type).first()
-                while (parameters.isNotEmpty()) {
-                    val param = parameters.first
-                    if (param.simpleName.toString() == p.name && param.asType().isSameType(type)) {
-                        break
-                    } else {
-                        parameters.pop()
-                        parameterIdx++
-                    }
+        requireParameterConditions.first().let { cond ->
+            val type = cond.requiredParameterTypes.first()
+            while (parameters.isNotEmpty()) {
+                val param = parameters.first
+                if (param.asType().isSameType(type)) {
+                    break
+                } else {
+                    parameters.pop()
+                    parameterIdx++
                 }
             }
+        }
         parameterFirstMatchIndex = parameterIdx
-        conditionsThatRequireParameter.forEach { (p, kw) ->
-            requireNotNull(p)
-            kw.requiredParameterType(p.type).forEach {
+        requireParameterConditions.forEach { cond ->
+            cond.requiredParameterTypes.forEach {
                 if (parameters.isEmpty()) {
-                    throw HandlerException("Missing parameter ${p.name}:${it.typeName}")
+                    throw HandlerException("Missing ${it.typeName} parameter")
                 }
                 val parameter = parameters.pop()
                 parameterLastMatchIndex = parameterIdx
                 parameterIdx++
-                if (!parameter.asType().isSameType(it) || parameter.simpleName.toString() != p.name) {
-                    throw HandlerException("Parameter mismatch, the ${parameterIdx}th parameter should be ${p.name}:${it}")
+                if (!parameter.asType().isSameType(it)) {
+                    throw HandlerException("Parameter mismatch, the ${parameterIdx}th parameter type should be $it")
                 }
+                cond.params += parameter
             }
         }
     }
@@ -235,11 +177,8 @@ abstract class NamedMethod private constructor(
     }
 
     protected fun buildWhereClause(): String {
-        return conditions.joinToString(separator = " ", prefix = "where ") { (property, keyword) ->
-            keyword.render(listOf(
-                property?.column?.name,
-                property?.column?.name?.let { "#{$it}" },
-            ))
+        return conditions.joinToString(separator = " ", prefix = "where ") { cond ->
+            cond.render()
         }
     }
 
@@ -256,16 +195,16 @@ abstract class NamedMethod private constructor(
 //            "^(LessThanEqual|GreaterThanEqual|IsNotNull|IsNull|LessThan|GreaterThan|NotIn|NotLike|Between|After|Before|Like|Not|In|True|False|)(And|OrderBy|Or|$)".toRegex()
 
         private val length2ConditionKeys = listOf(
-            3 to listOf("LessThanEqual", "GreaterThanEqual", "IsNotNull"),
-            2 to listOf("IsNull", "LessThan", "GreaterThan", "NotIn", "NotLike"),
-            1 to listOf("Between", "After", "Before", "Like", "Not", "In", "True", "False"),
+            3 to listOf("LessThanEqual", "GreaterThanEqual"),
+            2 to listOf("IsNull", "LessThan", "GreaterThan", "NotNull", "NotIn", "NotLike"),
+            1 to listOf("Between", "Like", "Not", "In", "True", "False"),
         )
         private val length2ConnectKeys = listOf(2 to listOf("OrderBy"), 1 to listOf("And", "Or"))
 
         fun findConditionKey(list: LinkedList<String>): String? {
             var s = ""
             for ((length, keys) in length2ConditionKeys) {
-                if (list.size > length) {
+                if (list.size >= length) {
                     if (list.subList(0, length).joinToString("") in keys) {
                         repeat(length) { s += list.pop() }
                         return s
@@ -288,83 +227,82 @@ abstract class NamedMethod private constructor(
             return s
         }
 
-
         /**
-         * 支持的关键字
+         * 支持的where子句条件关键字
+         * @property property BeanProperty? 匹配的bean属性
+         * @property params List<VariableElement> 匹配的方法参数
+         * @property requiredParameterTypesFn Function0<List<TypeMirror>> 返回需要的参数的类型列表
+         * @property renderFn Function0<String> 返回sql的条件字符串
+         * @constructor
          */
-        enum class ConditionalKeywordEnum(
-            val numberOfParameter: Int = 1,
-            /**
-             * 输入实体类属性的类型，返回的操作符要求的参数类型
-             */
-            val requiredParameterType: (TypeMirror) -> List<TypeMirror> = { listOf(it) },
-            val render: (List<String?>) -> String,
+        sealed class Condition(
+            private val requiredParameterTypesFn: Condition.() -> List<TypeMirror> = { listOf(property!!.type) },
+            private val renderFn: Condition.() -> String,
         ) {
-            LessThanEqual(render = { "${it[0]} <= ${it[1]}" }),
-            GreaterThanEqual(render = { "${it[0]} >= ${it[1]}" }),
-            IsNotNull(
-                numberOfParameter = 0,
-                requiredParameterType = { emptyList() },
-                render = { "${it[0]} is not null" }
-            ),
-            IsNull(
-                numberOfParameter = 0,
-                requiredParameterType = { emptyList() },
-                render = { "${it[0]} is null" }
-            ),
-            LessThan(render = { "${it[0]} < ${it[1]}" }),
-            GreaterThan(render = { "${it[0]} > ${it[1]}" }),
-            NotIn(
-                requiredParameterType = { listOf(Collection::class.type(it)) },
-                render = { "${it[0]} not in ${it[1]}" }
-            ),
-            NotLike(render = { "${it[0]} not like ${it[1]}" }),
-            Between(
-                numberOfParameter = 2,
-                requiredParameterType = { listOf(it, it) },
-                render = { "${it[0]} between ${it[1]} and ${it[2]}" },
-            ),
-            After(render = { "${it[0]} > ${it[1]}" }),
-            Before(render = { "${it[0]} < ${it[1]}" }),
-            Like(render = { "${it[0]} like ${it[1]}" }),
-            Not(render = { "${it[0]} <> ${it[1]}" }),
-            In(
-                requiredParameterType = { listOf(Collection::class.type(it)) },
-                render = { "${it[0]} in ${it[1]}" }
-            ),
-            True(
-                numberOfParameter = 0,
-                requiredParameterType = { emptyList() },
-                render = { "${it[0]} = true" }
-            ),
-            False(
-                numberOfParameter = 0,
-                requiredParameterType = { emptyList() },
-                render = { "${it[0]} = false" }
-            ),
+            var property: BeanProperty? = null
+            val params = mutableListOf<VariableElement>()
+            val column: String
+                get() = property!!.column.name.sqlQuote()
+
+            val requiredParameterTypes by lazy { requiredParameterTypesFn(this) }
+            fun render() = renderFn(this)
+
+
+            companion object {
+                private val name2Constructor =
+                    Condition::class.sealedSubclasses.associate { it.simpleName to it.primaryConstructor }
+
+                operator fun invoke(name: String): Condition {
+                    return name2Constructor[name]?.call() ?: throw IllegalStateException()
+                }
+            }
+
+            class LessThanEqual : Condition(renderFn = { "${column} <= #{${params[0].simpleName}}" })
+            class GreaterThanEqual : Condition(renderFn = { "${column} >= #{${params[0].simpleName}}" })
+            class NotNull :
+                Condition(requiredParameterTypesFn = { emptyList() }, renderFn = { "${column} is not null" })
+
+            class IsNull : Condition(requiredParameterTypesFn = { emptyList() }, renderFn = { "${column} is null" })
+
+            class LessThan : Condition(renderFn = { "${column} < #{${params[0].simpleName}}" })
+
+            class GreaterThan : Condition(renderFn = { "$column > #{${params[0].simpleName}}" })
+
+            class NotIn : Condition(requiredParameterTypesFn = { listOf(Collection::class.type(property!!.type)) },
+                renderFn = { "$column not in #{${params[0].simpleName}}" })
+
+            class NotLike : Condition(renderFn = { "$column not like #{${params[0].simpleName}}" })
+
+            class Between : Condition(
+                requiredParameterTypesFn = { listOf(property!!.type, property!!.type) },
+                renderFn = { "$column between #{${params[0].simpleName}} and #{${params[1].simpleName}}" },
+            )
+
+            class Like : Condition(renderFn = { "$column like #{${params[0].simpleName}}" })
+
+            class Not : Condition(renderFn = { "$column <> #{${params[0].simpleName}}" })
+
+            class In : Condition(requiredParameterTypesFn = { listOf(Collection::class.type(property!!.type)) },
+                renderFn = { "$column in #{${params[0].simpleName}}" })
+
+            class True : Condition(requiredParameterTypesFn = { emptyList() }, renderFn = { "$column = true" })
+
+            class False : Condition(requiredParameterTypesFn = { emptyList() }, renderFn = { "$column = false" })
 
             /**
-             * 当关键字为空字符串时当作Is处理
+             * Is不能作为关键字出现在方法名中
+             * 当字段名后没有接其他条件关键字或Order时当作Is处理
              */
-            Is(render = { "${it[0]} = ${it[1]}" }),
-            And(
-                numberOfParameter = 0,
-                requiredParameterType = { emptyList() },
-                render = { "and" }
-            ),
-            Or(
-                numberOfParameter = 0,
-                requiredParameterType = { emptyList() },
-                render = { "or" }
-            ),
-            ;
+            class Is : Condition(renderFn = { "$column = #{${params[0].simpleName}}" })
+
+            class And : Condition(requiredParameterTypesFn = { emptyList() }, renderFn = { "and" })
+
+            class Or : Condition(requiredParameterTypesFn = { emptyList() }, renderFn = { "or" })
         }
 
         enum class OrderEnum {
             Asc, Desc
         }
-
-//        private val orderByItemRegex = "(.*?)(Asc|Desc)((?=[A-Z])|$)".toRegex()
 
         private val prefixList = listOf("queryBy", "queryOneBy", "findBy", "findOneBy", "countBy", "deleteBy")
 

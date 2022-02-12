@@ -36,12 +36,18 @@ class OrderTest : BaseTest() {
             Person(3, "a"),
         )
         val impl = getJavaDaoInstance<OrderWithMultipleColumnDao>()
-        val list = impl.queryByWhenCreatedIsNotNullOrderByNameAscIdAsc("a")
+        val list = impl.queryByWhenCreatedNotNullOrderByNameAscIdAsc()
         assertContentEquals(list.map { it.id }, listOf(2, 3, 1))
     }
-//
-//    @Test
-//    fun a() {
-//        initTable(Person())
-//    }
+    @Test
+    fun orderByNameAscIdDesc() {
+        initData(
+            Person(1, "b"),
+            Person(2, "a"),
+            Person(3, "a"),
+        )
+        val impl = getJavaDaoInstance<OrderWithMultipleColumnDao>()
+        val list = impl.queryByIdNotNullOrderByNameAscIdDesc()
+        assertContentEquals(list.map { it.id }, listOf(3, 2, 1))
+    }
 }

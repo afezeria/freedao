@@ -1,4 +1,4 @@
-package test.java.named.order;
+package test.java.named.cond;
 
 import com.github.afezeria.freedao.annotation.Dao;
 import org.jetbrains.annotations.NotNull;
@@ -10,11 +10,8 @@ import java.util.List;
  * @author afezeria
  */
 @Dao(crudEntity = Person.class)
-public interface OrderWithMultipleColumnDao {
+public interface IsDao {
 
     @NotNull
-    List<Person> queryByWhenCreatedNotNullOrderByNameAscIdAsc();
-
-    @NotNull
-    List<Person> queryByIdNotNullOrderByNameAscIdDesc();
+    List<Person> queryById(Long id);
 }
