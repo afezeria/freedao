@@ -306,12 +306,7 @@ abstract class NamedMethod private constructor(
 
         private val prefixList = listOf("queryBy", "queryOneBy", "findBy", "findOneBy", "countBy", "deleteBy")
 
-        fun match(element: ExecutableElement): Boolean {
-            val name = element.simpleName.toString()
-            return prefixList.any { name.startsWith(it) && name.length > it.length && name[it.length].isUpperCase() }
-        }
-
-        operator fun invoke(element: ExecutableElement, daoModel: DaoModel): NamedMethod {
+        operator fun invoke(element: ExecutableElement, daoModel: DaoModel): NamedMethod? {
             val name = element.simpleName.toString()
             return name.run {
                 when {
@@ -319,7 +314,7 @@ abstract class NamedMethod private constructor(
                     startsWith("queryOneBy") || startsWith("findOneBy") -> QueryOne(element, daoModel)
                     startsWith("countBy") -> Count(element, daoModel)
                     startsWith("deleteBy") -> Delete(element, daoModel)
-                    else -> throw IllegalStateException()
+                    else -> null
                 }
             }
         }

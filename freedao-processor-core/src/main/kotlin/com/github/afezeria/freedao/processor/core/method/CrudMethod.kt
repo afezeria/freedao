@@ -2,7 +2,6 @@ package com.github.afezeria.freedao.processor.core.method
 
 import com.github.afezeria.freedao.Long2IntegerResultHandler
 import com.github.afezeria.freedao.processor.core.*
-import javax.lang.model.element.Element
 import javax.lang.model.element.ExecutableElement
 import kotlin.reflect.full.primaryConstructor
 
@@ -27,17 +26,14 @@ sealed class CrudMethod(element: ExecutableElement, daoModel: DaoModel) :
         operator fun invoke(
             element: ExecutableElement,
             daoModel: DaoModel,
-        ): CrudMethod {
+        ): CrudMethod? {
             return CrudMethod::class.sealedSubclasses.find {
                 it.simpleName!!.replaceFirstChar { it.lowercase() } == element.simpleName.toString()
-            }!!.primaryConstructor!!.call(element, daoModel)
-        }
-
-        fun match(element: ExecutableElement): Boolean {
-            return CrudMethod::class.sealedSubclasses.any {
-                it.simpleName!!.replaceFirstChar { it.lowercase() } == element.simpleName.toString()
+            }?.let {
+                it.primaryConstructor!!.call(element, daoModel)
             }
         }
+
     }
 }
 

@@ -5,10 +5,9 @@ import com.github.afezeria.freedao.annotation.Insert
 import com.github.afezeria.freedao.annotation.Select
 import com.github.afezeria.freedao.annotation.Update
 import com.github.afezeria.freedao.processor.core.DaoModel
-import javax.lang.model.element.Element
 import javax.lang.model.element.ExecutableElement
 
-class AnnotationStyleMethod(
+class AnnotationStyleMethod private constructor(
     element: ExecutableElement, daoModel: DaoModel,
 ) : MethodModel(element, daoModel) {
 
@@ -17,13 +16,11 @@ class AnnotationStyleMethod(
     }
 
     companion object {
-        fun match(element: ExecutableElement): Boolean {
-            return element.run {
-                getAnnotation(Insert::class.java) != null
-                        || getAnnotation(Select::class.java) != null
-                        || getAnnotation(Update::class.java) != null
-                        || getAnnotation(Delete::class.java) != null
-            }
+        private val annotations = listOf(Insert::class.java, Select::class.java, Update::class.java, Delete::class.java)
+
+        operator fun invoke(element: ExecutableElement, daoModel: DaoModel): AnnotationStyleMethod? {
+            return annotations.find { element.getAnnotation(it) != null }
+                ?.let { AnnotationStyleMethod(element, daoModel) }
         }
     }
 }

@@ -3,6 +3,7 @@ package com.github.afezeria.freedao.processor.core.method
 import com.github.afezeria.freedao.StatementType
 import com.github.afezeria.freedao.processor.core.*
 import com.github.afezeria.freedao.processor.core.spi.BuildMethodService
+import com.github.afezeria.freedao.processor.core.spi.MethodFactory
 import com.github.afezeria.freedao.processor.core.template.RootElement
 import com.squareup.javapoet.CodeBlock
 import com.squareup.javapoet.MethodSpec
@@ -15,7 +16,7 @@ import javax.lang.model.type.TypeMirror
 /**
  *
  */
-sealed class MethodModel(
+abstract class MethodModel(
     element: ExecutableElement,
     val daoModel: DaoModel,
 ) : Model<ExecutableElement>(element) {
@@ -101,18 +102,20 @@ sealed class MethodModel(
             }.map { BeanProperty(it as VariableElement) }
         }
 
+        val methodFactories by lazy {
+            ServiceLoader.load(
+                MethodFactory::class.java,
+                MainProcessor::class.java.classLoader
+            ).sortedBy { it.order() }
+        }
+
         operator fun invoke(element: ExecutableElement, daoModel: DaoModel): MethodModel {
-            return element.let {
-                when {
-                    XmlTemplateMethod.match(it) -> XmlTemplateMethod(element, daoModel)
-                    AnnotationStyleMethod.match(it) -> AnnotationStyleMethod(element, daoModel)
-                    CrudMethod.match(it) -> CrudMethod(element, daoModel)
-                    NamedMethod.match(it) -> NamedMethod(element, daoModel)
-                    else -> {
-                        throw HandlerException("invalid method declare")
-                    }
-                }
-            }
+            return XmlTemplateMethod(element, daoModel)
+                ?: AnnotationStyleMethod(element, daoModel)
+                ?: CrudMethod(element, daoModel)
+                ?: NamedMethod(element, daoModel)
+                ?: methodFactories.firstNotNullOfOrNull { it.create(element, daoModel) }
+                ?: throw HandlerException("invalid method declare")
         }
     }
 

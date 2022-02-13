@@ -53,7 +53,7 @@ class DaoModel(element: TypeElement) : Model<TypeElement>(element) {
             it.kind == ElementKind.METHOD && !it.modifiers.contains(Modifier.DEFAULT)
         }.map { element ->
             runCatching {
-                MethodModel(element as ExecutableElement, this).render()
+                MethodModel.invoke(element as ExecutableElement, this).render()
             }.apply {
                 this.exceptionOrNull()?.let { e ->
                     if (e is HandlerException) {
