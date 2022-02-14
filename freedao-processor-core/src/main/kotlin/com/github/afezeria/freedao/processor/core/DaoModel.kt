@@ -3,9 +3,11 @@ package com.github.afezeria.freedao.processor.core
 import com.github.afezeria.freedao.annotation.Dao
 import com.github.afezeria.freedao.processor.core.method.MethodModel
 import com.github.afezeria.freedao.processor.core.spi.BuildDaoService
-import com.squareup.javapoet.FieldSpec
+import com.squareup.javapoet.AnnotationSpec
 import com.squareup.javapoet.JavaFile
 import com.squareup.javapoet.TypeSpec
+import java.io.PrintWriter
+import java.io.StringWriter
 import java.util.*
 import javax.lang.model.element.*
 import javax.tools.Diagnostic
@@ -24,10 +26,16 @@ class DaoModel(element: TypeElement) : Model<TypeElement>(element) {
 
     var isJavaCode: Boolean = true
 
-    var fieldList: MutableList<FieldSpec> = mutableListOf()
     var classBuilder: TypeSpec.Builder = TypeSpec.classBuilder(implClassName).apply {
         addSuperinterface(element.asType())
         addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+        addAnnotations(
+            element.annotationMirrors
+                .filter { !it.annotationType.isSameType(Dao::class) }
+                .map {
+                    AnnotationSpec.get(it)
+                }
+        )
     }
 
     init {
@@ -53,11 +61,20 @@ class DaoModel(element: TypeElement) : Model<TypeElement>(element) {
             it.kind == ElementKind.METHOD && !it.modifiers.contains(Modifier.DEFAULT)
         }.map { element ->
             runCatching {
-                MethodModel.invoke(element as ExecutableElement, this).render()
+                MethodModel(element as ExecutableElement, this).render()
             }.apply {
                 this.exceptionOrNull()?.let { e ->
                     if (e is HandlerException) {
                         processingEnvironment.messager.printMessage(Diagnostic.Kind.ERROR, e.message, element)
+                        if (debug) {
+                            val stringWriter = StringWriter()
+                            val printWriter = PrintWriter(stringWriter)
+                            e.printStackTrace(printWriter)
+                            processingEnvironment.messager.printMessage(
+                                Diagnostic.Kind.ERROR,
+                                stringWriter.toString()
+                            )
+                        }
                     } else {
                         throw e
                     }

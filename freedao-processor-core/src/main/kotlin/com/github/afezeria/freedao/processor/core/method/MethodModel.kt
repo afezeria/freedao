@@ -5,8 +5,10 @@ import com.github.afezeria.freedao.processor.core.*
 import com.github.afezeria.freedao.processor.core.spi.BuildMethodService
 import com.github.afezeria.freedao.processor.core.spi.MethodFactory
 import com.github.afezeria.freedao.processor.core.template.RootElement
+import com.squareup.javapoet.AnnotationSpec
 import com.squareup.javapoet.CodeBlock
 import com.squareup.javapoet.MethodSpec
+import com.squareup.javapoet.ParameterSpec
 import java.util.*
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.VariableElement
@@ -16,7 +18,7 @@ import javax.lang.model.type.TypeMirror
 /**
  *
  */
-abstract class MethodModel(
+abstract class MethodModel protected constructor(
     element: ExecutableElement,
     val daoModel: DaoModel,
 ) : Model<ExecutableElement>(element) {
@@ -41,7 +43,28 @@ abstract class MethodModel(
             throw HandlerException("select method cannot return primitive type")
         }
 
-        builder = MethodSpec.overriding(element)
+        builder = MethodSpec.overriding(element).apply {
+            addAnnotations(
+                element.annotationMirrors.map {
+                    AnnotationSpec.get(it)
+                }
+            )
+            parameters.clear()
+            addParameters(
+                element.parameters.map {
+                    ParameterSpec.get(it)
+                        .toBuilder()
+                        .addAnnotations(
+                            it.annotationMirrors.map { ann -> AnnotationSpec.get(ann) }
+                        )
+                        .build()
+                }
+            )
+        }
+//        builder = MethodSpec.methodBuilder(element.simpleName.toString())
+//            .returns(element.returnType.typeName)
+//            .addModifiers(element.modifiers)
+//            .addAnnotation(Override::class.java)
         //process non-null parameter
         element.parameters.forEach { param ->
             param.annotationMirrors
@@ -86,7 +109,7 @@ abstract class MethodModel(
     companion object {
         private val notNullAnnotationSet = setOf("NotNull", "NonNull")
 
-        val buildMethodService by lazy {
+        private val buildMethodService by lazy {
             ServiceLoader.load(
                 BuildMethodService::class.java,
                 MainProcessor::class.java.classLoader
@@ -102,7 +125,7 @@ abstract class MethodModel(
             }.map { BeanProperty(it as VariableElement) }
         }
 
-        val methodFactories by lazy {
+        private val methodFactories by lazy {
             ServiceLoader.load(
                 MethodFactory::class.java,
                 MainProcessor::class.java.classLoader
