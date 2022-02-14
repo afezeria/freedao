@@ -28,7 +28,6 @@ class Foreach : XmlElement() {
      */
     override fun render() {
         context.currentScope { builderName ->
-            addStatement("$builderName.append(\$S)", open)
             val (iterableVar, iterableType) = context.createInternalVariableByContextValue(collection,
                 Iterable::class.type)
             val indexVar = if (index.isNotEmpty()) {
@@ -41,7 +40,10 @@ class Foreach : XmlElement() {
                 null)
 
             addStatement("$builderName.append(\$S)", open)
-            val iteratorVar = context.createInternalFlag(Iterator::class.type(String::class.type), null)
+            val iteratorVar = context.createInternalFlag(
+                Iterator::class.type(iterableType.typeArguments[0]),
+                null
+            )
             addStatement("$iteratorVar = $iterableVar.iterator()")
             beginControlFlow("while($iteratorVar.hasNext())")
             children.forEach {

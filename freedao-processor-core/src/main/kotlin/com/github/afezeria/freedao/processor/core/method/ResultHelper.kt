@@ -55,19 +55,19 @@ class ResultHelper(val element: ExecutableElement) {
                 originalItemType = type
             }
             if (originalItemType.isAbstractType()) {
-                //单行结果的类型为抽象类型必须为Map
+                //单行结果的类型为抽象类型时必须为Map
                 if (!originalItemType.erasure().isSameType(Map::class)
                 ) {
                     throw HandlerException("Invalid return type:$originalItemType, the abstract type of single row result can only be Map")
                 }
-                mapKeyType = requireNotNull(type.findTypeArgument(Map::class.type, "K")).run {
+                mapKeyType = requireNotNull(originalItemType.findTypeArgument(Map::class.type, "K")).run {
                     if (isSameType(Any::class) || isSameType(String::class)) {
                         String::class.type
                     } else {
                         throw HandlerException("Invalid type argument:$this, key type must be String")
                     }
                 }
-                mapValueType = requireNotNull(type.findTypeArgument(Map::class.type, "V")).run {
+                mapValueType = requireNotNull(originalItemType.findTypeArgument(Map::class.type, "V")).run {
                     if (isNotAbstractType()) {
                         this
                     } else {

@@ -16,6 +16,7 @@ create table `person`
 (
     `id`   int auto_increment primary key,
     `name` text,
+    `active` bool,
     `when_created` timestamp default now()
 )
     """
@@ -27,6 +28,7 @@ create table "person"
 (
     "id"          bigserial primary key,
     "name"        text,
+    "active"      bool,
     "when_created" timestamp default now()
 )
     """
@@ -41,6 +43,7 @@ class Person(
     var id: Long? = null,
     var name: String? = null,
     var whenCreated: LocalDateTime? = null,
+    var active: Boolean? = null,
 ) : Entity {
 
 }

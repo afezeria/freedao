@@ -6,7 +6,7 @@ import java.util.*
 
 class TextElement(pureText: Boolean, content: String) : XmlElement() {
 
-    private val contents = mutableListOf(pureText to content)
+    val contents = mutableListOf(pureText to content)
     fun append(element: TextElement) {
         contents.addAll(element.contents)
     }
@@ -68,6 +68,6 @@ class TextElement(pureText: Boolean, content: String) : XmlElement() {
 
     companion object {
         private val namedStringParameterRegex = "\\$\\{((?:[a-zA-Z0-1_]+\\.)*[a-zA-Z0-1_]+)}".toRegex()
-        private val namedSqlParameterRegex = "#\\{((?:[a-zA-Z0-1_]+\\.)*[a-zA-Z0-1_]+)}".toRegex()
+        private val namedSqlParameterRegex = "#\\{((?:[a-zA-Z0-9_]+\\.)*[a-zA-Z0-9_]+)}".toRegex()
     }
 }

@@ -107,7 +107,7 @@ class TemplateHandler(map: Map<String, TypeMirror>) {
                         }
                         type.isAssignable(Map::class) -> {
                             text = "$text.get($s)"
-                            type = declaredType.typeArguments.takeIf { it.isNotEmpty() }?.get(0) ?: Any::class.type
+                            type = declaredType.findTypeArgument(Map::class.type, "V") ?: Any::class.type
                         }
                         else -> {
                             throw RuntimeException("$text is not a map")

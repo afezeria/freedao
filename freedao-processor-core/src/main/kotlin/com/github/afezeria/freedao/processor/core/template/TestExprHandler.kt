@@ -54,18 +54,18 @@ class TestExprHandler(val context: TemplateHandler, val test: String) : TestExpr
         ctx.apply {
             if (childCount == 3) {
                 if (children[0].text == "(") {
-                    builder.append("(")
                     super.visitExpr(ctx)
-                    builder.append(")")
                 } else {
                     builder.append("(")
                     visitExpr(expr(0))
-                    builder.append(" ${LOGICAL_OP().text} ")
+                    builder.append(" ${logicalOp(LOGICAL_OP().text)} ")
                     visitExpr(expr(1))
                     builder.append(")")
                 }
             } else {
+                builder.append("(")
                 super.visitExpr(ctx)
+                builder.append(")")
             }
         }
     }
@@ -103,7 +103,7 @@ class TestExprHandler(val context: TemplateHandler, val test: String) : TestExpr
 
     override fun visitLiteralLogicalOperation(ctx: TestExprParser.LiteralLogicalOperationContext) {
         val (chainText, _) = context.createInvokeChain(ctx.INVOKE_CHAIN().text, Boolean::class.type)
-        builder.append("$chainText ${ctx.getChild(1).text} ${ctx.getChild(2).text}")
+        builder.append("$chainText ${logicalOp(ctx.getChild(1).text)} ${ctx.getChild(2).text}")
     }
 
     override fun visitNullCheck(ctx: TestExprParser.NullCheckContext) {
@@ -122,7 +122,7 @@ class TestExprHandler(val context: TemplateHandler, val test: String) : TestExpr
             TestExprParser.LOGICAL_OP -> {
                 val (leftText, _) = context.createInvokeChain(ctx.INVOKE_CHAIN(0).text, Boolean::class.type)
                 val (rightText, _) = context.createInvokeChain(ctx.INVOKE_CHAIN(1).text, Boolean::class.type)
-                builder.append("$leftText ${ctx.op.text} $rightText")
+                builder.append("$leftText ${logicalOp(ctx.op.text)} $rightText")
             }
             TestExprParser.COMPARISON_OP -> {
                 val (leftText, leftType) = context.createInvokeChain(ctx.INVOKE_CHAIN(0).text)
@@ -146,4 +146,9 @@ class TestExprHandler(val context: TemplateHandler, val test: String) : TestExpr
         }
     }
 
+    fun logicalOp(string: String) = when (string) {
+        "and" -> "&&"
+        "or" -> "||"
+        else -> throw IllegalArgumentException()
+    }
 }
