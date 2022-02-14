@@ -2,6 +2,7 @@ package com.github.afezeria.freedao.processor.core.method
 
 import com.github.afezeria.freedao.Long2IntegerResultHandler
 import com.github.afezeria.freedao.processor.core.*
+import org.intellij.lang.annotations.Language
 import java.util.*
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.VariableElement
@@ -147,7 +148,7 @@ abstract class NamedMethod private constructor(
             val type = cond.requiredParameterTypes.first()
             while (parameters.isNotEmpty()) {
                 val param = parameters.first
-                if (param.asType().isSameType(type)) {
+                if (param.asType().isAssignable(type)) {
                     break
                 } else {
                     parameters.pop()
@@ -164,7 +165,7 @@ abstract class NamedMethod private constructor(
                 val parameter = parameters.pop()
                 parameterLastMatchIndex = parameterIdx
                 parameterIdx++
-                if (!parameter.asType().isSameType(it)) {
+                if (!parameter.asType().isAssignable(it)) {
                     throw HandlerException("Parameter mismatch, the ${parameterIdx}th parameter type should be $it")
                 }
                 cond.params += parameter
@@ -257,19 +258,23 @@ abstract class NamedMethod private constructor(
                 }
             }
 
-            class LessThanEqual : Condition(renderFn = { "${column} <= #{${params[0].simpleName}}" })
-            class GreaterThanEqual : Condition(renderFn = { "${column} >= #{${params[0].simpleName}}" })
+            class LessThanEqual : Condition(renderFn = { "$column &lt;= #{${params[0].simpleName}}" })
+            class GreaterThanEqual : Condition(renderFn = { "$column &gt;= #{${params[0].simpleName}}" })
             class NotNull :
-                Condition(requiredParameterTypesFn = { emptyList() }, renderFn = { "${column} is not null" })
+                Condition(requiredParameterTypesFn = { emptyList() }, renderFn = { "$column is not null" })
 
-            class IsNull : Condition(requiredParameterTypesFn = { emptyList() }, renderFn = { "${column} is null" })
+            class IsNull : Condition(requiredParameterTypesFn = { emptyList() }, renderFn = { "$column is null" })
 
-            class LessThan : Condition(renderFn = { "${column} < #{${params[0].simpleName}}" })
+            class LessThan : Condition(renderFn = { "$column &lt; #{${params[0].simpleName}}" })
 
-            class GreaterThan : Condition(renderFn = { "$column > #{${params[0].simpleName}}" })
+            class GreaterThan : Condition(renderFn = { "$column &gt; #{${params[0].simpleName}}" })
 
-            class NotIn : Condition(requiredParameterTypesFn = { listOf(Collection::class.type(property!!.type)) },
-                renderFn = { "$column not in #{${params[0].simpleName}}" })
+            class NotIn : Condition(
+                requiredParameterTypesFn = { listOf(Collection::class.type(property!!.type)) },
+                renderFn = {
+                    "$column not in (<foreach collection='${params[0].simpleName}' item='item' separator=','>#{item}</foreach>)"
+                }
+            )
 
             class NotLike : Condition(renderFn = { "$column not like #{${params[0].simpleName}}" })
 
@@ -280,10 +285,14 @@ abstract class NamedMethod private constructor(
 
             class Like : Condition(renderFn = { "$column like #{${params[0].simpleName}}" })
 
-            class Not : Condition(renderFn = { "$column <> #{${params[0].simpleName}}" })
+            class Not : Condition(renderFn = { "$column &lt;&gt; #{${params[0].simpleName}}" })
 
-            class In : Condition(requiredParameterTypesFn = { listOf(Collection::class.type(property!!.type)) },
-                renderFn = { "$column in #{${params[0].simpleName}}" })
+            class In : Condition(
+                requiredParameterTypesFn = { listOf(Collection::class.type(property!!.type)) },
+                renderFn = {
+                    "$column in (<foreach collection='${params[0].simpleName}' item='item' separator=','>#{item}</foreach>)"
+                }
+            )
 
             class True : Condition(requiredParameterTypesFn = { emptyList() }, renderFn = { "$column = true" })
 

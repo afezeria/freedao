@@ -147,8 +147,8 @@ class ClassicBuildMethodService : BuildMethodService {
 
                 addStatement("$stmtVar.execute()")
 
-                when {
-                    methodModel.returnUpdateCount -> {
+                when(methodModel.statementType) {
+                    StatementType.INSERT,StatementType.UPDATE,StatementType.DELETE -> {
                         handeUpdateMethodResultMapping(methodModel, resultHelper)
                     }
                     else -> {
@@ -249,7 +249,7 @@ class ClassicBuildMethodService : BuildMethodService {
             } else {
                 "<>"
             }
-            if (resultHelper.itemType.isSameType(Map::class)) {
+            if (resultHelper.itemType.isAssignable(Map::class)) {
                 val addInitItemStatement = {
                     addStatement("$itemVar = new \$T$diamondStr()", resultHelper.itemType)
                 }
@@ -289,13 +289,12 @@ class ClassicBuildMethodService : BuildMethodService {
                     addStatement("int $columnCountVar = $metaDataVar.getColumnCount()")
                     beginControlFlow("while ($resultSetVar.next())")
                     addInitItemStatement()
-                    beginControlFlow("for (int $idxVar = 1; i <= $columnCountVar; $idxVar++)")
+                    beginControlFlow("for (int $idxVar = 1; $idxVar <= $columnCountVar; $idxVar++)")
                     addStatement("String $labelVar = $metaDataVar.getColumnLabel($idxVar)")
                     if (resultHelper.mapValueType!!.isSameType(Any::class)) {
-                        addStatement("$itemVar.put($labelVar, $resultSetVar.getObject($labelVar, \$T.class)",
-                            resultHelper.mapValueType)
+                        addStatement("$itemVar.put($labelVar, $resultSetVar.getObject($labelVar))")
                     } else {
-                        addStatement("$itemVar.put($labelVar, $resultSetVar.getObject($labelVar, \$T.class)",
+                        addStatement("$itemVar.put($labelVar, $resultSetVar.getObject($labelVar, \$T.class))",
                             resultHelper.mapValueType)
                     }
                     endControlFlow()

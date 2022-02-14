@@ -1,6 +1,7 @@
 package com.github.afezeria.freedao;
 
 /**
+ *
  */
 public class TrimHelper {
 
@@ -8,6 +9,16 @@ public class TrimHelper {
                                               String prefix,
                                               String[] prefixOverrides,
                                               String[] postfixOverrides) {
+        boolean ret = true;
+        for (int i = 0; i < source.length(); i++) {
+            if (!Character.isWhitespace(source.charAt(i))) {
+                ret = false;
+                break;
+            }
+        }
+        if (ret) {
+            return new StringBuilder();
+        }
         int left = 0;
         int right = source.length() - 1;
 
