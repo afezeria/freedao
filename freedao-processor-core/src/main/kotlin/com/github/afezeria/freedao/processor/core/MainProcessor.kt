@@ -13,6 +13,7 @@ import javax.lang.model.element.Element
 import javax.lang.model.element.ElementKind
 import javax.lang.model.element.TypeElement
 import javax.tools.Diagnostic
+import kotlin.system.measureTimeMillis
 
 
 /**
@@ -31,14 +32,18 @@ class MainProcessor : AbstractProcessor() {
         annotations: MutableSet<out TypeElement>?,
         roundEnv: RoundEnvironment,
     ): Boolean {
-        val annotatedElements = roundEnv.getElementsAnnotatedWith(Dao::class.java)
-        if (annotatedElements.isEmpty()) return false
-        if (isLombokInvoked) {
-            init()
-            for (annotatedElement in annotatedElements) {
-                processElement(annotatedElement)
+        val time = measureTimeMillis {
+            val annotatedElements = roundEnv.getElementsAnnotatedWith(Dao::class.java)
+            if (annotatedElements.isEmpty()) return false
+            if (isLombokInvoked) {
+                init()
+                for (annotatedElement in annotatedElements) {
+                    processElement(annotatedElement)
+                }
             }
         }
+        processingEnvironment.messager.printMessage(Diagnostic.Kind.NOTE, "${time}ms")
+        println("====================== $time")
         return false
     }
 

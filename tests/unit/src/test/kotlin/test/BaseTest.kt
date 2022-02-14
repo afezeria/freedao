@@ -4,6 +4,7 @@ import com.github.afezeria.freedao.annotation.Column
 import com.github.afezeria.freedao.annotation.Table
 import com.github.afezeria.freedao.processor.classic.contextVar
 import com.github.afezeria.freedao.processor.core.MainProcessor
+import com.github.afezeria.freedao.processor.core.debug
 import com.github.afezeria.freedao.processor.core.toSnakeCase
 import com.github.afezeria.freedao.runtime.classic.DaoContext
 import com.google.testing.compile.Compilation
@@ -34,10 +35,14 @@ import kotlin.reflect.full.memberProperties
  */
 @RunWith(Parameterized::class)
 abstract class BaseTest {
+    init {
+        debug = true
+    }
+
     @Parameter(0)
     lateinit var env: DbEnv
 
-    fun initDataFillNull(vararg entities: Entity) = initData(true, *entities)
+    fun initDataWithNullValue(vararg entities: Entity) = initData(true, *entities)
     fun initData(vararg entities: Entity) = initData(false, *entities)
 
     @OptIn(ExperimentalStdlibApi::class)
