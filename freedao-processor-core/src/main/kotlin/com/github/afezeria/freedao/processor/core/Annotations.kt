@@ -1,6 +1,5 @@
 package com.github.afezeria.freedao.processor.core
 
-import com.github.afezeria.freedao.ParameterTypeHandler
 import com.github.afezeria.freedao.ResultTypeHandler
 import com.github.afezeria.freedao.annotation.Column
 import javax.lang.model.element.Modifier
@@ -16,7 +15,6 @@ class ColumnAnn(element: VariableElement) {
     val exist: Boolean
     val insert: Boolean
     val update: Boolean
-    val parameterTypeHandle: DeclaredType
     val resultTypeHandle: DeclaredType
 
     init {
@@ -26,20 +24,7 @@ class ColumnAnn(element: VariableElement) {
             exist = it?.exist ?: true
             insert = it?.insert ?: true
             update = it?.update ?: true
-            parameterTypeHandle = it?.mirroredType { parameterTypeHandle } ?: ParameterTypeHandler::class.type
             resultTypeHandle = it?.mirroredType { resultTypeHandle } ?: ResultTypeHandler::class.type
-        }
-        //检查参数处理器和字段是否匹配
-        if (!parameterTypeHandle.isSameType(ParameterTypeHandler::class.type)) {
-            val handleMethod = parameterTypeHandle.findMethod("handle")
-                ?.takeIf { it.modifiers.containsAll(listOf(Modifier.STATIC, Modifier.PUBLIC)) }
-                ?: throw HandlerException("Invalid ParameterTypeHandler:${parameterTypeHandle.typeName}, cannot find method:handle")
-            if (handleMethod.parameters.size != 1) {
-                throw HandlerException("Invalid ParameterTypeHandler:${parameterTypeHandle.typeName}, the number of handle method parameters is not 1")
-            }
-            if (element.asType().isAssignable(handleMethod.parameters[0].asType())) {
-                throw HandlerException("${parameterTypeHandle.typeName} cannot handle field ${element.simpleName}:${element.asType()}, ${element.asType()} cannot assignable ${handleMethod.parameters[0].asType()}")
-            }
         }
         //检查结果处理器和字段是否匹配
         if (!resultTypeHandle.isSameType(ResultTypeHandler::class.type)) {
