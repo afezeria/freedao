@@ -1,6 +1,5 @@
 plugins {
     kotlin("jvm")
-//    kotlin("kapt")
 }
 
 dependencies {
@@ -8,8 +7,8 @@ dependencies {
     api(projects.freedaoProcessorClassic)
 
 }
-kotlin {
-    jvmToolchain {
-        (this as JavaToolchainSpec).languageVersion.set(JavaLanguageVersion.of(8))
-    }
-}
+//kotlin {
+//    jvmToolchain {
+//        (this as JavaToolchainSpec).languageVersion.set(JavaLanguageVersion.of(8))
+//    }
+//}
