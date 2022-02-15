@@ -3,6 +3,7 @@ plugins {
     id("io.spring.dependency-management")
     kotlin("plugin.spring")
     kotlin("jvm")
+    id("io.freefair.lombok") version "6.4.0"
 }
 
 dependencies {
@@ -14,11 +15,10 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 
-    implementation("org.springframework.boot:spring-boot-starter-jdbc")
-
     annotationProcessor(projects.freedaoProcessorSpring)
 
     implementation(libs.postgresql)
+    implementation(libs.h2)
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 
 }
