@@ -12,7 +12,6 @@ import com.google.testing.compile.CompilationSubject
 import com.google.testing.compile.Compiler
 import com.google.testing.compile.JavaFileObjects
 import com.zaxxer.hikari.HikariDataSource
-import org.jetbrains.kotlin.utils.addToStdlib.ifTrue
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameter
@@ -42,24 +41,21 @@ abstract class BaseTest {
     @Parameter(0)
     lateinit var env: DbEnv
 
-    fun initDataWithNullValue(vararg entities: Entity) = initData(true, *entities)
-    fun initData(vararg entities: Entity) = initData(false, *entities)
+    inline fun <reified T : Entity> initDataWithNullValue(vararg entities: T) = initData(T::class, true, *entities)
+    inline fun <reified T : Entity> initData(vararg entities: T) = initData(T::class, false, *entities)
 
     @OptIn(ExperimentalStdlibApi::class)
-    private fun initData(fillNull: Boolean, vararg entities: Entity) {
-        entities.isEmpty().ifTrue { throw IllegalArgumentException() }
-        val deletedTable = mutableSetOf<String>()
-        entities.forEach {
-            val testResource = it::class.findAnnotations<DDL>().find { it.dialect == env.name }
+    fun <T : Any> initData(kClass: KClass<T>, fillNull: Boolean, vararg entities: Entity) {
+        env.dataSource.apply {
+            val testResource =
+                kClass.findAnnotations<DDL>().find { it.dialect == env.name }
+                    ?: throw IllegalStateException()
+            val table = kClass.findAnnotation<Table>()
                 ?: throw IllegalStateException()
-            val table = it::class.findAnnotation<Table>() ?: throw IllegalStateException()
-            env.dataSource.apply {
-                //每张表只删除一次
-                if (table.name !in deletedTable) {
-                    execute("drop table if exists ${table.name}")
-                    deletedTable += table.name
-                    execute(testResource.value)
-                }
+            execute("drop table if exists ${table!!.name}")
+            execute(testResource.value)
+
+            entities.forEach {
                 val name2value = it::class.memberProperties.mapTo(mutableListOf()) { p ->
                     (p.findAnnotation<Column>()?.name?.takeIf { it.isNotEmpty() }
                         ?: p.name.toSnakeCase()) to p.getter.call(it)
@@ -77,14 +73,11 @@ abstract class BaseTest {
                     *name2value.map { it.second }.toTypedArray()
                 )
             }
-
-
         }
-
     }
 
 
-    fun initTable(table: String, data: List<Map<String, Any?>>) {
+    fun initTable(table: String, data: List<Map<String, Any?>> = emptyList()) {
         env.dataSource.execute("delete from $table")
         val fields = data[0].keys
         env.dataSource.execute(
@@ -113,7 +106,10 @@ abstract class BaseTest {
         val className = clazz.simpleName + "Impl"
         val javaFileObject = JavaFileObjects.forResource(path.normalize().toAbsolutePath().toUri().toURL())
 
-        val compilation: Compilation = Compiler.javac().withProcessors(MainProcessor()).compile(javaFileObject)
+        val compilation: Compilation = Compiler.javac()
+            .withProcessors(MainProcessor())
+            .withOptions("-parameters")
+            .compile(javaFileObject)
         CompilationSubject.assertThat(compilation).succeeded()
 
         compilation.generatedSourceFiles().forEach {
