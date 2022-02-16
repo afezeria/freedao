@@ -15,7 +15,7 @@ import javax.tools.Diagnostic
 /**
  *
  */
-class DaoModel(element: TypeElement) : Model<TypeElement>(element) {
+class DaoModel(val element: TypeElement) {
 
     lateinit var annotation: Any
     var crudEntity: EntityObjectModel? = null

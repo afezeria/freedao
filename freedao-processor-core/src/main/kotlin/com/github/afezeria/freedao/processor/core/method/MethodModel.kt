@@ -4,6 +4,7 @@ import com.github.afezeria.freedao.StatementType
 import com.github.afezeria.freedao.processor.core.*
 import com.github.afezeria.freedao.processor.core.spi.BuildMethodService
 import com.github.afezeria.freedao.processor.core.spi.MethodFactory
+import com.github.afezeria.freedao.processor.core.spi.ValidatorService
 import com.github.afezeria.freedao.processor.core.template.RootElement
 import com.squareup.javapoet.AnnotationSpec
 import com.squareup.javapoet.CodeBlock
@@ -19,9 +20,9 @@ import javax.lang.model.type.TypeMirror
  *
  */
 abstract class MethodModel protected constructor(
-    element: ExecutableElement,
+    val element: ExecutableElement,
     val daoModel: DaoModel,
-) : Model<ExecutableElement>(element) {
+) {
     val name: String = element.simpleName.toString()
     var parameters: List<Parameter> =
         element.parameters.mapIndexed { index, variableElement ->
