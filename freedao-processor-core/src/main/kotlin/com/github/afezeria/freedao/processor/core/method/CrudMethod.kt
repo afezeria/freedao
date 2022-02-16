@@ -248,3 +248,24 @@ class UpdateSelective(element: ExecutableElement, daoModel: DaoModel) :
             """.trimIndent()
     }
 }
+
+class All(element: ExecutableElement, daoModel: DaoModel) :
+    CrudMethod(element, daoModel) {
+
+    init {
+        if (!resultHelper.returnType.isAssignable(Collection::class.type(crudEntity.type))
+        ) {
+            throw HandlerException("The return type must be assignable to Collection<${crudEntity.type.typeName}>")
+        }
+    }
+
+    override fun getTemplate(): String {
+
+        //language=xml
+        return """
+                <select>
+                select ${resultHelper.mappings.joinToString { it.source }} from ${crudEntity.dbFullyQualifiedName}
+                </select>
+            """.trimIndent()
+    }
+}
