@@ -215,6 +215,31 @@ private fun DeclaredType.findTypeArgumentHelper(
     throw UnreachableException()
 }
 
+fun TypeMirror.parameterized(type: DeclaredType, enclosingElementType: DeclaredType): TypeMirror {
+    return when (this) {
+        is TypeVariable -> {
+            type.findTypeArgument(enclosingElementType, typeName.toString())!!
+        }
+        is DeclaredType -> {
+            val map = typeArguments.map {
+                when (it) {
+                    is TypeVariable -> {
+                        type.findTypeArgument(enclosingElementType, it.typeName.toString())!!
+                    }
+                    else -> {
+                        it.parameterized(type, enclosingElementType)
+                    }
+                }
+            }
+            typeUtils.getDeclaredType(this.asElement() as TypeElement,*map.toTypedArray())
+        }
+        else -> {
+            this
+        }
+    }
+}
+
+
 fun TypeMirror.isCustomJavaBean(): Boolean {
     if (this !is DeclaredType) {
         return false

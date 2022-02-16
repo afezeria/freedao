@@ -9,10 +9,12 @@ import javax.lang.model.type.TypeMirror
 /**
  *
  */
-class Parameter(val index: Int, element: VariableElement) {
-    val name = element.simpleName.toString()
-    val model = ObjectModel(element.asType())
-
+class Parameter(
+    val index: Int,
+    val name: String,
+    val model: ObjectModel,
+    val variableElement: VariableElement,
+) {
 
     fun match(name: String, type: TypeMirror): Boolean {
         return this.name == name && typeUtils.isAssignable(this.model.typeMirror, type)

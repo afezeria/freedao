@@ -1,7 +1,6 @@
 plugins {
     kotlin("jvm")
     id("io.freefair.lombok") version "6.3.0"
-
     id("com.bnorm.power.kotlin-power-assert")
 }
 
@@ -40,4 +39,9 @@ java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(17))
     }
+
+}
+
+tasks.named<JavaCompile>("compileJava") {
+    options.compilerArgs.add("-parameters")
 }

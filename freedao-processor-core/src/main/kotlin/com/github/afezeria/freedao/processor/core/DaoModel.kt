@@ -10,6 +10,7 @@ import java.io.PrintWriter
 import java.io.StringWriter
 import java.util.*
 import javax.lang.model.element.*
+import javax.lang.model.type.DeclaredType
 import javax.tools.Diagnostic
 
 /**
@@ -57,30 +58,34 @@ class DaoModel(val element: TypeElement) {
     }
 
     fun render() {
-        val results = element.enclosedElements.filter {
-            it.kind == ElementKind.METHOD && !it.modifiers.contains(Modifier.DEFAULT)
-        }.map { element ->
-            runCatching {
-                MethodModel(element as ExecutableElement, this).render()
-            }.apply {
-                this.exceptionOrNull()?.let { e ->
-                    if (e is HandlerException) {
-                        processingEnvironment.messager.printMessage(Diagnostic.Kind.ERROR, e.message, element)
-                        if (debug) {
-                            val stringWriter = StringWriter()
-                            val printWriter = PrintWriter(stringWriter)
-                            e.printStackTrace(printWriter)
-                            processingEnvironment.messager.printMessage(
-                                Diagnostic.Kind.ERROR,
-                                stringWriter.toString()
-                            )
+        val results = listOf(
+            element.enclosedElements,
+            *element.interfaces.map { (it as DeclaredType).asElement().enclosedElements }.toTypedArray()
+        ).flatten()
+            .filter {
+                it.kind == ElementKind.METHOD && !it.modifiers.contains(Modifier.DEFAULT)
+            }.map { element ->
+                runCatching {
+                    MethodModel(element as ExecutableElement, this).render()
+                }.apply {
+                    this.exceptionOrNull()?.let { e ->
+                        if (e is HandlerException) {
+                            processingEnvironment.messager.printMessage(Diagnostic.Kind.ERROR, e.message, element)
+                            if (debug) {
+                                val stringWriter = StringWriter()
+                                val printWriter = PrintWriter(stringWriter)
+                                e.printStackTrace(printWriter)
+                                processingEnvironment.messager.printMessage(
+                                    Diagnostic.Kind.ERROR,
+                                    stringWriter.toString()
+                                )
+                            }
+                        } else {
+                            throw e
                         }
-                    } else {
-                        throw e
                     }
                 }
-            }
-        }.takeIf { it.all { it.isSuccess } }
+            }.takeIf { it.all { it.isSuccess } }
             ?.map { it.getOrNull()!! }
             ?: return
         classBuilder.addMethods(results)

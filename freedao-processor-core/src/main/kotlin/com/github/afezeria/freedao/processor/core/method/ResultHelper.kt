@@ -13,7 +13,7 @@ import javax.lang.model.type.TypeMirror
 /**
  *
  */
-class ResultHelper(val element: ExecutableElement) {
+class ResultHelper(val daoModel: DaoModel, val element: ExecutableElement) {
     var returnVoid = false
     val returnType: TypeMirror
     var containerType: DeclaredType? = null
@@ -28,7 +28,11 @@ class ResultHelper(val element: ExecutableElement) {
 
 
     init {
-        returnType = element.returnType
+
+        returnType = element.returnType.parameterized(
+            daoModel.element.asType() as DeclaredType,
+            element.enclosingElement.asType().erasure() as DeclaredType
+        )
         if (returnType is NoType) {
             returnVoid = true
         } else if (returnType is PrimitiveType) {

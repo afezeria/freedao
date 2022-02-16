@@ -25,27 +25,33 @@ class AutoFillStruct private constructor(
     }
 
     companion object {
-        private fun findAutoFillParameter(method: MethodModel): Triple<Int, DeclaredType?, DeclaredType>? {
-            return method.element.parameters.run {
-                indexOfFirst {
-                    it.asType().run {
-                        this is DeclaredType && (isCustomJavaBean() || (isAssignable(Collection::class) && findTypeArgument(
-                            Collection::class.type,
-                            "E")!!.isCustomJavaBean()))
-                    }
-                }.takeIf { it != -1 }?.let { idx ->
-                    val type = get(idx).asType() as DeclaredType
-                    if (type.isCustomJavaBean()) {
-                        Triple(idx, null, type)
-                    } else {
-                        Triple(idx, type, type.findTypeArgument(Collection::class.type, "E")!!)
-                    }
+        /**
+         * 从方法参数中查找第一个需要用数据库生成字段填充的对象
+         * @param method MethodModel
+         * @return Triple<Int, DeclaredType?, DeclaredType>? first:在参数中的位置，second：容器类型，third：对象类型
+         */
+        private fun findAutoFillParameter(method: MethodModel): AutoFillStruct? {
+            return method.parameters.indexOfFirst {
+                it.model.typeMirror.run {
+                    this is DeclaredType
+                            && (
+                            isCustomJavaBean()
+                                    || (isAssignable(Collection::class)
+                                    && findTypeArgument(Collection::class.type, "E")!!.isCustomJavaBean())
+                            )
+                }
+            }.takeIf { it != -1 }?.let { idx ->
+                val type = method.parameters[idx].model.typeMirror as DeclaredType
+                if (type.isCustomJavaBean()) {
+                    AutoFillStruct(idx, null, type)
+                } else {
+                    AutoFillStruct(idx, type, type.findTypeArgument(Collection::class.type, "E")!!)
                 }
             }
         }
 
         fun validation(method: MethodModel) {
-            findAutoFillParameter(method)?.let { (_, _, type) ->
+            findAutoFillParameter(method)?.apply {
                 type.asElement().enclosedElements.forEach { element ->
                     if (element is VariableElement && element.getAnnotation(AutoFill::class.java) != null && !element.hasSetter()) {
                         throw HandlerException("AutoFill property must have setter method")
@@ -55,9 +61,7 @@ class AutoFillStruct private constructor(
         }
 
         operator fun invoke(method: MethodModel): AutoFillStruct? {
-            return findAutoFillParameter(method)?.run {
-                AutoFillStruct(first, second, third).takeIf { it.dbAutoFillProperties.isNotEmpty() }
-            }
+            return findAutoFillParameter(method)?.takeIf { it.dbAutoFillProperties.isNotEmpty() }
         }
     }
 }

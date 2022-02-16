@@ -13,6 +13,7 @@ import com.squareup.javapoet.ParameterSpec
 import java.util.*
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.VariableElement
+import javax.lang.model.type.DeclaredType
 import javax.lang.model.type.PrimitiveType
 import javax.lang.model.type.TypeMirror
 
@@ -24,14 +25,30 @@ abstract class MethodModel protected constructor(
     val daoModel: DaoModel,
 ) {
     val name: String = element.simpleName.toString()
+
+    init {
+        if (element.typeParameters.isNotEmpty()) {
+            throw HandlerException("method cannot have TypeParameter")
+        }
+    }
     var parameters: List<Parameter> =
         element.parameters.mapIndexed { index, variableElement ->
-            Parameter(index, variableElement)
+            Parameter(
+                index,
+                variableElement.simpleName.toString(),
+                ObjectModel(
+                    variableElement.asType().parameterized(
+                        daoModel.element.asType() as DeclaredType,
+                        element.enclosingElement.asType().erasure() as DeclaredType
+                    )
+                ),
+                variableElement,
+            )
         }
     var returnUpdateCount = false
     lateinit var statementType: StatementType
 
-    var resultHelper: ResultHelper = ResultHelper(element)
+    var resultHelper: ResultHelper = ResultHelper(daoModel, element)
 
     lateinit var sqlBuildCodeBlock: CodeBlock
     lateinit var builder: MethodSpec.Builder
@@ -44,28 +61,31 @@ abstract class MethodModel protected constructor(
             throw HandlerException("select method cannot return primitive type")
         }
 
+        ServiceLoader.load(ValidatorService::class.java, MainProcessor::class.java.classLoader)
+            .forEach {
+                it.validation(this)
+            }
+
         builder = MethodSpec.overriding(element).apply {
+            returns(resultHelper.returnType.typeName)
+            parameters.clear()
+            addParameters(
+                this@MethodModel.parameters.map {
+                    ParameterSpec.builder(
+                        it.model.typeMirror.typeName,
+                        it.name,
+                        *it.variableElement.modifiers.toTypedArray()
+                    ).addAnnotations(
+                        it.variableElement.annotationMirrors.map { ann -> AnnotationSpec.get(ann) }
+                    ).build()
+                }
+            )
             addAnnotations(
                 element.annotationMirrors.map {
                     AnnotationSpec.get(it)
                 }
             )
-            parameters.clear()
-            addParameters(
-                element.parameters.map {
-                    ParameterSpec.get(it)
-                        .toBuilder()
-                        .addAnnotations(
-                            it.annotationMirrors.map { ann -> AnnotationSpec.get(ann) }
-                        )
-                        .build()
-                }
-            )
         }
-//        builder = MethodSpec.methodBuilder(element.simpleName.toString())
-//            .returns(element.returnType.typeName)
-//            .addModifiers(element.modifiers)
-//            .addAnnotation(Override::class.java)
         //process non-null parameter
         element.parameters.forEach { param ->
             param.annotationMirrors

@@ -18,8 +18,8 @@ class RootElement(methodModel: MethodModel) : XmlElement() {
         template = methodModel.getTemplate()
         context =
             TemplateHandler(
-                methodModel.element.parameters
-                    .associate { it.simpleName.toString() to it.asType() }
+                methodModel.parameters
+                    .associate { it.name to it.model.typeMirror}
             )
         val document = PositionalXMLReader.readXML(ByteArrayInputStream(template.toByteArray()))
 //        val document = documentBuilder.parse(ByteArrayInputStream(template.toByteArray()))
