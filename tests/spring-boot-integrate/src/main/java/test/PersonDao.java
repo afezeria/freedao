@@ -1,8 +1,6 @@
 package test;
 
 import com.github.afezeria.freedao.annotation.Dao;
-import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
