@@ -52,7 +52,7 @@ abstract class BaseTest {
                     ?: throw IllegalStateException()
             val table = kClass.findAnnotation<Table>()
                 ?: throw IllegalStateException()
-            execute("drop table if exists ${table!!.name}")
+            execute("drop table if exists ${table.name}")
             execute(testResource.value)
 
             entities.forEach {
@@ -102,23 +102,41 @@ abstract class BaseTest {
         return getImplInstance(T::class, Path("./src/main/java/" + T::class.qualifiedName?.replace('.', '/') + ".java"))
     }
 
-    fun <T : Any> getImplInstance(clazz: KClass<T>, path: Path): T {
-        val className = clazz.simpleName + "Impl"
+    inline fun <reified T : Any> compileFailure(block: Compilation.() -> Unit) {
+        return compileJava(
+            Path("./src/main/java/" + T::class.qualifiedName?.replace('.', '/') + ".java")
+        ).let {
+            CompilationSubject.assertThat(it).failed()
+            it.diagnostics().forEach { println(it.toString()) }
+
+            block.invoke(it)
+        }
+    }
+
+
+    fun compileJava(path: Path): Compilation {
         val javaFileObject = JavaFileObjects.forResource(path.normalize().toAbsolutePath().toUri().toURL())
 
         val compilation: Compilation = Compiler.javac()
             .withProcessors(MainProcessor())
             .withOptions("-parameters")
             .compile(javaFileObject)
+        return compilation
+    }
+
+    fun <T : Any> getImplInstance(clazz: KClass<T>, path: Path): T {
+        val compilation = compileJava(path)
         CompilationSubject.assertThat(compilation).succeeded()
 
         compilation.generatedSourceFiles().forEach {
             if (it.kind == JavaFileObject.Kind.SOURCE) {
+
                 println("${it.name} ========================")
                 println(it.openReader(true).readText())
             }
         }
 
+        val className = clazz.simpleName + "Impl"
         val readBytes =
             compilation.generatedFiles().find { it.name.contains(className) && it.kind == CLASS }!!
                 .openInputStream().readBytes()
@@ -128,6 +146,7 @@ abstract class BaseTest {
             isAccessible = true
         }
         declaredField.set(instance, env.context)
+        @Suppress("UNCHECKED_CAST")
         return instance as T
     }
 

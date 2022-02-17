@@ -16,5 +16,9 @@ public @interface Table {
 
     String database() default "";
 
+    /**
+     * 实体类的字段名数组
+     * @return
+     */
     String[] primaryKeys() default {};
 }

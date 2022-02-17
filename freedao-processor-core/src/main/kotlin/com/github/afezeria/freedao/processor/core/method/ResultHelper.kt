@@ -36,7 +36,7 @@ class ResultHelper(val daoModel: DaoModel, val element: ExecutableElement) {
         if (returnType is NoType) {
             returnVoid = true
         } else if (returnType is PrimitiveType) {
-            itemType = returnType.boxed()
+            itemType = returnType.boxed() as DeclaredType
         } else {
             //检查类型
             val type = returnType as DeclaredType

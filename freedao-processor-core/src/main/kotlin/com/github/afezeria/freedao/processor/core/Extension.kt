@@ -1,12 +1,14 @@
 package com.github.afezeria.freedao.processor.core
 
-import com.github.afezeria.freedao.processor.core.spi.BuildDaoService
 import com.squareup.javapoet.TypeName
+import java.io.PrintWriter
+import java.io.StringWriter
 import javax.annotation.processing.ProcessingEnvironment
 import javax.lang.model.element.*
 import javax.lang.model.type.*
 import javax.lang.model.util.Elements
 import javax.lang.model.util.Types
+import javax.tools.Diagnostic
 import kotlin.reflect.KClass
 
 /**
@@ -17,8 +19,6 @@ val elementUtils: Elements
     get() = processingEnvironment.elementUtils
 val typeUtils: Types
     get() = processingEnvironment.typeUtils
-
-lateinit var buildDaoService: BuildDaoService
 
 
 val TypeMirror.typeName: TypeName
@@ -34,7 +34,11 @@ fun TypeMirror.isAssignable(other: KClass<*>) = typeUtils.isAssignable(this, oth
 fun TypeMirror.erasure() = typeUtils.erasure(this)
 
 fun TypeMirror.unboxed(): PrimitiveType = typeUtils.unboxedType(this)
-fun PrimitiveType.boxed(): DeclaredType = typeUtils.boxedClass(this).asType() as DeclaredType
+fun TypeMirror.boxed(): TypeMirror = if (this is PrimitiveType) {
+    typeUtils.boxedClass(this).asType()
+} else {
+    this
+}
 
 /**
  * 查找bean属性
@@ -231,7 +235,7 @@ fun TypeMirror.parameterized(type: DeclaredType, enclosingElementType: DeclaredT
                     }
                 }
             }
-            typeUtils.getDeclaredType(this.asElement() as TypeElement,*map.toTypedArray())
+            typeUtils.getDeclaredType(this.asElement() as TypeElement, *map.toTypedArray())
         }
         else -> {
             this
@@ -259,4 +263,37 @@ fun TypeMirror.isCustomJavaBean(): Boolean {
         }
     }
     return false
+}
+
+fun <R> runCatchingHandlerExceptionOrThrow(element: Element, block: () -> R): R? {
+    try {
+        return block()
+    } catch (e: Throwable) {
+        if (e is HandlerException) {
+            processingEnvironment.messager.printMessage(Diagnostic.Kind.ERROR, e.message, element)
+            if (debug) {
+                val stringWriter = StringWriter()
+                val printWriter = PrintWriter(stringWriter)
+                e.printStackTrace(printWriter)
+                processingEnvironment.messager.printMessage(
+                    Diagnostic.Kind.WARNING,
+                    stringWriter.toString()
+                )
+            }
+        } else if (e.cause is HandlerException) {
+            processingEnvironment.messager.printMessage(Diagnostic.Kind.ERROR, e.cause!!.message, element)
+            if (debug) {
+                val stringWriter = StringWriter()
+                val printWriter = PrintWriter(stringWriter)
+                e.cause!!.printStackTrace(printWriter)
+                processingEnvironment.messager.printMessage(
+                    Diagnostic.Kind.WARNING,
+                    stringWriter.toString()
+                )
+            }
+        } else {
+            throw e
+        }
+    }
+    return null
 }

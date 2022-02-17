@@ -45,10 +45,12 @@ open class BeanObjectModel(val type: DeclaredType) : ObjectModel(type) {
 class EntityObjectModel(type: DeclaredType) : BeanObjectModel(type) {
     val table: String
     var schema: String = ""
-    var primaryKey: MutableList<BeanProperty> = mutableListOf()
-    lateinit var properties: List<BeanProperty>
+    var primaryKey: List<BeanProperty>
+    var properties: List<BeanProperty>
 
     init {
+        properties = element.enclosedElements.filter { it.kind == ElementKind.FIELD && it.hasGetter() }
+            .map { BeanProperty(it as VariableElement) }
         element.getAnnotation(Table::class.java)!!.let {
             table = it.name.ifBlank {
                 type.simpleName.toSnakeCase()
@@ -56,16 +58,10 @@ class EntityObjectModel(type: DeclaredType) : BeanObjectModel(type) {
             if (it.schema.isNotBlank()) {
                 schema = it.schema
             }
-            it.primaryKeys.forEach { fieldName ->
-                element.enclosedElements.forEach { fieldElement ->
-                    if (fieldElement.kind == ElementKind.FIELD && fieldElement.simpleName.toString() == fieldName) {
-                        primaryKey += BeanProperty(fieldElement as VariableElement)
-                    }
-                }
+            primaryKey = properties.filter { prop ->
+                prop.name in it.primaryKeys
             }
         }
-        properties = element.enclosedElements.filter { it.kind == ElementKind.FIELD && it.hasGetter() }
-            .map { BeanProperty(it as VariableElement) }
     }
 
     val dbFullyQualifiedName: String by lazy {

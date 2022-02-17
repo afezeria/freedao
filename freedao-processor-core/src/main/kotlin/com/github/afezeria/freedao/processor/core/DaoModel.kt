@@ -6,12 +6,9 @@ import com.github.afezeria.freedao.processor.core.spi.BuildDaoService
 import com.squareup.javapoet.AnnotationSpec
 import com.squareup.javapoet.JavaFile
 import com.squareup.javapoet.TypeSpec
-import java.io.PrintWriter
-import java.io.StringWriter
 import java.util.*
 import javax.lang.model.element.*
 import javax.lang.model.type.DeclaredType
-import javax.tools.Diagnostic
 
 /**
  *
@@ -40,8 +37,11 @@ class DaoModel(val element: TypeElement) {
     }
 
     init {
-        if (element.enclosingElement.kind != ElementKind.PACKAGE) {
-            throw HandlerException("dao interface must be top level interface")
+        if (element.enclosingElement.kind != ElementKind.PACKAGE
+            || element.kind != ElementKind.INTERFACE
+            || element.kind == ElementKind.ANNOTATION_TYPE
+        ) {
+            throw HandlerException("Dao must be top level interface")
         }
         crudEntity =
             element.getAnnotation(Dao::class.java)
@@ -50,7 +50,7 @@ class DaoModel(val element: TypeElement) {
                 ?.let { ObjectModel(it) }
                 ?.let {
                     if (it !is EntityObjectModel) {
-                        throw HandlerException("The class as the value of crudEntity must be annotated with table")
+                        throw HandlerException("The value of Dao.crudEntity must be annotated with table")
                     } else {
                         it
                     }
@@ -65,28 +65,11 @@ class DaoModel(val element: TypeElement) {
             .filter {
                 it.kind == ElementKind.METHOD && !it.modifiers.contains(Modifier.DEFAULT)
             }.map { element ->
-                runCatching {
+                runCatchingHandlerExceptionOrThrow(element) {
                     MethodModel(element as ExecutableElement, this).render()
-                }.apply {
-                    this.exceptionOrNull()?.let { e ->
-                        if (e is HandlerException) {
-                            processingEnvironment.messager.printMessage(Diagnostic.Kind.ERROR, e.message, element)
-                            if (debug) {
-                                val stringWriter = StringWriter()
-                                val printWriter = PrintWriter(stringWriter)
-                                e.printStackTrace(printWriter)
-                                processingEnvironment.messager.printMessage(
-                                    Diagnostic.Kind.ERROR,
-                                    stringWriter.toString()
-                                )
-                            }
-                        } else {
-                            throw e
-                        }
-                    }
                 }
-            }.takeIf { it.all { it.isSuccess } }
-            ?.map { it.getOrNull()!! }
+            }.takeIf { it.all { it != null } }
+            ?.map { it!! }
             ?: return
         classBuilder.addMethods(results)
 

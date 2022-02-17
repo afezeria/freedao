@@ -1,16 +1,13 @@
 package com.github.afezeria.freedao.processor.core
 
 import com.github.afezeria.freedao.annotation.Dao
-import com.github.afezeria.freedao.processor.core.spi.BuildDaoService
 import java.io.PrintWriter
 import java.io.StringWriter
-import java.util.*
 import javax.annotation.processing.AbstractProcessor
 import javax.annotation.processing.ProcessingEnvironment
 import javax.annotation.processing.RoundEnvironment
 import javax.lang.model.SourceVersion
 import javax.lang.model.element.Element
-import javax.lang.model.element.ElementKind
 import javax.lang.model.element.TypeElement
 import javax.tools.Diagnostic
 import kotlin.system.measureTimeMillis
@@ -32,18 +29,19 @@ class MainProcessor : AbstractProcessor() {
         annotations: MutableSet<out TypeElement>?,
         roundEnv: RoundEnvironment,
     ): Boolean {
-        val time = measureTimeMillis {
-            val annotatedElements = roundEnv.getElementsAnnotatedWith(Dao::class.java)
-            if (annotatedElements.isEmpty()) return false
-            if (isLombokInvoked) {
-                init()
-                for (annotatedElement in annotatedElements) {
-                    processElement(annotatedElement)
+        if (isLombokInvoked) {
+            roundEnv.getElementsAnnotatedWith(Dao::class.java).takeIf { it.isNotEmpty() }
+                ?.let {
+                    val time = measureTimeMillis {
+                        it.forEach {
+                            processElement(it)
+                        }
+                    }
+                    //NOTE级别要在gradle中开启debug模式才会输出，但是debug模式输出的其他信息太多了，实际上只能用WARNING级别
+                    processingEnvironment.messager.printMessage(Diagnostic.Kind.WARNING, "${time}ms")
+                    println("====================== $time")
                 }
-            }
         }
-        processingEnvironment.messager.printMessage(Diagnostic.Kind.NOTE, "${time}ms")
-        println("====================== $time")
         return false
     }
 
@@ -52,25 +50,10 @@ class MainProcessor : AbstractProcessor() {
         processingEnvironment = processingEnv
     }
 
-    private fun init() {
-        buildDaoService = ServiceLoader.load(
-            BuildDaoService::class.java,
-            MainProcessor::class.java.classLoader
-        ).first()
-    }
-
     private fun processElement(element: Element) {
         try {
-            if (element is TypeElement && element.kind == ElementKind.INTERFACE && element.enclosingElement.kind == ElementKind.PACKAGE) {
-//                DaoModel(element).handle()
-                DaoModel(element).render()
-            } else {
-                processingEnvironment.messager.printMessage(
-                    Diagnostic.Kind.ERROR,
-                    "dao must be top level interface",
-                    element
-                )
-                return
+            runCatchingHandlerExceptionOrThrow(element) {
+                DaoModel(element as TypeElement).render()
             }
         } catch (e: Exception) {
             val stringWriter = StringWriter()
@@ -84,14 +67,9 @@ class MainProcessor : AbstractProcessor() {
     }
 
     private val isLombokInvoked: Boolean
-        get() {
-            return try {
-                Class.forName("lombok.launch.AnnotationProcessorHider\$AstModificationNotifierData")
-                    .getField("lombokInvoked")
-                    .getBoolean(null)
-            } catch (e: Exception) {
-                true
-            }
-        }
-
+        get() = runCatching {
+            Class.forName("lombok.launch.AnnotationProcessorHider\$AstModificationNotifierData")
+                .getField("lombokInvoked")
+                .getBoolean(null)
+        }.getOrDefault(true)
 }

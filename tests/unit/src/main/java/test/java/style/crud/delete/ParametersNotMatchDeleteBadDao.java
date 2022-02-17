@@ -5,9 +5,9 @@ import org.jetbrains.annotations.NotNull;
 import test.Person;
 
 /**
+ * @author afezeria
  */
 @Dao(crudEntity = Person.class)
-public interface PersonDeleteDao {
-
-    int delete(@NotNull Long id);
+public interface ParametersNotMatchDeleteBadDao {
+    int delete(@NotNull String str);
 }

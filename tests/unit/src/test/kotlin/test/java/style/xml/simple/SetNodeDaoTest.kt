@@ -18,10 +18,9 @@ class SetNodeDaoTest : BaseTest() {
             Person(1, "a", active = true),
         )
 
-        val oldFirst = env.find("person", "id = 1")
         val impl = getJavaDaoInstance<SetNodeDao>()
         assertFails {
-            val count = impl.update(1, null, null, null)
+            impl.update(1, null, null, null)
         }
         val count1 = impl.update(1, "b", null, null)
         val find1 = env.find("person", "id = 1")[0]

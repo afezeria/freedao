@@ -2,6 +2,7 @@ package test
 
 import com.github.afezeria.freedao.processor.core.MainProcessor
 import com.github.afezeria.freedao.runtime.classic.LogHelper
+import com.google.testing.compile.Compilation
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.SourceFile
 import org.intellij.lang.annotations.Language
@@ -11,6 +12,7 @@ import java.sql.Date
 import java.sql.ResultSet
 import java.sql.Time
 import java.sql.Timestamp
+import java.util.*
 import javax.sql.DataSource
 
 /**
@@ -51,8 +53,8 @@ fun DataSource.execute(
     @Language("sql") sql: String,
     vararg params: Any?,
 ): MutableList<MutableMap<String, Any?>> {
-    LogHelper.logSql(logger,sql)
-    LogHelper.logArgs(logger,params.toList())
+    LogHelper.logSql(logger, sql)
+    LogHelper.logArgs(logger, params.toList())
     return connection.use { conn ->
         conn.prepareStatement(sql).use { stmt ->
             params.forEachIndexed { index, any ->
@@ -84,3 +86,6 @@ fun ResultSet?.toList(): MutableList<MutableMap<String, Any?>> {
     }
     return list
 }
+
+val Compilation.errorMessages: List<String>
+    get() = errors().map { it.getMessage(Locale.getDefault()) }

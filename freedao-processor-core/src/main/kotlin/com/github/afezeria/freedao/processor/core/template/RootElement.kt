@@ -22,7 +22,6 @@ class RootElement(methodModel: MethodModel) : XmlElement() {
                     .associate { it.name to it.model.typeMirror}
             )
         val document = PositionalXMLReader.readXML(ByteArrayInputStream(template.toByteArray()))
-//        val document = documentBuilder.parse(ByteArrayInputStream(template.toByteArray()))
         try {
             methodModel.statementType =
                 StatementType.valueOf(document.firstChild.nodeName.uppercase())
@@ -39,7 +38,4 @@ class RootElement(methodModel: MethodModel) : XmlElement() {
         return context.handle()
     }
 
-//    companion object {
-//        private val documentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder()
-//    }
 }

@@ -28,9 +28,10 @@ abstract class MethodModel protected constructor(
 
     init {
         if (element.typeParameters.isNotEmpty()) {
-            throw HandlerException("method cannot have TypeParameter")
+            throw HandlerException("Method cannot have TypeParameter")
         }
     }
+
     var parameters: List<Parameter> =
         element.parameters.mapIndexed { index, variableElement ->
             Parameter(
@@ -57,8 +58,19 @@ abstract class MethodModel protected constructor(
     fun render(): MethodSpec {
         //generate build sql code
         sqlBuildCodeBlock = RootElement(this).buildCodeBlock()
-        if (statementType == StatementType.SELECT && resultHelper.returnType is PrimitiveType) {
-            throw HandlerException("select method cannot return primitive type")
+        when (statementType) {
+            StatementType.SELECT -> {
+                if (resultHelper.returnType is PrimitiveType) {
+                    throw HandlerException("select method cannot return primitive type")
+                }
+            }
+            StatementType.INSERT, StatementType.UPDATE, StatementType.DELETE -> {
+                if (!resultHelper.returnType.boxed().isSameType(Int::class)
+                    && !resultHelper.returnType.boxed().isSameType(Long::class)
+                ) {
+                    throw HandlerException("The return type of insert/update/delete method must be Integer or Long")
+                }
+            }
         }
 
         ServiceLoader.load(ValidatorService::class.java, MainProcessor::class.java.classLoader)
@@ -159,7 +171,7 @@ abstract class MethodModel protected constructor(
                 ?: CrudMethod(element, daoModel)
                 ?: NamedMethod(element, daoModel)
                 ?: methodFactories.firstNotNullOfOrNull { it.create(element, daoModel) }
-                ?: throw HandlerException("invalid method declare")
+                ?: throw HandlerException("Invalid method declare")
         }
     }
 

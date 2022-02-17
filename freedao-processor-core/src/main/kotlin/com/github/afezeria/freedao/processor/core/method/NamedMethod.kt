@@ -21,7 +21,6 @@ abstract class NamedMethod private constructor(
     /**
      * 当关键字为And/Or时pair.first为null
      */
-//    var conditions: MutableList<Pair<BeanProperty?, ConditionalKeywordEnum>> = mutableListOf()
     var conditions: MutableList<Condition> = mutableListOf()
     var orderColumns: MutableList<Pair<BeanProperty, OrderEnum>> = mutableListOf()
 
@@ -38,8 +37,8 @@ abstract class NamedMethod private constructor(
     init {
         daoModel.crudEntity?.let {
             crudEntity = it
-            dbProperties = crudEntity.getProperties().filter { it.column.exist }
-            propertyMap = crudEntity.getProperties().filter { it.column.exist }.associateBy { it.name }
+            dbProperties = crudEntity.properties.filter { it.column.exist }
+            propertyMap = crudEntity.properties.filter { it.column.exist }.associateBy { it.name }
         } ?: run {
             throw HandlerException(
                 "Method $name requires that the crudEntity attribute to be specified in the Dao annotation of the interface",
@@ -174,7 +173,7 @@ abstract class NamedMethod private constructor(
     }
 
     protected fun buildSelectList(): String {
-        return crudEntity.getProperties().filter { it.column.exist }.joinToString { it.toSelectItem() }
+        return crudEntity.properties.filter { it.column.exist }.joinToString { it.toSelectItem() }
     }
 
     protected fun buildWhereClause(): String {
@@ -192,8 +191,6 @@ abstract class NamedMethod private constructor(
 
     companion object {
         private val methodNameSplitRegex = "^(.*?By)(.*)$".toRegex()
-//        val keywordRegex =
-//            "^(LessThanEqual|GreaterThanEqual|IsNotNull|IsNull|LessThan|GreaterThan|NotIn|NotLike|Between|After|Before|Like|Not|In|True|False|)(And|OrderBy|Or|$)".toRegex()
 
         private val length2ConditionKeys = listOf(
             3 to listOf("LessThanEqual", "GreaterThanEqual"),

@@ -1,6 +1,7 @@
 package com.github.afezeria.freedao.processor.core.method
 
 import com.github.afezeria.freedao.Long2IntegerResultHandler
+import com.github.afezeria.freedao.ResultTypeHandler
 import com.github.afezeria.freedao.processor.core.*
 import javax.lang.model.element.ExecutableElement
 import kotlin.reflect.full.primaryConstructor
@@ -16,7 +17,7 @@ sealed class CrudMethod(element: ExecutableElement, daoModel: DaoModel) :
             crudEntity = it
         } ?: run {
             throw HandlerException(
-                "Method $name requires that the crudEntity attribute to be specified in the Dao annotation of the interface",
+                "Method $name requires Dao.crudEntity to be specified",
             )
         }
     }
@@ -47,7 +48,11 @@ class Count(element: ExecutableElement, daoModel: DaoModel) : CrudMethod(element
         resultHelper.mappings +=
             MappingData(source = "_cot",
                 target = "",
-                typeHandler = Long2IntegerResultHandler::class.type,
+                typeHandler = if (resultHelper.returnType.isSameType(Int::class)) {
+                    Long2IntegerResultHandler::class.type
+                } else {
+                    ResultTypeHandler::class.type
+                },
                 targetType = null,
                 constructorParameterIndex = -1
             )
@@ -69,10 +74,10 @@ class Delete(element: ExecutableElement, daoModel: DaoModel) :
         returnUpdateCount = true
         if (crudEntity.primaryKey.isEmpty()) {
             throw HandlerException(
-                "delete method requires that the class specified by Dao.crudEntity must have primary key",
+                "The delete method requires that the Dao.crudEntity has primary key",
             )
         }
-        crudEntity.primaryKey.forEach { requireParameter(it.type, it.name) }
+        crudEntity.primaryKey.forEach { requireParameter(it.type) }
     }
 
     override fun getTemplate(): String {
@@ -96,10 +101,10 @@ class Insert(element: ExecutableElement, daoModel: DaoModel) :
     init {
         returnUpdateCount = true
         requireParameter(crudEntity.typeMirror)
-        insertProperties = crudEntity.getProperties()
+        insertProperties = crudEntity.properties
             .filter { it.column.run { exist && insert } }
         if (insertProperties.isEmpty()) {
-            throw HandlerException("crudEntity has no property to insert")
+            throw HandlerException("The entity class specified by Dao.crudEntity has no property that can be used for insertion")
         }
     }
 
@@ -126,12 +131,11 @@ class InsertSelective(element: ExecutableElement, daoModel: DaoModel) :
     init {
         returnUpdateCount = true
         requireParameter(crudEntity.typeMirror)
-        insertProperties = crudEntity.getProperties()
+        insertProperties = crudEntity.properties
             .filter { it.column.run { exist && insert } }
         if (insertProperties.isEmpty()) {
-            throw HandlerException("crudEntity has no property to insert")
+            throw HandlerException("The entity class specified by Dao.crudEntity has no property that can be used for insertion")
         }
-
     }
 
     override fun getTemplate(): String {
@@ -174,13 +178,15 @@ class Update(element: ExecutableElement, daoModel: DaoModel) :
         requireParameter(crudEntity.typeMirror)
         if (crudEntity.primaryKey.isEmpty()) {
             throw HandlerException(
-                "update method requires that the class specified by Dao.crudEntity must have primary key",
+                "The update method requires that the class specified by Dao.crudEntity must have primary key",
             )
         }
-        updateProperties = crudEntity.getProperties()
-            .filter { it.column.run { exist && update } }
+        updateProperties = crudEntity.properties
+            .filter {
+                it.column.run { exist && update } && it !in crudEntity.primaryKey
+            }
         if (updateProperties.isEmpty()) {
-            throw HandlerException("crudEntity has no property to update")
+            throw HandlerException("The entity class specified by Dao.crudEntity has no property that can be used for update")
         }
     }
 
@@ -218,11 +224,12 @@ class UpdateSelective(element: ExecutableElement, daoModel: DaoModel) :
                 "update method requires that the class specified by Dao.crudEntity must have primary key",
             )
         }
-        updateProperties = crudEntity.getProperties()
+        updateProperties = crudEntity.properties
             .filter { it.column.run { exist && update } }
         if (updateProperties.isEmpty()) {
-            throw HandlerException("crudEntity has no property to update")
+            throw HandlerException("The entity class specified by Dao.crudEntity has no property that can be used for update")
         }
+
     }
 
     override fun getTemplate(): String {
