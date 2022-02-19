@@ -2,6 +2,7 @@ package test.java.style.named.prefix
 
 import org.junit.Test
 import test.BaseTest
+import test.Person
 import test.java.style.named.prefix.DeleteByNameDao
 
 /**
@@ -11,7 +12,7 @@ import test.java.style.named.prefix.DeleteByNameDao
 class DeleteTest : BaseTest() {
     @Test
     fun deleteByName() {
-        initTable("person", listOf(mapOf("name" to "a"), mapOf("name" to "b")))
+        initData(Person(1, "a"), Person(2, "b"))
         val impl = getJavaDaoInstance<DeleteByNameDao>()
         val updateCount = impl.deleteByName("a")
         assert(updateCount == 1)

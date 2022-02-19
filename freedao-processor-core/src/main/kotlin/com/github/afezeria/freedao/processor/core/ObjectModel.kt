@@ -46,11 +46,10 @@ class EntityObjectModel(type: DeclaredType) : BeanObjectModel(type) {
     val table: String
     var schema: String = ""
     var primaryKey: List<BeanProperty>
-    var properties: List<BeanProperty>
+    var properties: List<BeanProperty> = element.enclosedElements.filter { it.kind == ElementKind.FIELD && it.hasGetter() }
+        .map { BeanProperty(it as VariableElement) }
 
     init {
-        properties = element.enclosedElements.filter { it.kind == ElementKind.FIELD && it.hasGetter() }
-            .map { BeanProperty(it as VariableElement) }
         element.getAnnotation(Table::class.java)!!.let {
             table = it.name.ifBlank {
                 type.simpleName.toSnakeCase()

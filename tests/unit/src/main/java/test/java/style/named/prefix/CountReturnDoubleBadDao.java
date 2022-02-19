@@ -8,7 +8,7 @@ import test.Person;
  *
  */
 @Dao(crudEntity = Person.class)
-public interface DeleteByNameDao {
+public interface CountReturnDoubleBadDao {
 
-    Integer deleteByName(@NotNull String name);
+    Double countByName(@NotNull String name);
 }

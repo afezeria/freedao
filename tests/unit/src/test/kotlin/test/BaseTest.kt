@@ -204,12 +204,12 @@ abstract class BaseTest {
                     jdbcUrl = "jdbc:h2:mem:;DB_CLOSE_DELAY=-1;INIT=RUNSCRIPT FROM 'classpath:sql/pg_init.sql';MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH",
                     driverClassName = "org.h2.Driver",
                 ),
-//                DbEnv(
-//                    type = EnvType.MEMORY,
-//                    name = "mysql",
-//                    jdbcUrl = "jdbc:h2:mem:;DB_CLOSE_DELAY=-1;INIT=RUNSCRIPT FROM 'classpath:sql/mysql_init.sql';MODE=MySQL;DATABASE_TO_LOWER=TRUE",
-//                    driverClassName = "org.h2.Driver",
-//                ),
+                DbEnv(
+                    type = EnvType.MEMORY,
+                    name = "mysql",
+                    jdbcUrl = "jdbc:h2:mem:;DB_CLOSE_DELAY=-1;INIT=RUNSCRIPT FROM 'classpath:sql/mysql_init.sql';MODE=MySQL;DATABASE_TO_LOWER=TRUE",
+                    driverClassName = "org.h2.Driver",
+                ),
             )
         }
         private val localEnv by lazy {

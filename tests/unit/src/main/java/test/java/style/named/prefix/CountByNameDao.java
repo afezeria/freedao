@@ -2,11 +2,12 @@ package test.java.style.named.prefix;
 
 import com.github.afezeria.freedao.annotation.Dao;
 import org.jetbrains.annotations.NotNull;
+import test.Person;
 
 /**
  *
  */
-@Dao(crudEntity = PrefixTestEntity.class)
+@Dao(crudEntity = Person.class)
 public interface CountByNameDao {
 
     Integer countByName(@NotNull String name);

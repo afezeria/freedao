@@ -1,10 +1,10 @@
 package test.java.style.named.prefix
 
+import com.github.afezeria.freedao.processor.core.typeName
 import org.junit.Test
 import test.BaseTest
-import test.java.style.named.prefix.FindOneByIdDao
-import test.java.style.named.prefix.QueryByNameDao
-import test.java.style.named.prefix.QueryOneByIdDao
+import test.Person
+import test.errorMessages
 
 /**
  *
@@ -13,7 +13,7 @@ import test.java.style.named.prefix.QueryOneByIdDao
 class QueryTest : BaseTest() {
     @Test
     fun findById() {
-        initTable("person", listOf(mapOf("id" to 1, "name" to "a"), mapOf("id" to 2, "name" to "b")))
+        initData(Person(1, "a"), Person(2, "b"))
         val impl = getJavaDaoInstance<FindOneByIdDao>()
         val entity = impl.findOneById(1L)
         assert(entity.id == 1L)
@@ -21,7 +21,7 @@ class QueryTest : BaseTest() {
 
     @Test
     fun queryById() {
-        initTable("person", listOf(mapOf("id" to 1, "name" to "a"), mapOf("id" to 2, "name" to "b")))
+        initData(Person(1, "a"), Person(2, "b"))
         val impl = getJavaDaoInstance<QueryOneByIdDao>()
         val entity = impl.queryOneById(1L)
         assert(entity.id == 1L)
@@ -29,9 +29,34 @@ class QueryTest : BaseTest() {
 
     @Test
     fun queryByName() {
-        initTable("person", listOf(mapOf("id" to 1, "name" to "a"), mapOf("id" to 2, "name" to "b")))
+        initData(Person(1, "a"), Person(2, "b"))
         val impl = getJavaDaoInstance<QueryByNameDao>()
         val list = impl.queryByName("a")
         assert(list.size == 1)
+    }
+
+    @Test
+    fun `error, return type of the query method is not collection`() {
+        compileFailure<QueryNotReturnCollectionBadDao> {
+            assert(
+                errorMessages.contains("The return type of method must be a collection")
+            )
+        }
+    }
+    @Test
+    fun `error, return type of method query is not collection of crudEntity`() {
+        compileFailure<QueryNotReturnEntityCollectionBadDao> {
+            assert(
+                errorMessages.contains("The element type of the return type must be a ${Person::class.qualifiedName}")
+            )
+        }
+    }
+    @Test
+    fun `error, return type of method queryOne is not crudEntity`() {
+        compileFailure<QueryOneNotReturnEntityBadDao> {
+            assert(
+                errorMessages.contains("The return type of method must be ${Person::class.qualifiedName}")
+            )
+        }
     }
 }

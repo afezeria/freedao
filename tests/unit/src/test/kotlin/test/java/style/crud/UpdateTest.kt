@@ -4,10 +4,7 @@ import org.junit.Test
 import test.BaseTest
 import test.Person
 import test.errorMessages
-import test.java.style.crud.update.EntityHasNoUpdatePropertyUpdateBadDao
-import test.java.style.crud.update.EntityWithoutPrimaryKeyUpdateBadDao
-import test.java.style.crud.update.PersonUpdateDao
-import test.java.style.crud.update.PersonUpdateSelectiveDao
+import test.java.style.crud.update.*
 
 /**
  *
@@ -51,20 +48,21 @@ class UpdateTest : BaseTest() {
             assert(it["when_created"] != null)
         }
     }
+
     @Test
-    fun `crudEntity has not update property error`() {
-        compileFailure<EntityHasNoUpdatePropertyUpdateBadDao> {
+    fun `error, entity without primary key`() {
+        compileFailure<EntityWithoutPrimaryKeyUpdateBadDao> {
             assert(
-                errorMessages.contains("The entity class specified by Dao.crudEntity has no property that can be used for update")
+                errorMessages.contains("The update method requires that the class specified by Dao.crudEntity must have primary key")
             )
         }
     }
 
     @Test
-    fun entityWithoutPrimaryKeyError() {
-        compileFailure<EntityWithoutPrimaryKeyUpdateBadDao> {
+    fun `error, crudEntity has not update property `() {
+        compileFailure<EntityHasNoUpdatePropertyUpdateBadDao> {
             assert(
-                errorMessages.contains("The update method requires that the class specified by Dao.crudEntity must have primary key")
+                errorMessages.contains("The entity class specified by Dao.crudEntity has no property that can be used for update")
             )
         }
     }

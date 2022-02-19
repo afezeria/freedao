@@ -4,11 +4,13 @@ import com.github.afezeria.freedao.annotation.Dao;
 import org.jetbrains.annotations.NotNull;
 import test.Person;
 
+import java.util.List;
+
 /**
  *
  */
 @Dao(crudEntity = Person.class)
-public interface DeleteByNameDao {
+public interface QueryOneNotReturnEntityBadDao {
 
-    Integer deleteByName(@NotNull String name);
+    String queryOneByName(@NotNull String name);
 }

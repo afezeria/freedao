@@ -10,12 +10,12 @@ import java.time.LocalDateTime
  * @author afezeria
  */
 @DDL(
-    dialect = "my",
+    dialect = "mysql",
     value = """
 create table `person`
 (
-    `id`   int auto_increment primary key,
-    `name` text,
+    `id`   long auto_increment primary key,
+    `name` varchar(200),
     `active` bool,
     `when_created` timestamp default now()
 )
@@ -27,7 +27,7 @@ create table `person`
 create table "person"
 (
     "id"          bigserial primary key,
-    "name"        text,
+    "name"        varchar(200),
     "active"      bool,
     "when_created" timestamp default now()
 )

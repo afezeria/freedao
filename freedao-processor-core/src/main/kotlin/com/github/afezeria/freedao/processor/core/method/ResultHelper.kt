@@ -68,14 +68,14 @@ class ResultHelper(val daoModel: DaoModel, val element: ExecutableElement) {
                     if (isSameType(Any::class) || isSameType(String::class)) {
                         String::class.type
                     } else {
-                        throw HandlerException("Invalid type argument:$this, key type must be String")
+                        throw HandlerException("Invalid type argument:$this, the key type must be String")
                     }
                 }
                 mapValueType = requireNotNull(originalItemType.findTypeArgument(Map::class.type, "V")).run {
                     if (isNotAbstractType()) {
                         this
                     } else {
-                        throw HandlerException("Invalid type argument:$this, value type cannot be abstract")
+                        throw HandlerException("Invalid type argument:$this, the value type cannot be abstract")
                     }
                 }
                 itemType = HashMap::class.type

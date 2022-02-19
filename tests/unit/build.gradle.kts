@@ -2,6 +2,7 @@ plugins {
     kotlin("jvm")
     id("io.freefair.lombok") version "6.3.0"
     id("com.bnorm.power.kotlin-power-assert")
+    jacoco
 }
 
 configure<com.bnorm.power.PowerAssertGradleExtension> {
@@ -44,4 +45,16 @@ java {
 
 tasks.named<JavaCompile>("compileJava") {
     options.compilerArgs.add("-parameters")
+}
+
+//tasks.test {
+//    finalizedBy(tasks.jacocoTestReport) // report is always generated after tests run
+//}
+tasks.jacocoTestReport {
+    dependsOn(tasks.test) // tests are required to run before generating the report
+
+    sourceSets(
+        project(":freedao-processor-core").sourceSets.main.get(),
+        project(":freedao-processor-classic").sourceSets.main.get()
+    )
 }

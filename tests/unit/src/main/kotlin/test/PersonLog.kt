@@ -7,7 +7,7 @@ import com.github.afezeria.freedao.annotation.Table
  * @author afezeria
  */
 @DDL(
-    dialect = "my",
+    dialect = "mysql",
     value = """
 create table `person_log`
 (

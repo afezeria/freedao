@@ -1,8 +1,8 @@
 package com.github.afezeria.freedao.processor.core.method
 
 import com.github.afezeria.freedao.Long2IntegerResultHandler
+import com.github.afezeria.freedao.ResultTypeHandler
 import com.github.afezeria.freedao.processor.core.*
-import org.intellij.lang.annotations.Language
 import java.util.*
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.VariableElement
@@ -14,9 +14,9 @@ abstract class NamedMethod private constructor(
     element: ExecutableElement, daoModel: DaoModel,
 ) : MethodModel(element, daoModel) {
 
-    lateinit var crudEntity: EntityObjectModel
-    lateinit var dbProperties: List<BeanProperty>
-    lateinit var propertyMap: Map<String, BeanProperty>
+    var crudEntity: EntityObjectModel
+    var dbProperties: List<BeanProperty>
+    var propertyMap: Map<String, BeanProperty>
 
     /**
      * 当关键字为And/Or时pair.first为null
@@ -35,15 +35,10 @@ abstract class NamedMethod private constructor(
     var parameterLastMatchIndex = 0
 
     init {
-        daoModel.crudEntity?.let {
-            crudEntity = it
-            dbProperties = crudEntity.properties.filter { it.column.exist }
-            propertyMap = crudEntity.properties.filter { it.column.exist }.associateBy { it.name }
-        } ?: run {
-            throw HandlerException(
-                "Method $name requires that the crudEntity attribute to be specified in the Dao annotation of the interface",
-            )
-        }
+        crudEntity = daoModel.crudEntity
+            ?: throw HandlerException("Method $name requires Dao.crudEntity to be specified")
+        dbProperties = crudEntity.properties.filter { it.column.exist }
+        propertyMap = crudEntity.properties.filter { it.column.exist }.associateBy { it.name }
         parseName()
         checkParameters()
     }
@@ -87,7 +82,7 @@ abstract class NamedMethod private constructor(
             }
         }
         if (propertyName.isNotEmpty()) {
-            throw HandlerException("missing property ${crudEntity.className}.${propertyName.replaceFirstChar { it.lowercase() }}")
+            throw HandlerException("missing condition property ${crudEntity.className}.${propertyName.replaceFirstChar { it.lowercase() }}")
         }
 
         if (hasOrderByClause) {
@@ -310,7 +305,6 @@ abstract class NamedMethod private constructor(
             Asc, Desc
         }
 
-        private val prefixList = listOf("queryBy", "queryOneBy", "findBy", "findOneBy", "countBy", "deleteBy")
 
         operator fun invoke(element: ExecutableElement, daoModel: DaoModel): NamedMethod? {
             val name = element.simpleName.toString()
@@ -331,11 +325,11 @@ abstract class NamedMethod private constructor(
         init {
             val returnType = resultHelper.returnType
             if (!returnType.erasure().isAssignable(Collection::class)) {
-                throw HandlerException("The container type of the return type must be a subclass of collection")
+                throw HandlerException("The return type of method must be a collection")
             }
             returnType as DeclaredType
             if (!crudEntity.type.isSameType(returnType.findTypeArgument(Collection::class.type, "E")!!)) {
-                throw HandlerException("The item type of the return type must be ${crudEntity.type.typeName}")
+                throw HandlerException("The element type of the return type must be a ${crudEntity.type.typeName}")
             }
         }
 
@@ -352,7 +346,7 @@ abstract class NamedMethod private constructor(
     open class QueryOne(element: ExecutableElement, daoModel: DaoModel) : NamedMethod(element, daoModel) {
         init {
             if (!crudEntity.type.isSameType(resultHelper.returnType)) {
-                throw HandlerException("return type must be ${crudEntity.type}")
+                throw HandlerException("The return type of method must be ${crudEntity.type}")
             }
         }
 
@@ -368,11 +362,6 @@ abstract class NamedMethod private constructor(
 
     class Delete(element: ExecutableElement, daoModel: DaoModel) : NamedMethod(element, daoModel) {
         init {
-            resultHelper.returnType.apply {
-                if (!isSameType(Long::class.type) && !isSameType(Int::class.type)) {
-                    throw HandlerException("return type must be Integer or Long")
-                }
-            }
             returnUpdateCount = true
         }
 
@@ -391,12 +380,16 @@ abstract class NamedMethod private constructor(
         init {
             resultHelper.returnType.apply {
                 if (!isSameType(Long::class.type) && !isSameType(Int::class.type)) {
-                    throw HandlerException("return type must be Integer or Long")
+                    throw HandlerException("The return type of count method must be Integer or Long")
                 }
             }
             resultHelper.mappings += MappingData(source = "_cot",
                 target = "",
-                typeHandler = Long2IntegerResultHandler::class.type,
+                typeHandler = if (resultHelper.returnType.isSameType(Int::class)) {
+                    Long2IntegerResultHandler::class.type
+                } else {
+                    ResultTypeHandler::class.type
+                },
                 targetType = null,
                 constructorParameterIndex = -1)
         }

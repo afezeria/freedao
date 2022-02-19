@@ -10,6 +10,7 @@ import test.java.style.crud.insert.*
  *
  */
 class InsertTest : BaseTest() {
+
     @Test
     fun `insert all fields`() {
         initData<Person>()
@@ -50,7 +51,7 @@ class InsertTest : BaseTest() {
     }
 
     @Test
-    fun `parameter type is different from the value of crudEntity error`() {
+    fun `error, parameter type is different from the value of crudEntity `() {
         compileFailure<ParameterNotMatchInsertBadDao> {
             assert(
                 errorMessages.contains("Missing parameter of type ${Person::class.qualifiedName}")
@@ -59,8 +60,16 @@ class InsertTest : BaseTest() {
     }
 
     @Test
-    fun `crudEntity has not insertable property error`() {
+    fun `error, insert, crudEntity has not insertable property `() {
         compileFailure<EntityHasNoInsertablePropertyInsertBadDao> {
+            assert(
+                errorMessages.contains("The entity class specified by Dao.crudEntity has no property that can be used for insertion")
+            )
+        }
+    }
+    @Test
+    fun `error, insertSelective, crudEntity has not insertable property `() {
+        compileFailure<EntityHasNoInsertablePropertyInsertSelectiveBadDao> {
             assert(
                 errorMessages.contains("The entity class specified by Dao.crudEntity has no property that can be used for insertion")
             )

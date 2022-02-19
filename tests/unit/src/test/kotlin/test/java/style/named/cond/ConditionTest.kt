@@ -3,7 +3,6 @@ package test.java.style.named.cond
 import org.junit.Test
 import test.BaseTest
 import test.Person
-import test.java.style.named.cond.*
 import kotlin.test.assertContentEquals
 
 /**
@@ -133,6 +132,7 @@ class ConditionTest : BaseTest() {
         assert(list.size == 1)
         assertContentEquals(list.map { it.id }, listOf(5))
     }
+
     @Test
     fun notNull() {
         initDataWithNullValue(
@@ -182,5 +182,30 @@ class ConditionTest : BaseTest() {
         val list = impl.queryByNameNot("a")
         assert(list.size == 1)
         assertContentEquals(list.map { it.id }, listOf(1))
+    }
+
+    @Test
+    fun and() {
+        initDataWithNullValue(
+            Person(1, "a"),
+            Person(5, "a"),
+        )
+        val impl = getJavaDaoInstance<AndDao>()
+        val list = impl.queryByIdAndName(1, "a")
+        assert(list.size == 1)
+        assertContentEquals(list.map { it.id }, listOf(1))
+    }
+
+    @Test
+    fun or() {
+        initDataWithNullValue(
+            Person(1, "a"),
+            Person(5, "a"),
+            Person(7, "b"),
+        )
+        val impl = getJavaDaoInstance<OrDao>()
+        val list = impl.queryByIdOrName(1, "a")
+        assert(list.size == 2)
+        assertContentEquals(list.map { it.id }, listOf(1, 5))
     }
 }

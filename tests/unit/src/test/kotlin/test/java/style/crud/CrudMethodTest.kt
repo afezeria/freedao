@@ -8,7 +8,7 @@ import test.errorMessages
  *
  * @author afezeria
  */
-class CrudTest : BaseTest() {
+class CrudMethodTest : BaseTest() {
     @Test
     fun notSpecifyCrudEntityError() {
         compileFailure<NotSpecifyCrudEntityBadDao> {
