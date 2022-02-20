@@ -4,7 +4,6 @@ import org.junit.Test
 import test.BaseTest
 import test.Person
 import test.errorMessages
-import test.java.style.crud.count.ReturnStringCountBadDao
 
 /**
  *
@@ -28,7 +27,7 @@ class CountTest : BaseTest() {
     }
 
     @Test
-    fun `error, count return double`(){
+    fun `error, count return double`() {
         compileFailure<CountReturnDoubleBadDao> {
             assert(
                 errorMessages.contains("The return type of count method must be Integer or Long")

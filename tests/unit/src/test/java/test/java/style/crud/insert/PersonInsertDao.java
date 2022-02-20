@@ -1,13 +1,14 @@
-package test.java.style.crud.delete;
+package test.java.style.crud.insert;
 
 import com.github.afezeria.freedao.annotation.Dao;
 import org.jetbrains.annotations.NotNull;
 import test.Person;
 
 /**
+ *
  */
 @Dao(crudEntity = Person.class)
-public interface PersonDeleteDao {
+public interface PersonInsertDao {
 
-    int delete(@NotNull Long id);
+    int insert(@NotNull Person entity);
 }

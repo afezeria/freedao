@@ -3,7 +3,6 @@ package test.java.style.named.prefix
 import org.junit.Test
 import test.BaseTest
 import test.Person
-import test.java.style.named.prefix.DeleteByNameDao
 
 /**
  *

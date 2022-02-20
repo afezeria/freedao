@@ -3,7 +3,6 @@ package test.java.style.xml.complex
 import org.junit.Test
 import test.BaseTest
 import test.Person
-import test.java.style.xml.complex.TestExpr1Dao
 
 /**
  *

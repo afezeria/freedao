@@ -5,9 +5,10 @@ import org.jetbrains.annotations.NotNull;
 import test.Person;
 
 /**
+ *
  */
 @Dao(crudEntity = Person.class)
-public interface PersonUpdateDao {
+public interface PersonUpdateSelectiveDao {
 
-    int update(@NotNull Person entity);
+    int updateSelective(@NotNull Person entity);
 }

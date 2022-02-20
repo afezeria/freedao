@@ -67,6 +67,7 @@ class InsertTest : BaseTest() {
             )
         }
     }
+
     @Test
     fun `error, insertSelective, crudEntity has not insertable property `() {
         compileFailure<EntityHasNoInsertablePropertyInsertSelectiveBadDao> {

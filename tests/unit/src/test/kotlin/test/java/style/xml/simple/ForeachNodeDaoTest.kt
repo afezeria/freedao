@@ -3,7 +3,6 @@ package test.java.style.xml.simple
 import org.junit.Test
 import test.BaseTest
 import test.Person
-import test.java.style.xml.simple.ForeachNodeDao
 import kotlin.test.assertContentEquals
 
 /**

@@ -99,12 +99,12 @@ abstract class BaseTest {
     }
 
     inline fun <reified T : Any> getJavaDaoInstance(): T {
-        return getImplInstance(T::class, Path("./src/main/java/" + T::class.qualifiedName?.replace('.', '/') + ".java"))
+        return getImplInstance(T::class, Path("./src/test/java/" + T::class.qualifiedName?.replace('.', '/') + ".java"))
     }
 
     inline fun <reified T : Any> compileFailure(block: Compilation.() -> Unit) {
         return compileJava(
-            Path("./src/main/java/" + T::class.qualifiedName?.replace('.', '/') + ".java")
+            Path("./src/test/java/" + T::class.qualifiedName?.replace('.', '/') + ".java")
         ).let {
             CompilationSubject.assertThat(it).failed()
             it.diagnostics().forEach { println(it.toString()) }

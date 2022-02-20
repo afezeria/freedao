@@ -1,13 +1,14 @@
-package test.java.style.crud.insert;
+package test.java.style.named.prefix;
 
 import com.github.afezeria.freedao.annotation.Dao;
 import org.jetbrains.annotations.NotNull;
 import test.Person;
 
 /**
+ *
  */
 @Dao(crudEntity = Person.class)
-public interface PersonInsertDao {
+public interface QueryOneNotReturnEntityBadDao {
 
-    int insert(@NotNull Person entity);
+    String queryOneByName(@NotNull String name);
 }

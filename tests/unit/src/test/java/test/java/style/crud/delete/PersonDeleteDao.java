@@ -1,16 +1,14 @@
-package test.java.style.named.prefix;
+package test.java.style.crud.delete;
 
 import com.github.afezeria.freedao.annotation.Dao;
 import org.jetbrains.annotations.NotNull;
 import test.Person;
 
-import java.util.List;
-
 /**
  *
  */
 @Dao(crudEntity = Person.class)
-public interface QueryNotReturnCollectionBadDao {
+public interface PersonDeleteDao {
 
-    Person queryByName(@NotNull String name);
+    int delete(@NotNull Long id);
 }

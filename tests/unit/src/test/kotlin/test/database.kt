@@ -3,7 +3,6 @@ package test
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import java.sql.Statement
-import java.util.*
 
 
 fun main() {
@@ -33,7 +32,7 @@ fun main() {
 //        stmt.addBatch()
 //    }
 //    println(Arrays.toString(stmt.executeBatch()))
-    stmt.setObject(1,"a")
+    stmt.setObject(1, "a")
     stmt.execute()
     println("======================")
     println(stmt.updateCount)

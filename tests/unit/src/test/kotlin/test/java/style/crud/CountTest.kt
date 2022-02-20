@@ -32,7 +32,7 @@ class CountTest : BaseTest() {
     }
 
     @Test
-    fun returnStringError(){
+    fun returnStringError() {
         compileFailure<ReturnStringCountBadDao> {
             assert(
                 errorMessages.contains("The return type of count method must be Integer or Long")

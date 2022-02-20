@@ -1,6 +1,5 @@
 package test.java.style.named.prefix
 
-import com.github.afezeria.freedao.processor.core.typeName
 import org.junit.Test
 import test.BaseTest
 import test.Person
@@ -43,6 +42,7 @@ class QueryTest : BaseTest() {
             )
         }
     }
+
     @Test
     fun `error, return type of method query is not collection of crudEntity`() {
         compileFailure<QueryNotReturnEntityCollectionBadDao> {
@@ -51,6 +51,7 @@ class QueryTest : BaseTest() {
             )
         }
     }
+
     @Test
     fun `error, return type of method queryOne is not crudEntity`() {
         compileFailure<QueryOneNotReturnEntityBadDao> {

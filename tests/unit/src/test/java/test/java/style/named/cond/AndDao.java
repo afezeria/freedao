@@ -1,4 +1,4 @@
-package test.java.style.named;
+package test.java.style.named.cond;
 
 import com.github.afezeria.freedao.annotation.Dao;
 import test.Person;
@@ -9,6 +9,6 @@ import java.util.List;
  * @author afezeria
  */
 @Dao(crudEntity = Person.class)
-public interface ParameterTypeMismatchBadDao {
-    List<Person> queryByIdAndName(Long id,Long name);
+public interface AndDao {
+    List<Person> queryByIdAndName(Long id, String name);
 }

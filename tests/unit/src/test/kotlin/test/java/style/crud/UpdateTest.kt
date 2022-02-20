@@ -4,7 +4,10 @@ import org.junit.Test
 import test.BaseTest
 import test.Person
 import test.errorMessages
-import test.java.style.crud.update.*
+import test.java.style.crud.update.EntityHasNoUpdatePropertyUpdateBadDao
+import test.java.style.crud.update.EntityWithoutPrimaryKeyUpdateBadDao
+import test.java.style.crud.update.PersonUpdateDao
+import test.java.style.crud.update.PersonUpdateSelectiveDao
 
 /**
  *

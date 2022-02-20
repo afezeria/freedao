@@ -3,7 +3,6 @@ package test.java
 import org.junit.Test
 import test.BaseTest
 import test.Person
-import test.java.style.crud.insert.PersonInsertDao
 import kotlin.test.assertContentEquals
 
 /**

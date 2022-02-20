@@ -3,8 +3,6 @@ package test.java.style.named.order
 import org.junit.Test
 import test.BaseTest
 import test.Person
-import test.java.style.named.order.OrderWithMultipleColumnDao
-import test.java.style.named.order.QueryWithSingleColumn
 import kotlin.test.assertContentEquals
 
 /**
@@ -41,6 +39,7 @@ class OrderTest : BaseTest() {
         val list = impl.queryByWhenCreatedNotNullOrderByNameAscIdAsc()
         assertContentEquals(list.map { it.id }, listOf(2, 3, 1))
     }
+
     @Test
     fun orderByNameAscIdDesc() {
         initData(

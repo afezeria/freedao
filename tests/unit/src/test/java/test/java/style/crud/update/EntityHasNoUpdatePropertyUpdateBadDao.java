@@ -2,7 +2,6 @@ package test.java.style.crud.update;
 
 import com.github.afezeria.freedao.annotation.Dao;
 import test.OnePropertyEntity;
-import test.PersonLog;
 
 /**
  * @author afezeria

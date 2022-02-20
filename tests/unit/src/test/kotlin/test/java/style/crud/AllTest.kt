@@ -1,6 +1,5 @@
 package test.java.style.crud
 
-import com.github.afezeria.freedao.processor.core.typeName
 import org.junit.Test
 import test.BaseTest
 import test.Person
@@ -29,7 +28,7 @@ class AllTest : BaseTest() {
     }
 
     @Test
-    fun `invalid return type`(){
+    fun `invalid return type`() {
         compileFailure<ReturnStringAllDao> {
             assert(
                 errorMessages.contains("The return type must be assignable to Collection<${Person::class.qualifiedName}>")
