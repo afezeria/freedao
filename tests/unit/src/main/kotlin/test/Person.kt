@@ -37,15 +37,55 @@ create table "person"
     name = "person",
     primaryKeys = ["id"]
 )
-class Person(
+open class Person(
     @Column(insert = false)
     @AutoFill
     var id: Long? = null,
     var name: String? = null,
     var whenCreated: LocalDateTime? = null,
     var active: Boolean? = null,
-) : Entity {
-
-}
+) : Entity
 
 interface Entity
+
+@Table(
+    name = "person",
+    primaryKeys = ["id"]
+)
+class PersonOverrideEqual : Person() {
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is Person) return false
+
+        if (name != other.name) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return name?.hashCode() ?: 0
+    }
+}
+
+@Table(
+    name = "person",
+    primaryKeys = ["id"]
+)
+class PersonWithoutPublicConstructor private constructor() : Person()
+
+@Table(
+    name = "person",
+    primaryKeys = ["id"]
+)
+class PersonBad1(test: Number) : Person()
+
+@Table(
+    name = "person",
+    primaryKeys = ["id"]
+)
+class PersonWithRequiredId(id: Long) : Person() {
+    init {
+        this.id = id
+    }
+}

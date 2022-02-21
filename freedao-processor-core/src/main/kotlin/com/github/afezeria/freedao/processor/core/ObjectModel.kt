@@ -3,6 +3,7 @@ package com.github.afezeria.freedao.processor.core
 import com.github.afezeria.freedao.annotation.Table
 import com.squareup.javapoet.TypeName
 import javax.lang.model.element.ElementKind
+import javax.lang.model.element.TypeElement
 import javax.lang.model.element.VariableElement
 import javax.lang.model.type.*
 
@@ -13,6 +14,7 @@ sealed class ObjectModel(val typeMirror: TypeMirror) {
 
     companion object {
         operator fun invoke(type: TypeMirror): ObjectModel {
+            //todo objectModel有用的子类实际上只有beanObject和 entityobjectmodel
             return when (type) {
                 is DeclaredType -> {
                     val element = type.asElement()
@@ -39,15 +41,30 @@ sealed class ObjectModel(val typeMirror: TypeMirror) {
 
 open class BeanObjectModel(val type: DeclaredType) : ObjectModel(type) {
     val className: TypeName = type.typeName
-    val element = type.asElement()
+    val element = type.asElement() as TypeElement
+    var properties: MutableList<BeanProperty> = mutableListOf()
+    init {
+        element.enclosedElements.filter { it.kind == ElementKind.FIELD && it.hasGetter() }
+            .forEach { properties += BeanProperty(it as VariableElement) }
+        //处理父类属性
+        var superType = element.superclass
+        while (superType.isCustomJavaBean()) {
+            val el = (superType as DeclaredType).asElement() as TypeElement
+            el.enclosedElements
+                .filter { it.kind == ElementKind.FIELD && it.hasGetter() && properties.none { p -> p.name == it.simpleName.toString() } }
+                .forEach {
+                    properties += BeanProperty(it as VariableElement)
+                }
+
+            superType = el.superclass
+        }
+    }
 }
 
 class EntityObjectModel(type: DeclaredType) : BeanObjectModel(type) {
     val table: String
     var schema: String = ""
     var primaryKey: List<BeanProperty>
-    var properties: List<BeanProperty> = element.enclosedElements.filter { it.kind == ElementKind.FIELD && it.hasGetter() }
-        .map { BeanProperty(it as VariableElement) }
 
     init {
         element.getAnnotation(Table::class.java)!!.let {
@@ -61,6 +78,7 @@ class EntityObjectModel(type: DeclaredType) : BeanObjectModel(type) {
                 prop.name in it.primaryKeys
             }
         }
+
     }
 
     val dbFullyQualifiedName: String by lazy {
@@ -78,9 +96,7 @@ class IterableObjectModel(type: TypeMirror) : ObjectModel(type) {
     lateinit var itemType: ObjectModel
 }
 
-class MapObjectModel(type: DeclaredType) : ObjectModel(type) {
-
-}
+class MapObjectModel(type: DeclaredType) : ObjectModel(type)
 
 class PrimitiveObjectModel(val type: PrimitiveType) : ObjectModel(type)
 

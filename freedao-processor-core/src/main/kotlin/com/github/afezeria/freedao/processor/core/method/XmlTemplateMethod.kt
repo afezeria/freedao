@@ -11,7 +11,7 @@ class XmlTemplateMethod private constructor(
 
     init {
         if (element.getAnnotation(XmlTemplate::class.java).value.isBlank()) {
-            throw HandlerException("invalid xml template")
+            throw HandlerException("Xml template cannot be blank")
         }
     }
 

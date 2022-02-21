@@ -147,8 +147,8 @@ class ClassicBuildMethodService : BuildMethodService {
 
                 addStatement("$stmtVar.execute()")
 
-                when(methodModel.statementType) {
-                    StatementType.INSERT,StatementType.UPDATE,StatementType.DELETE -> {
+                when (methodModel.statementType) {
+                    StatementType.INSERT, StatementType.UPDATE, StatementType.DELETE -> {
                         handeUpdateMethodResultMapping(methodModel, resultHelper)
                     }
                     else -> {
@@ -375,6 +375,9 @@ class ClassicBuildMethodService : BuildMethodService {
             if (resultHelper.mappings.isNotEmpty() && !resultHelper.mappings[0].typeHandler.isSameType(ResultTypeHandler::class)) {
                 //有类型转换
                 addStatement("$itemVar = \$T.handle($resultSetVar.getObject(1))", resultHelper.mappings[0].typeHandler)
+            } else if (resultHelper.itemType.isSameType(Any::class)) {
+                //未指定单列类型或类型为Object
+                addStatement("$itemVar = $resultSetVar.getObject(1)", resultHelper.itemType)
             } else {
                 //无类型转换器
                 addStatement("$itemVar = $resultSetVar.getObject(1, \$T.class)", resultHelper.itemType)

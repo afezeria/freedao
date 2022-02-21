@@ -227,7 +227,9 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoMod
         CrudMethod(element, daoModel) {
 
         init {
-            if (!resultHelper.returnType.isAssignable(Collection::class.type(crudEntity.type))
+            if (
+                !(resultHelper.returnType.isAssignable(Collection::class.type) &&
+                        resultHelper.itemType.isSameType(crudEntity.type))
             ) {
                 throw HandlerException("The return type must be assignable to Collection<${crudEntity.type.typeName}>")
             }

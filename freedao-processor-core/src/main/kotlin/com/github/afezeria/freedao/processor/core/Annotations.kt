@@ -41,6 +41,11 @@ class ColumnAnn(element: VariableElement) {
 
 /**
  * 存储[com.github.afezeria.freedao.annotation.Mapping]内容
+ * @property source resultSet列名
+ * @property target bean类字段名
+ * @property typeHandler 结果处理器类型
+ * @property targetType 字段类型
+ * @property constructorParameterIndex 在构造器参数中的位置，-1表示该字段使用setter方法设置
  */
 class MappingData(
     val source: String,

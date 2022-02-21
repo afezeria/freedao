@@ -219,6 +219,23 @@ private fun DeclaredType.findTypeArgumentHelper(
     throw UnreachableException()
 }
 
+/**
+ * 获取带类型参数的类型的实际类型
+ *
+ * 例：
+ *
+ *      interface A<T>{
+ *        T a();
+ *      }
+ *      interface B<Long>{}
+ *
+ *      TypeArg("T").parameterized(Type(B::class),Type(A::class)) => Type(Long::class)
+ *
+ * @receiver TypeMirror 带类型参数的类型，一般为方法返回值的类型
+ * @param type DeclaredType 一般为当前dao接口的类型
+ * @param enclosingElementType DeclaredType 一般为方法所属的接口的类型
+ * @return TypeMirror receiver在type中的实际类型
+ */
 fun TypeMirror.parameterized(type: DeclaredType, enclosingElementType: DeclaredType): TypeMirror {
     return when (this) {
         is TypeVariable -> {
@@ -248,7 +265,11 @@ fun TypeMirror.isCustomJavaBean(): Boolean {
     if (this !is DeclaredType) {
         return false
     }
-    if (typeName.toString().startsWith("java")) {
+
+    if (simpleName.startsWith("java")) {
+        return false
+    }
+    if (this.isSameType(Any::class)) {
         return false
     }
     if (this.isAssignable(Collection::class)) {
@@ -257,12 +278,13 @@ fun TypeMirror.isCustomJavaBean(): Boolean {
     if (this.isAssignable(Map::class)) {
         return false
     }
-    (asElement() as TypeElement).enclosedElements.forEach {
+    val el = this.asElement() as TypeElement
+    el.enclosedElements.forEach {
         if (it.kind == ElementKind.FIELD && it.hasGetter()) {
             return true
         }
     }
-    return false
+    return el.superclass.isCustomJavaBean()
 }
 
 fun <R> runCatchingHandlerExceptionOrThrow(element: Element, block: () -> R): R? {
