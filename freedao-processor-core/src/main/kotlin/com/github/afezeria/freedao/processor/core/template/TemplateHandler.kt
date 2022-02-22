@@ -95,6 +95,7 @@ class TemplateHandler(map: Map<String, TypeMirror>) {
             type = typeUtils.boxedClass(type).asType()
             text = "($type) $text"
         }
+        var originalText = first
 
         for (s in arr) {
             val declaredType = type as DeclaredType
@@ -110,7 +111,7 @@ class TemplateHandler(map: Map<String, TypeMirror>) {
                             type = declaredType.findTypeArgument(Map::class.type, "V") ?: Any::class.type
                         }
                         else -> {
-                            throw RuntimeException("$text is not a map")
+                            throw HandlerException("$originalText is not a map")
                         }
                     }
                 }
@@ -125,7 +126,7 @@ class TemplateHandler(map: Map<String, TypeMirror>) {
                             type = declaredType.typeArguments.takeIf { it.isNotEmpty() }?.get(0) ?: Any::class.type
                         }
                         else -> {
-                            throw RuntimeException("$text is not a list")
+                            throw HandlerException("$originalText is not a list")
                         }
                     }
                 }
@@ -137,7 +138,7 @@ class TemplateHandler(map: Map<String, TypeMirror>) {
                         type = Int::class.type
                         text = "(${type}) $text.size()"
                     } else {
-                        type = declaredType.getBeanPropertyType(s)
+                        type = declaredType.getBeanPropertyType(s) { "error expr:$originalText.$s, missing property:${declaredType}.$s." }
                         text = "$text.get${s.replaceFirstChar { it.uppercaseChar() }}()"
                     }
                 }
@@ -146,12 +147,13 @@ class TemplateHandler(map: Map<String, TypeMirror>) {
                 type = typeUtils.boxedClass(type).asType()
                 text = "($type) $text"
             }
+            originalText += ".$s"
         }
         return if (expectType != null) {
             when {
                 type.isSameType(Any::class) -> "((${expectType.typeName}) $text)" to expectType
                 type.isAssignable(expectType) -> text to type
-                else -> throw RuntimeException("$text:$type cannot assignable to $expectType")
+                else -> throw HandlerException("$originalText is of type $type cannot assignable to $expectType")
             }
         } else {
             text to type
@@ -182,7 +184,7 @@ class TemplateHandler(map: Map<String, TypeMirror>) {
      */
     fun createTemplateVariable(name: String, type: TypeMirror, defaultValue: Any?): String {
         if (getContextVar(name) != null) {
-            throw RuntimeException("property '$name' already exists")
+            throw HandlerException("Property '$name' already exists")
         }
         val varName = name.toVarName()
         parameterStack.first[varName] = type

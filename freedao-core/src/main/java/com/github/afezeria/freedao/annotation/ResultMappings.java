@@ -16,5 +16,5 @@ public @interface ResultMappings {
      * <p>
      * 为false时，会先按名称映射再处理value中的自定义映射，target相同时自定义映射会覆盖自动生成的映射
      */
-    boolean onlyCustomMapping() default true;
+    boolean onlyCustomMapping() default false;
 }

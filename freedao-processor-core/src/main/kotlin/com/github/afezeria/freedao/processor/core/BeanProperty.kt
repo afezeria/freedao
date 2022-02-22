@@ -1,6 +1,5 @@
 package com.github.afezeria.freedao.processor.core
 
-import com.github.afezeria.freedao.annotation.Column
 import javax.lang.model.element.VariableElement
 import javax.lang.model.type.DeclaredType
 import javax.lang.model.type.TypeMirror
@@ -14,6 +13,9 @@ class BeanProperty(
     val name: String = element.simpleName.toString()
     val type: TypeMirror = element.asType()
 
+    val hasSetter by lazy {
+        element.hasSetter()
+    }
 
     //判断流程，方法上做了映射按方法的来
     //实体类做了映射按实体类的来

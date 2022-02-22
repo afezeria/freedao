@@ -3,7 +3,7 @@ package com.github.afezeria.freedao.processor.classic
 import com.github.afezeria.freedao.ResultTypeHandler
 import com.github.afezeria.freedao.StatementType
 import com.github.afezeria.freedao.processor.core.*
-import com.github.afezeria.freedao.processor.core.method.MethodModel
+import com.github.afezeria.freedao.processor.core.method.MethodHandler
 import com.github.afezeria.freedao.processor.core.method.ResultHelper
 import com.github.afezeria.freedao.processor.core.spi.BuildMethodService
 import com.github.afezeria.freedao.processor.core.template.TemplateHandler
@@ -32,16 +32,16 @@ class ClassicBuildMethodService : BuildMethodService {
      */
     private val methodCounter: MutableMap<String, Int> = mutableMapOf()
 
-    override fun build(methodModel: MethodModel): CodeBlock {
+    override fun build(methodHandler: MethodHandler): CodeBlock {
         val counter =
-            methodCounter.compute("${methodModel.daoModel.element.qualifiedName}.${methodModel.name}") { _, v ->
+            methodCounter.compute("${methodHandler.daoHandler.element.qualifiedName}.${methodHandler.name}") { _, v ->
                 v?.inc() ?: 0
             }!!
-        val signVar = addMethodSignatureField(methodModel, counter)
-        val sqlVar = addSqlBuilderField(methodModel, counter)
-        val executorVar = addExecutorField(methodModel, counter)
+        val signVar = addMethodSignatureField(methodHandler, counter)
+        val sqlVar = addSqlBuilderField(methodHandler, counter)
+        val executorVar = addExecutorField(methodHandler, counter)
         return CodeBlock.builder().apply {
-            addStatement("Object[] $methodArgsVar = {${methodModel.parameters.joinToString { it.name }}}")
+            addStatement("Object[] $methodArgsVar = {${methodHandler.parameters.joinToString { it.name }}}")
             addStatement("Object[] __sqlAndArgs__ = $contextVar.buildSql($signVar, $methodArgsVar, $sqlVar)")
 
             addStatement("return $contextVar.execute($signVar, $methodArgsVar, (\$T) $buildSqlResultVar[0], (\$T) $buildSqlResultVar[1], $executorVar)",
@@ -54,53 +54,53 @@ class ClassicBuildMethodService : BuildMethodService {
 
     /**
      * 给dao添加表示sql签名的静态属性
-     * @param methodModel MethodHandler
+     * @param methodHandler MethodHandler
      */
-    private fun addMethodSignatureField(methodModel: MethodModel, counter: Int): String {
-        val name = "${methodModel.name}_${counter}_sign"
+    private fun addMethodSignatureField(methodHandler: MethodHandler, counter: Int): String {
+        val name = "${methodHandler.name}_${counter}_sign"
         val field = FieldSpec.builder(
             SqlSignature::class.type.typeName,
             name,
             Modifier.PRIVATE,
             Modifier.FINAL,
         ).initializer(CodeBlock.builder()
-            .add("new \$T(\$L,${methodModel.daoModel.implQualifiedName}.class,\$S,\$T.class${
-                methodModel.parameters.joinToString { "${it.model.typeMirror.erasure().typeName}.class" }
+            .add("new \$T(\$L,${methodHandler.daoHandler.implQualifiedName}.class,\$S,\$T.class${
+                methodHandler.parameters.joinToString { "${it.type.erasure().typeName}.class" }
                     .takeIf { it.isNotBlank() }
                     ?.let { ", $it" }
                     ?: ""
             })",
                 SqlSignature::class.type,
-                "${StatementType::class.qualifiedName}.${methodModel.statementType}",
-                methodModel.name,
-                methodModel.resultHelper.returnType.erasure()).build()).build()
-        methodModel.daoModel.classBuilder.addField(field)
+                "${StatementType::class.qualifiedName}.${methodHandler.statementType}",
+                methodHandler.name,
+                methodHandler.resultHelper.returnType.erasure()).build()).build()
+        methodHandler.daoHandler.classBuilder.addField(field)
         return name
     }
 
-    private fun addSqlBuilderField(methodModel: MethodModel, counter: Int): String {
+    private fun addSqlBuilderField(methodHandler: MethodHandler, counter: Int): String {
         //Function<Object[], Object[]> insert_0_sqlBuilder
         val field = FieldSpec.builder(
             java.util.function.Function::class.type(
                 typeUtils.getArrayType(Any::class.type),
                 typeUtils.getArrayType(Any::class.type),
             ).typeName,
-            "${methodModel.name}_${counter}_sql",
+            "${methodHandler.name}_${counter}_sql",
             Modifier.PRIVATE,
             Modifier.FINAL,
         ).initializer(
             CodeBlock.builder().apply {
                 add("_params -> {\n")
                 indent()
-                methodModel.parameters.forEachIndexed { index, parameter ->
-                    var type = parameter.model.typeMirror
+                methodHandler.parameters.forEachIndexed { index, parameter ->
+                    var type = parameter.type
                     if (type is PrimitiveType) {
                         type = typeUtils.boxedClass(type).asType()
                     }
                     addStatement("\$T ${parameter.name.toVarName()} = (\$T) _params[\$L]", type, type, index)
                 }
                 add("\n")
-                add(methodModel.sqlBuildCodeBlock)
+                add(methodHandler.sqlBuildCodeBlock)
                 add("\n")
                 addStatement("\$T l_sql_0 = l_builder_0.toString()", String::class.type)
                 addStatement("return new Object[]{l_sql_0, ${TemplateHandler.sqlArgsVarName}}")
@@ -108,16 +108,16 @@ class ClassicBuildMethodService : BuildMethodService {
                 add("}")
             }.build()
         ).build()
-        methodModel.daoModel.classBuilder.addField(field)
+        methodHandler.daoHandler.classBuilder.addField(field)
 
         return field.name
     }
 
-    private fun addExecutorField(methodModel: MethodModel, counter: Int): String? {
-        val resultHelper = methodModel.resultHelper
+    private fun addExecutorField(methodHandler: MethodHandler, counter: Int): String? {
+        val resultHelper = methodHandler.resultHelper
         val field = FieldSpec.builder(
             SqlExecutor::class.type(resultHelper.returnType).typeName,
-            "${methodModel.name}_${counter}_executor",
+            "${methodHandler.name}_${counter}_executor",
             Modifier.PRIVATE,
             Modifier.FINAL,
         ).initializer(
@@ -132,7 +132,7 @@ class ClassicBuildMethodService : BuildMethodService {
                 endControlFlow()
 
 
-                if (EnableAutoFill(methodModel)) {
+                if (EnableAutoFill(methodHandler)) {
                     beginControlFlow("try (\$T $stmtVar = $connVar.prepareStatement($sqlVar, \$T.RETURN_GENERATED_KEYS))",
                         PreparedStatement::class.type,
                         Statement::class.type)
@@ -147,12 +147,12 @@ class ClassicBuildMethodService : BuildMethodService {
 
                 addStatement("$stmtVar.execute()")
 
-                when (methodModel.statementType) {
+                when (methodHandler.statementType) {
                     StatementType.INSERT, StatementType.UPDATE, StatementType.DELETE -> {
-                        handeUpdateMethodResultMapping(methodModel, resultHelper)
+                        handeUpdateMethodResultMapping(methodHandler, resultHelper)
                     }
                     else -> {
-                        handeSelectMethodResultMapping(methodModel, resultHelper)
+                        handeSelectMethodResultMapping(methodHandler, resultHelper)
                     }
                 }
 
@@ -163,14 +163,14 @@ class ClassicBuildMethodService : BuildMethodService {
                 add("}")
             }.build()
         ).build()
-        methodModel.daoModel.classBuilder.addField(field)
+        methodHandler.daoHandler.classBuilder.addField(field)
 
         return field.name
     }
 
-    private fun CodeBlock.Builder.handeUpdateMethodResultMapping(methodModel: MethodModel, resultHelper: ResultHelper) {
-        if (EnableAutoFill(methodModel)) {
-            AutoFillStruct(methodModel)?.apply {
+    private fun CodeBlock.Builder.handeUpdateMethodResultMapping(methodHandler: MethodHandler, resultHelper: ResultHelper) {
+        if (EnableAutoFill(methodHandler)) {
+            AutoFillStruct(methodHandler)?.apply {
                 addStatement("\$T $resultSetVar = $stmtVar.getGeneratedKeys()", ResultSet::class.type)
 
                 if (isCollection) {
@@ -178,7 +178,7 @@ class ClassicBuildMethodService : BuildMethodService {
                     addStatement("\$T $itemVar = null", type)
                     addStatement("int $idxVar = 0")
                     beginControlFlow("while ($resultSetVar.next())")
-                    addStatement("$itemVar = $containerVar.get(i)")
+                    addStatement("$itemVar = $containerVar.get($idxVar)")
                 } else {
                     addStatement("\$T $itemVar = (\$T) $methodArgsVar[${index}]", type, type)
                     beginControlFlow("while ($resultSetVar.next())")
@@ -202,8 +202,8 @@ class ClassicBuildMethodService : BuildMethodService {
                     }
                 }
                 if (isCollection) {
-                    addStatement("$containerVar.add($itemVar)")
-                    addStatement("i++")
+//                    addStatement("$containerVar.add($itemVar)")
+                    addStatement("$idxVar++")
                     endControlFlow()
                 } else {
                     addStatement("break")
@@ -218,7 +218,7 @@ class ClassicBuildMethodService : BuildMethodService {
         }
     }
 
-    private fun CodeBlock.Builder.handeSelectMethodResultMapping(methodModel: MethodModel, resultHelper: ResultHelper) {
+    private fun CodeBlock.Builder.handeSelectMethodResultMapping(methodHandler: MethodHandler, resultHelper: ResultHelper) {
 
         addStatement("\$T $resultSetVar = $stmtVar.getResultSet()", ResultSet::class.type)
         val returnMultipleRow = resultHelper.containerType != null
@@ -242,7 +242,7 @@ class ClassicBuildMethodService : BuildMethodService {
                 resultHelper.returnType,
             )
         }
-        if (methodModel.resultHelper.isStructuredItem) {
+        if (methodHandler.resultHelper.isStructuredItem) {
             //返回结构化数据
             val diamondStr = if ((resultHelper.itemType.asElement() as TypeElement).typeParameters.isEmpty()) {
                 ""
@@ -261,7 +261,7 @@ class ClassicBuildMethodService : BuildMethodService {
                         when {
                             //有类型转换器
                             !it.typeHandler.isSameType(ResultTypeHandler::class) -> {
-                                addStatement("$itemVar.put(\$S, \$T.handle(rs.getObject(\$S)))",
+                                addStatement("$itemVar.put(\$S, \$T.handle($resultSetVar.getObject(\$S)))",
                                     it.source,
                                     it.typeHandler,
                                     it.source)
@@ -279,7 +279,7 @@ class ClassicBuildMethodService : BuildMethodService {
                         }
                     }
                     if (returnMultipleRow) {
-                        addStatement("$containerVar.add(item)")
+                        addStatement("$containerVar.add($itemVar)")
                     } else {
                         addStatement("break")
                     }
@@ -370,8 +370,8 @@ class ClassicBuildMethodService : BuildMethodService {
                 endControlFlow()
             }
         } else {
-            beginControlFlow("while ($resultSetVar.next())")
             //返回单列
+            beginControlFlow("while ($resultSetVar.next())")
             if (resultHelper.mappings.isNotEmpty() && !resultHelper.mappings[0].typeHandler.isSameType(ResultTypeHandler::class)) {
                 //有类型转换
                 addStatement("$itemVar = \$T.handle($resultSetVar.getObject(1))", resultHelper.mappings[0].typeHandler)

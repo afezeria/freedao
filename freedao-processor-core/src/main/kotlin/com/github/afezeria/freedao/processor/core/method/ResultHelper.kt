@@ -1,6 +1,5 @@
 package com.github.afezeria.freedao.processor.core.method
 
-import com.github.afezeria.freedao.ResultTypeHandler
 import com.github.afezeria.freedao.annotation.ResultMappings
 import com.github.afezeria.freedao.processor.core.*
 import javax.lang.model.element.ElementKind
@@ -14,12 +13,13 @@ import javax.lang.model.type.TypeMirror
 /**
  *
  */
-class ResultHelper(val daoModel: DaoModel, val element: ExecutableElement) {
+class ResultHelper(val daoHandler: DaoHandler, val element: ExecutableElement) {
     //    var returnVoid = false
     val returnType: TypeMirror
     var containerType: DeclaredType? = null
     var itemType: DeclaredType
-//    var mapKeyType: DeclaredType? = null
+
+    //    var mapKeyType: DeclaredType? = null
     var mapValueType: DeclaredType? = null
 
     var mappings: MutableList<MappingData> = mutableListOf()
@@ -28,7 +28,7 @@ class ResultHelper(val daoModel: DaoModel, val element: ExecutableElement) {
     init {
 
         returnType = element.returnType.parameterized(
-            daoModel.element.asType() as DeclaredType,
+            daoHandler.element.asType() as DeclaredType,
             element.enclosingElement.asType().erasure() as DeclaredType
         )
         if (returnType is NoType) {
@@ -103,12 +103,6 @@ class ResultHelper(val daoModel: DaoModel, val element: ExecutableElement) {
             if (onlyCustomMapping && value.isEmpty()) {
                 throw HandlerException("Invalid result mapping, value cannot be empty when onlyCustomMapping is true")
             }
-            value.forEach {
-                val resultTypeHandler = it.mirroredType { typeHandler }
-                if (resultTypeHandler.findMethod("handle", Any::class.type) == null) {
-                    throw HandlerException("Invalid ResultTypeHandler:${resultTypeHandler.typeName}, missing method:handle(Object.class)")
-                }
-            }
         }
 
         when {
@@ -135,7 +129,7 @@ class ResultHelper(val daoModel: DaoModel, val element: ExecutableElement) {
 
                 //处理属性映射
                 model.properties
-                    .filter { mappings.none { m -> m.target == it.name } }
+                    .filter { it.hasSetter && mappings.none { m -> m.target == it.name } }
                     .forEach {
                         mappings += MappingData(
                             source = it.column.name,
@@ -148,51 +142,37 @@ class ResultHelper(val daoModel: DaoModel, val element: ExecutableElement) {
 
 
                 resultMappings?.apply {
-                    val customMappings = value.mapTo(mutableListOf()) {
+                    val customMappings = value.mapNotNullTo(mutableListOf()) {
                         //检查mapping注解的值是否合法
                         val prop =
                             model.properties.find { p -> p.name == it.target }
                                 ?: throw HandlerException("${itemType.typeName} is missing the ${it.target} field")
-                        val resultTypeHandler = it.mirroredType { typeHandler }
-                            .apply {
-                                if (!isSameType(ResultTypeHandler::class.type)
-                                    && !findMethod("handle", Any::class.type)!!.returnType.isAssignable(prop.type)
-                                ) {
-                                    throw HandlerException("$this does not match field:[${prop.name}:${prop.type}]")
-                                }
+                        val handlerType = it.mirroredType { typeHandler }
+                        prop.type.matchResultTypeHandler(handlerType) {
+                            "$handlerType cannot handle ${prop.name}:${prop.type} field"
+                        }
+
+                        mappings.indexOfFirst { m -> m.target == it.target }
+                            //如果索引为-1表示该属性没有setter方法且不在构造器参数中
+                            .takeIf { it != -1 }
+                            ?.let { idx ->
+                                val autoMapping = mappings.removeAt(idx)
+                                MappingData(
+                                    source = it.source,
+                                    target = it.target,
+                                    typeHandler = handlerType,
+                                    targetType = autoMapping.targetType,
+                                    constructorParameterIndex = autoMapping.constructorParameterIndex
+                                )
                             }
-                        //上面已经检查了itemType是否包含名为it.target的属性，所以这里indexOfFirst返回值必定不为null
-                        val autoMapping = mappings.removeAt(mappings.indexOfFirst { m -> m.target == it.target })
-                        MappingData(
-                            source = it.source,
-                            target = it.target,
-                            typeHandler = resultTypeHandler,
-                            targetType = autoMapping.targetType,
-                            constructorParameterIndex = autoMapping.constructorParameterIndex
-                        )
                     }
                     if (onlyCustomMapping) {
                         mappings = customMappings
+                    } else {
+                        mappings += customMappings
                     }
                 }
             }
-//            itemType.erasure().isAssignable(Map::class.type) -> {
-//                //映射结果为map
-//                resultMappings?.apply {
-//                    val valueType = itemType.findTypeArgument(Map::class.type, "V")!!
-//                    value.forEach {
-//                        val resultTypeHandler = it.mirroredType { typeHandler }
-//                            .apply {
-//                                if (!isSameType(ResultTypeHandler::class.type)
-//                                    && !findMethod("handle", Any::class.type)!!.returnType.isAssignable(valueType)
-//                                ) {
-//                                    throw HandlerException("$this does not match type:${valueType.typeName}")
-//                                }
-//                            }
-//                        MappingData(it.source, it.target, resultTypeHandler)
-//                    }
-//                }
-//            }
             else -> {
                 val t = if (itemType.isAssignable(Map::class.type)) {
                     mapValueType!!
@@ -202,15 +182,12 @@ class ResultHelper(val daoModel: DaoModel, val element: ExecutableElement) {
                 //itemType既不是自定义bean也不是map时只能是单值类型，比如：Integer,LocalDateTime,String
                 resultMappings?.apply {
                     value.forEach {
-                        val resultTypeHandler = it.mirroredType { typeHandler }
-                            .apply {
-                                if (!isSameType(ResultTypeHandler::class.type)
-                                    && !findMethod("handle", Any::class.type)!!.returnType.isAssignable(t)
-                                ) {
-                                    throw HandlerException("$this does not match type:$t")
-                                }
-                            }
-                        MappingData(it.source, it.target, resultTypeHandler)
+                        val handlerType = it.mirroredType { typeHandler }
+                        t.matchResultTypeHandler(handlerType) {
+                            "$handlerType does not match $t type"
+                        }
+
+                        mappings += MappingData(it.source, it.target, handlerType)
                     }
                 }
             }

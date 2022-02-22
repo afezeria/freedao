@@ -2,7 +2,6 @@ package com.github.afezeria.freedao.processor.core
 
 import com.github.afezeria.freedao.ResultTypeHandler
 import com.github.afezeria.freedao.annotation.Column
-import javax.lang.model.element.Modifier
 import javax.lang.model.element.VariableElement
 import javax.lang.model.type.DeclaredType
 
@@ -27,14 +26,8 @@ class ColumnAnn(element: VariableElement) {
             resultTypeHandle = it?.mirroredType { resultTypeHandle } ?: ResultTypeHandler::class.type
         }
         //检查结果处理器和字段是否匹配
-        if (!resultTypeHandle.isSameType(ResultTypeHandler::class.type)) {
-            val handleMethod = resultTypeHandle.findMethod("handle", Any::class.type)
-                ?.takeIf { it.modifiers.containsAll(listOf(Modifier.STATIC, Modifier.PUBLIC)) }
-                ?: throw HandlerException("Invalid ResultTypeHandler:${resultTypeHandle.typeName}, cannot find method:handle(Object.class)")
-            if (!handleMethod.returnType.isAssignable(element.asType())) {
-                throw HandlerException("${resultTypeHandle.typeName} cannot handle field ${element.simpleName}:${element.asType()}, ${handleMethod.returnType} cannot assignable ${element.asType()}")
-            }
-
+        element.asType().matchResultTypeHandler(resultTypeHandle) {
+            "$resultTypeHandle cannot handle field ${element.simpleName}:${element.asType()}"
         }
     }
 }

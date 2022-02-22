@@ -1,7 +1,7 @@
 package com.github.afezeria.freedao.processor.core
 
 import com.github.afezeria.freedao.annotation.Dao
-import com.github.afezeria.freedao.processor.core.method.MethodModel
+import com.github.afezeria.freedao.processor.core.method.MethodHandler
 import com.github.afezeria.freedao.processor.core.spi.BuildDaoService
 import com.squareup.javapoet.AnnotationSpec
 import com.squareup.javapoet.JavaFile
@@ -13,9 +13,8 @@ import javax.lang.model.type.DeclaredType
 /**
  *
  */
-class DaoModel(val element: TypeElement) {
+class DaoHandler(val element: TypeElement) {
 
-    lateinit var annotation: Any
     var crudEntity: EntityObjectModel? = null
 
     var packageName = "${(element.enclosingElement as PackageElement).qualifiedName}"
@@ -66,7 +65,7 @@ class DaoModel(val element: TypeElement) {
                 it.kind == ElementKind.METHOD && !it.modifiers.contains(Modifier.DEFAULT)
             }.map { element ->
                 runCatchingHandlerExceptionOrThrow(element) {
-                    MethodModel(element as ExecutableElement, this).render()
+                    MethodHandler(element as ExecutableElement, this).render()
                 }
             }.takeIf { it.all { it != null } }
             ?.map { it!! }

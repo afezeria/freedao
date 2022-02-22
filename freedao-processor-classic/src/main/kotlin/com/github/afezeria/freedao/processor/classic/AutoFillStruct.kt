@@ -1,7 +1,7 @@
 package com.github.afezeria.freedao.processor.classic
 
 import com.github.afezeria.freedao.processor.core.*
-import com.github.afezeria.freedao.processor.core.method.MethodModel
+import com.github.afezeria.freedao.processor.core.method.MethodHandler
 import com.github.afezeria.freedao.runtime.classic.AutoFill
 import com.github.afezeria.freedao.runtime.classic.ValueGenerator
 import javax.lang.model.element.VariableElement
@@ -30,9 +30,9 @@ class AutoFillStruct private constructor(
          * @param method MethodModel
          * @return Triple<Int, DeclaredType?, DeclaredType>? first:在参数中的位置，second：容器类型，third：对象类型
          */
-        private fun findAutoFillParameter(method: MethodModel): AutoFillStruct? {
+        private fun findAutoFillParameter(method: MethodHandler): AutoFillStruct? {
             return method.parameters.indexOfFirst {
-                it.model.typeMirror.run {
+                it.type.run {
                     this is DeclaredType
                             && (
                             isCustomJavaBean()
@@ -41,7 +41,7 @@ class AutoFillStruct private constructor(
                             )
                 }
             }.takeIf { it != -1 }?.let { idx ->
-                val type = method.parameters[idx].model.typeMirror as DeclaredType
+                val type = method.parameters[idx].type as DeclaredType
                 if (type.isCustomJavaBean()) {
                     AutoFillStruct(idx, null, type)
                 } else {
@@ -50,7 +50,7 @@ class AutoFillStruct private constructor(
             }
         }
 
-        fun validation(method: MethodModel) {
+        fun validation(method: MethodHandler) {
             findAutoFillParameter(method)?.apply {
                 type.asElement().enclosedElements.forEach { element ->
                     if (element is VariableElement && element.getAnnotation(AutoFill::class.java) != null && !element.hasSetter()) {
@@ -60,7 +60,7 @@ class AutoFillStruct private constructor(
             }
         }
 
-        operator fun invoke(method: MethodModel): AutoFillStruct? {
+        operator fun invoke(method: MethodHandler): AutoFillStruct? {
             return findAutoFillParameter(method)?.takeIf { it.dbAutoFillProperties.isNotEmpty() }
         }
     }

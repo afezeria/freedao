@@ -53,7 +53,7 @@ class MainProcessor : AbstractProcessor() {
     private fun processElement(element: Element) {
         try {
             runCatchingHandlerExceptionOrThrow(element) {
-                DaoModel(element as TypeElement).render()
+                DaoHandler(element as TypeElement).render()
             }
         } catch (e: Exception) {
             val stringWriter = StringWriter()

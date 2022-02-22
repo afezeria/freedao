@@ -24,7 +24,8 @@ public interface QueryWithOverrideParameterMappingDao {
                             source = "uid",
                             target = "id"
                     )
-            }
+            },
+            onlyCustomMapping = true
     )
     List<PersonWithRequiredId> query();
 }

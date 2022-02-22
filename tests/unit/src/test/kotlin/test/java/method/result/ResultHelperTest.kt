@@ -3,8 +3,8 @@ package test.java.method.result
 import org.junit.Test
 import test.BaseTest
 import test.Person
+import test.StringResultTypeHandler
 import test.errorMessages
-import test.java.StringResultTypeHandler
 import java.util.*
 import kotlin.test.assertContentEquals
 
@@ -247,7 +247,7 @@ class ResultHelperTest : BaseTest() {
     fun `error, result type handler and property type do not match`() {
         compileFailure<TypeHandlerNotMatchFieldBadDao> {
             assert(
-                errorMessages.contains("${StringResultTypeHandler::class.qualifiedName} does not match field:[id:java.lang.Long]")
+                errorMessages.contains("${StringResultTypeHandler::class.qualifiedName} cannot handle id:java.lang.Long field")
             )
         }
     }
@@ -256,7 +256,7 @@ class ResultHelperTest : BaseTest() {
     fun `error, result type handler and list item type do not match`() {
         compileFailure<TypeHandlerNotMatchListItemTypeBadDao> {
             assert(
-                errorMessages.contains("${StringResultTypeHandler::class.qualifiedName} does not match type:java.lang.Long")
+                errorMessages.contains("${StringResultTypeHandler::class.qualifiedName} does not match java.lang.Long type")
             )
         }
     }
@@ -264,7 +264,7 @@ class ResultHelperTest : BaseTest() {
     fun `error, result type handler and map value type not match`() {
         compileFailure<TypeHandlerNotMatchMapValueTypeBadDao> {
             assert(
-                errorMessages.contains("${StringResultTypeHandler::class.qualifiedName} does not match type:java.lang.Long")
+                errorMessages.contains("${StringResultTypeHandler::class.qualifiedName} does not match java.lang.Long type")
             )
         }
     }

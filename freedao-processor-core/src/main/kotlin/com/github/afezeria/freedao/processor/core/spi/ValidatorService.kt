@@ -1,7 +1,7 @@
 package com.github.afezeria.freedao.processor.core.spi
 
-import com.github.afezeria.freedao.processor.core.DaoModel
-import com.github.afezeria.freedao.processor.core.method.MethodModel
+import com.github.afezeria.freedao.processor.core.DaoHandler
+import com.github.afezeria.freedao.processor.core.method.MethodHandler
 
 /**
  * provide implementation specific validation rules
@@ -9,6 +9,6 @@ import com.github.afezeria.freedao.processor.core.method.MethodModel
  * @author afezeria
  */
 interface ValidatorService {
-    fun validation(daoModel: DaoModel) {}
-    fun validation(methodModel: MethodModel) {}
+    fun validation(daoHandler: DaoHandler) {}
+    fun validation(methodHandler: MethodHandler) {}
 }

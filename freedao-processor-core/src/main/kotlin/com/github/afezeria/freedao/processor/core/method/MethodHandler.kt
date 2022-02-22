@@ -20,9 +20,9 @@ import javax.lang.model.type.TypeMirror
 /**
  *
  */
-abstract class MethodModel protected constructor(
+abstract class MethodHandler protected constructor(
     val element: ExecutableElement,
-    val daoModel: DaoModel,
+    val daoHandler: DaoHandler,
 ) {
     val name: String = element.simpleName.toString()
 
@@ -37,11 +37,9 @@ abstract class MethodModel protected constructor(
             Parameter(
                 index,
                 variableElement.simpleName.toString(),
-                ObjectModel(
-                    variableElement.asType().parameterized(
-                        daoModel.element.asType() as DeclaredType,
-                        element.enclosingElement.asType().erasure() as DeclaredType
-                    )
+                variableElement.asType().parameterized(
+                    daoHandler.element.asType() as DeclaredType,
+                    element.enclosingElement.asType().erasure() as DeclaredType
                 ),
                 variableElement,
             )
@@ -49,7 +47,7 @@ abstract class MethodModel protected constructor(
     var returnUpdateCount = false
     lateinit var statementType: StatementType
 
-    var resultHelper: ResultHelper = ResultHelper(daoModel, element)
+    var resultHelper: ResultHelper = ResultHelper(daoHandler, element)
 
     lateinit var sqlBuildCodeBlock: CodeBlock
     lateinit var builder: MethodSpec.Builder
@@ -82,9 +80,9 @@ abstract class MethodModel protected constructor(
             returns(resultHelper.returnType.typeName)
             parameters.clear()
             addParameters(
-                this@MethodModel.parameters.map {
+                this@MethodHandler.parameters.map {
                     ParameterSpec.builder(
-                        it.model.typeMirror.typeName,
+                        it.type.typeName,
                         it.name,
                         *it.variableElement.modifiers.toTypedArray()
                     ).addAnnotations(
@@ -120,7 +118,7 @@ abstract class MethodModel protected constructor(
         if (name == null) {
             when (
                 parameters.filter {
-                    typeUtils.isAssignable(it.model.typeMirror, typeMirror)
+                    typeUtils.isAssignable(it.type, typeMirror)
                 }.size
             ) {
                 0 -> throw HandlerException("Missing parameter of type ${typeMirror.typeName}")
@@ -130,9 +128,9 @@ abstract class MethodModel protected constructor(
                     throw HandlerException("Duplicate ${typeMirror.typeName} type parameter")
             }
         } else {
-            if (parameters.none { it.name == name && typeUtils.isAssignable(it.model.typeMirror, typeMirror) }) {
+            if (parameters.none { it.name == name && typeUtils.isAssignable(it.type, typeMirror) }) {
                 val parameterDeclare =
-                    if (daoModel.isJavaCode) "${typeMirror.typeName} $name"
+                    if (daoHandler.isJavaCode) "${typeMirror.typeName} $name"
                     else "$name: ${typeMirror.typeName}"
                 throw HandlerException("missing parameter [$parameterDeclare]")
             }
@@ -165,12 +163,12 @@ abstract class MethodModel protected constructor(
             ).sortedBy { it.order() }
         }
 
-        operator fun invoke(element: ExecutableElement, daoModel: DaoModel): MethodModel {
-            return XmlTemplateMethod(element, daoModel)
-                ?: AnnotationStyleMethod(element, daoModel)
-                ?: CrudMethod(element, daoModel)
-                ?: NamedMethod(element, daoModel)
-                ?: methodFactories.firstNotNullOfOrNull { it.create(element, daoModel) }
+        operator fun invoke(element: ExecutableElement, daoHandler: DaoHandler): MethodHandler {
+            return XmlTemplateMethod(element, daoHandler)
+                ?: AnnotationStyleMethod(element, daoHandler)
+                ?: CrudMethod(element, daoHandler)
+                ?: NamedMethod(element, daoHandler)
+                ?: methodFactories.firstNotNullOfOrNull { it.create(element, daoHandler) }
                 ?: throw HandlerException("Invalid method declare")
         }
     }

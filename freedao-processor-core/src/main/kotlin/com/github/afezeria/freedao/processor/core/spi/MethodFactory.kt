@@ -1,7 +1,7 @@
 package com.github.afezeria.freedao.processor.core.spi
 
-import com.github.afezeria.freedao.processor.core.DaoModel
-import com.github.afezeria.freedao.processor.core.method.MethodModel
+import com.github.afezeria.freedao.processor.core.DaoHandler
+import com.github.afezeria.freedao.processor.core.method.MethodHandler
 import javax.lang.model.element.ExecutableElement
 
 /**
@@ -12,6 +12,6 @@ interface MethodFactory {
     fun order(): Int
     fun create(
         element: ExecutableElement,
-        daoModel: DaoModel,
-    ): MethodModel?
+        daoHandler: DaoHandler,
+    ): MethodHandler?
 }

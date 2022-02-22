@@ -5,7 +5,7 @@ import com.github.afezeria.freedao.annotation.Mapping;
 import com.github.afezeria.freedao.annotation.ResultMappings;
 import com.github.afezeria.freedao.annotation.XmlTemplate;
 import test.Person;
-import test.java.StringResultTypeHandler;
+import test.StringResultTypeHandler;
 
 import java.util.List;
 

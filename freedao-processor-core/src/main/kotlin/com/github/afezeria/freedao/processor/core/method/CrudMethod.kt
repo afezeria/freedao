@@ -6,13 +6,13 @@ import com.github.afezeria.freedao.processor.core.*
 import javax.lang.model.element.ExecutableElement
 
 
-abstract class CrudMethod private constructor(element: ExecutableElement, daoModel: DaoModel) :
-    MethodModel(element, daoModel) {
+abstract class CrudMethod private constructor(element: ExecutableElement, daoHandler: DaoHandler) :
+    MethodHandler(element, daoHandler) {
 
     val crudEntity: EntityObjectModel
 
     init {
-        crudEntity = daoModel.crudEntity
+        crudEntity = daoHandler.crudEntity
             ?: throw HandlerException("Method $name requires Dao.crudEntity to be specified")
 
     }
@@ -21,22 +21,22 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoMod
     companion object {
         operator fun invoke(
             element: ExecutableElement,
-            daoModel: DaoModel,
+            daoHandler: DaoHandler,
         ): CrudMethod? {
             return when (element.simpleName.toString()) {
-                "count" -> Count(element, daoModel)
-                "delete" -> Delete(element, daoModel)
-                "insert" -> Insert(element, daoModel)
-                "insertSelective" -> InsertSelective(element, daoModel)
-                "update" -> Update(element, daoModel)
-                "updateSelective" -> UpdateSelective(element, daoModel)
-                "all" -> All(element, daoModel)
+                "count" -> Count(element, daoHandler)
+                "delete" -> Delete(element, daoHandler)
+                "insert" -> Insert(element, daoHandler)
+                "insertSelective" -> InsertSelective(element, daoHandler)
+                "update" -> Update(element, daoHandler)
+                "updateSelective" -> UpdateSelective(element, daoHandler)
+                "all" -> All(element, daoHandler)
                 else -> null
             }
         }
     }
 
-    class Count(element: ExecutableElement, daoModel: DaoModel) : CrudMethod(element, daoModel) {
+    class Count(element: ExecutableElement, daoHandler: DaoHandler) : CrudMethod(element, daoHandler) {
         init {
             if (!resultHelper.returnType.isSameType(Int::class)
                 && !resultHelper.returnType.isSameType(Long::class)
@@ -66,8 +66,8 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoMod
         }
     }
 
-    class Delete(element: ExecutableElement, daoModel: DaoModel) :
-        CrudMethod(element, daoModel) {
+    class Delete(element: ExecutableElement, daoHandler: DaoHandler) :
+        CrudMethod(element, daoHandler) {
         init {
             returnUpdateCount = true
             if (crudEntity.primaryKey.isEmpty()) {
@@ -92,8 +92,8 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoMod
 
     }
 
-    open class Insert(element: ExecutableElement, daoModel: DaoModel) :
-        CrudMethod(element, daoModel) {
+    open class Insert(element: ExecutableElement, daoHandler: DaoHandler) :
+        CrudMethod(element, daoHandler) {
         val insertProperties: List<BeanProperty>
 
         init {
@@ -107,7 +107,7 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoMod
         }
 
         override fun getTemplate(): String {
-            val parameterName = parameters.find { it.model.typeMirror.isSameType(crudEntity.type) }!!.name
+            val parameterName = parameters.find { it.type.isSameType(crudEntity.type) }!!.name
 
             //language=xml
             return """
@@ -120,8 +120,8 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoMod
 
     }
 
-    class InsertSelective(element: ExecutableElement, daoModel: DaoModel) :
-        Insert(element, daoModel) {
+    class InsertSelective(element: ExecutableElement, daoHandler: DaoHandler) :
+        Insert(element, daoHandler) {
 
         override fun getTemplate(): String {
             val parameterName = element.parameters[0].simpleName.toString()
@@ -153,8 +153,8 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoMod
         }
     }
 
-    open class Update(element: ExecutableElement, daoModel: DaoModel) :
-        CrudMethod(element, daoModel) {
+    open class Update(element: ExecutableElement, daoHandler: DaoHandler) :
+        CrudMethod(element, daoHandler) {
 
         val updateProperties: List<BeanProperty>
 
@@ -196,8 +196,8 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoMod
         }
     }
 
-    class UpdateSelective(element: ExecutableElement, daoModel: DaoModel) :
-        Update(element, daoModel) {
+    class UpdateSelective(element: ExecutableElement, daoHandler: DaoHandler) :
+        Update(element, daoHandler) {
 
         override fun getTemplate(): String {
             val parameterName = element.parameters[0].simpleName.toString()
@@ -223,8 +223,8 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoMod
         }
     }
 
-    class All(element: ExecutableElement, daoModel: DaoModel) :
-        CrudMethod(element, daoModel) {
+    class All(element: ExecutableElement, daoHandler: DaoHandler) :
+        CrudMethod(element, daoHandler) {
 
         init {
             if (

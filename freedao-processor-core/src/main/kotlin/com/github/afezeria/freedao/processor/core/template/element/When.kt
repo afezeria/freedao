@@ -7,7 +7,7 @@ class When : XmlElement() {
 
     override fun render() {
         if (parent !is Choose) {
-            throw RuntimeException("The parent node of the when node must be a choose node")
+            throwWithPosition("The parent node of the when node must be a choose node")
         }
         val chooseFlag = (parent as Choose).flagName
         context.currentScope {

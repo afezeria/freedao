@@ -1,5 +1,6 @@
 package com.github.afezeria.freedao.processor.core
 
+import com.github.afezeria.freedao.ResultTypeHandler
 import com.squareup.javapoet.TypeName
 import java.io.PrintWriter
 import java.io.StringWriter
@@ -45,9 +46,12 @@ fun TypeMirror.boxed(): TypeMirror = if (this is PrimitiveType) {
  * @receiver DeclaredType
  * @param name String 属性名称
  */
-fun DeclaredType.getBeanPropertyType(name: String): TypeMirror {
+fun DeclaredType.getBeanPropertyType(
+    name: String,
+    errorMsg: () -> String = { "missing property:${this}.$name" },
+): TypeMirror {
     return asElement().enclosedElements.find { it.simpleName.toString() == name && it.hasGetter() }?.asType()
-        ?: throw RuntimeException("bean property '$name' not found")
+        ?: throw HandlerException(errorMsg())
 }
 
 val DeclaredType.simpleName: String
@@ -63,25 +67,6 @@ fun <T : Annotation> T.mirroredType(block: T.() -> Unit): DeclaredType {
     } catch (e: MirroredTypeException) {
         return e.typeMirror as DeclaredType
     }
-}
-
-fun DeclaredType.findMethod(name: String, vararg parameters: TypeMirror): ExecutableElement? {
-    return asElement().enclosedElements
-        .find {
-            it is ExecutableElement && it.kind == ElementKind.METHOD && it.simpleName.toString() == name
-                    && it.parameters.mapIndexed { i, e -> e.asType().isSameType(parameters[i]) }.all { it }
-        } as ExecutableElement?
-}
-
-fun DeclaredType.findField(name: String? = null, type: TypeMirror? = null): VariableElement? {
-    if (name == null && type == null) {
-        throw IllegalArgumentException("At least one of name and type cannot be null")
-    }
-    return asElement().enclosedElements
-        .find {
-            it is VariableElement && it.kind == ElementKind.FIELD && (name == null || name == it.simpleName.toString()) && (type == null || type.isSameType(
-                it.asType()))
-        } as VariableElement?
 }
 
 fun Name.getterName(): String = "get" + toString().replaceFirstChar { it.uppercaseChar() }
@@ -126,10 +111,6 @@ fun KClass<*>.type(vararg typeArgs: TypeMirror): DeclaredType {
     return typeUtils.getDeclaredType(element,
         *typeArgs.map { if (it is PrimitiveType) it.boxed() else it }.toTypedArray()
     )
-}
-
-fun DeclaredType.withTypeArgs(vararg typeArgs: TypeMirror): DeclaredType {
-    return typeUtils.getDeclaredType(typeUtils.asElement(this) as TypeElement, *typeArgs)
 }
 
 var quoteCharacter = '"'
@@ -206,7 +187,7 @@ private fun DeclaredType.findTypeArgumentHelper(
                             }
                     }
                     else -> {
-                        throw UnreachableException()
+                        throw IllegalStateException()
                     }
                 }
             }
@@ -216,7 +197,7 @@ private fun DeclaredType.findTypeArgumentHelper(
             }
         }
     }
-    throw UnreachableException()
+    throw IllegalStateException()
 }
 
 /**
@@ -318,4 +299,32 @@ fun <R> runCatchingHandlerExceptionOrThrow(element: Element, block: () -> R): R?
         }
     }
     return null
+}
+
+/**
+ * 检查[handlerType]是否是一个合法的ResultTypeHandler，以及该handler是否和receiver的类型匹配
+ * @receiver TypeMirror
+ * @param handlerType DeclaredType
+ * @param typeNotMatchMsg Function0<String> 类型不匹配时抛出的异常的错误信息
+ */
+fun TypeMirror.matchResultTypeHandler(
+    handlerType: DeclaredType,
+    typeNotMatchMsg: () -> String ={"$handlerType does not match $this type"},
+) {
+    if (handlerType.isSameType(ResultTypeHandler::class)){
+        return
+    }
+    val handlerElement = handlerType.asElement().enclosedElements
+        .find {
+            it is ExecutableElement
+                    && it.kind == ElementKind.METHOD
+                    && it.simpleName.toString() == "handle"
+                    && it.parameters.size == 1
+                    && it.parameters[0].asType().isSameType(Any::class)
+                    && it.modifiers.containsAll(listOf(Modifier.PUBLIC, Modifier.STATIC))
+        } as ExecutableElement?
+        ?: throw HandlerException("Invalid ResultTypeHandler:${handlerType}, missing method:handle(Object.class)")
+    if (!handlerElement.returnType.isAssignable(this)) {
+        throw HandlerException(typeNotMatchMsg())
+    }
 }

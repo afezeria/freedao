@@ -1,5 +1,6 @@
 package com.github.afezeria.freedao.processor.core.template
 
+import com.github.afezeria.freedao.processor.core.HandlerException
 import com.github.afezeria.freedao.processor.core.antlr.TestExprBaseVisitor
 import com.github.afezeria.freedao.processor.core.antlr.TestExprLexer
 import com.github.afezeria.freedao.processor.core.antlr.TestExprParser
@@ -7,7 +8,6 @@ import com.github.afezeria.freedao.processor.core.isAssignable
 import com.github.afezeria.freedao.processor.core.isSameType
 import com.github.afezeria.freedao.processor.core.type
 import org.antlr.v4.runtime.*
-import org.antlr.v4.runtime.misc.ParseCancellationException
 import org.antlr.v4.runtime.tree.ParseTree
 import java.util.*
 
@@ -21,33 +21,40 @@ class TestExprHandler(val context: TemplateHandler, val test: String) : TestExpr
     private val parameters = mutableListOf<Any>()
 
     fun handle(): String {
+        val listener = object : BaseErrorListener() {
+            override fun syntaxError(
+                recognizer: Recognizer<*, *>?,
+                offendingSymbol: Any?,
+                line: Int,
+                charPositionInLine: Int,
+                msg: String?,
+                e: RecognitionException?,
+            ) {
+                throwWithExpr("$line:$charPositionInLine $msg")
+            }
+        }
+
         val input = CharStreams.fromString(test)
         val lexer = TestExprLexer(input).apply {
             removeErrorListeners()
-            addErrorListener(
-                object : BaseErrorListener() {
-                    override fun syntaxError(
-                        recognizer: Recognizer<*, *>?,
-                        offendingSymbol: Any?,
-                        line: Int,
-                        charPositionInLine: Int,
-                        msg: String?,
-                        e: RecognitionException?,
-                    ) {
-                        throw ParseCancellationException("expr:[$test] $line:$charPositionInLine $msg")
-                    }
-                }
-            )
-
+            addErrorListener(listener)
         }
         val tokens = CommonTokenStream(lexer)
-        val parser = TestExprParser(tokens)
+        val parser = TestExprParser(tokens).apply {
+            removeErrorListeners()
+            addErrorListener(listener)
+        }
+
         val tree: ParseTree = parser.stat()
         this.visit(tree)
         context.currentScope {
             addStatement("$condFlag = $builder", *parameters.toTypedArray())
         }
         return condFlag
+    }
+
+    fun throwWithExpr(msg: String): Nothing {
+        throw HandlerException("[$test] $msg")
     }
 
     override fun visitExpr(ctx: TestExprParser.ExprContext) {
@@ -128,15 +135,15 @@ class TestExprHandler(val context: TemplateHandler, val test: String) : TestExpr
                 val (leftText, leftType) = context.createInvokeChain(ctx.INVOKE_CHAIN(0).text)
                 val (rightText, rightType) = context.createInvokeChain(ctx.INVOKE_CHAIN(1).text)
                 if (!leftType.isSameType(Any::class) && !leftType.isAssignable(Comparable::class)) {
-                    throw RuntimeException("${ctx.INVOKE_CHAIN(0).text} is not comparable")
+                    throwWithExpr("${ctx.INVOKE_CHAIN(0).text} is not comparable")
                 }
                 if (!rightType.isSameType(Any::class) && !rightType.isAssignable(Comparable::class)) {
-                    throw RuntimeException("${ctx.INVOKE_CHAIN(1).text} is not comparable")
+                    throwWithExpr("${ctx.INVOKE_CHAIN(1).text} is not comparable")
                 }
                 if (!leftType.isSameType(Any::class) && !rightType.isSameType(Any::class) && !leftType.isSameType(
                         rightType)
                 ) {
-                    throw RuntimeException("Unable to compare ${ctx.INVOKE_CHAIN(0)}:${leftType} and ${
+                    throwWithExpr("Unable to compare ${ctx.INVOKE_CHAIN(0)}:${leftType} and ${
                         ctx.INVOKE_CHAIN(1)
                     }:${rightType}")
                 }
@@ -146,9 +153,9 @@ class TestExprHandler(val context: TemplateHandler, val test: String) : TestExpr
         }
     }
 
-    fun logicalOp(string: String) = when (string) {
+    private fun logicalOp(string: String) = when (string) {
         "and" -> "&&"
         "or" -> "||"
-        else -> throw IllegalArgumentException()
+        else -> throw IllegalStateException("unreachable")
     }
 }

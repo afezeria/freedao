@@ -1,13 +1,13 @@
 package com.github.afezeria.freedao.processor.core.method
 
 import com.github.afezeria.freedao.annotation.XmlTemplate
-import com.github.afezeria.freedao.processor.core.DaoModel
+import com.github.afezeria.freedao.processor.core.DaoHandler
 import com.github.afezeria.freedao.processor.core.HandlerException
 import javax.lang.model.element.ExecutableElement
 
 class XmlTemplateMethod private constructor(
-    element: ExecutableElement, daoModel: DaoModel,
-) : MethodModel(element, daoModel) {
+    element: ExecutableElement, daoHandler: DaoHandler,
+) : MethodHandler(element, daoHandler) {
 
     init {
         if (element.getAnnotation(XmlTemplate::class.java).value.isBlank()) {
@@ -20,9 +20,9 @@ class XmlTemplateMethod private constructor(
     }
 
     companion object {
-        operator fun invoke(element: ExecutableElement, daoModel: DaoModel): XmlTemplateMethod? {
+        operator fun invoke(element: ExecutableElement, daoHandler: DaoHandler): XmlTemplateMethod? {
             return if (element.getAnnotation(XmlTemplate::class.java) != null) {
-                XmlTemplateMethod(element, daoModel)
+                XmlTemplateMethod(element, daoHandler)
             } else {
                 null
             }

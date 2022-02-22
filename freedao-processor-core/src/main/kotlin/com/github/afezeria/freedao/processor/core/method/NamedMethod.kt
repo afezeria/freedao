@@ -11,8 +11,8 @@ import javax.lang.model.type.TypeMirror
 import kotlin.reflect.full.primaryConstructor
 
 abstract class NamedMethod private constructor(
-    element: ExecutableElement, daoModel: DaoModel,
-) : MethodModel(element, daoModel) {
+    element: ExecutableElement, daoHandler: DaoHandler,
+) : MethodHandler(element, daoHandler) {
 
     var crudEntity: EntityObjectModel
     var dbProperties: List<BeanProperty>
@@ -35,7 +35,7 @@ abstract class NamedMethod private constructor(
     var parameterLastMatchIndex = 0
 
     init {
-        crudEntity = daoModel.crudEntity
+        crudEntity = daoHandler.crudEntity
             ?: throw HandlerException("Method $name requires Dao.crudEntity to be specified")
         dbProperties = crudEntity.properties.filter { it.column.exist }
         propertyMap = crudEntity.properties.filter { it.column.exist }.associateBy { it.name }
@@ -178,7 +178,7 @@ abstract class NamedMethod private constructor(
     }
 
     protected fun buildOrderClause(): String {
-        return orderColumns.joinToString() { (prop, enum) ->
+        return orderColumns.joinToString { (prop, enum) ->
             "${prop.column.name.sqlQuote()} ${enum.name.lowercase()}"
         }.takeIf { it.isNotBlank() }?.let { "order by $it" } ?: ""
     }
@@ -306,14 +306,14 @@ abstract class NamedMethod private constructor(
         }
 
 
-        operator fun invoke(element: ExecutableElement, daoModel: DaoModel): NamedMethod? {
+        operator fun invoke(element: ExecutableElement, daoHandler: DaoHandler): NamedMethod? {
             val name = element.simpleName.toString()
             return name.run {
                 when {
-                    startsWith("queryBy") || startsWith("findBy") -> Query(element, daoModel)
-                    startsWith("queryOneBy") || startsWith("findOneBy") -> QueryOne(element, daoModel)
-                    startsWith("countBy") -> Count(element, daoModel)
-                    startsWith("deleteBy") -> Delete(element, daoModel)
+                    startsWith("queryBy") || startsWith("findBy") -> Query(element, daoHandler)
+                    startsWith("queryOneBy") || startsWith("findOneBy") -> QueryOne(element, daoHandler)
+                    startsWith("countBy") -> Count(element, daoHandler)
+                    startsWith("deleteBy") -> Delete(element, daoHandler)
                     else -> null
                 }
             }
@@ -321,7 +321,7 @@ abstract class NamedMethod private constructor(
 
     }
 
-    open class Query(element: ExecutableElement, daoModel: DaoModel) : NamedMethod(element, daoModel) {
+    open class Query(element: ExecutableElement, daoHandler: DaoHandler) : NamedMethod(element, daoHandler) {
         init {
             val returnType = resultHelper.returnType
             if (!returnType.erasure().isAssignable(Collection::class)) {
@@ -343,7 +343,7 @@ abstract class NamedMethod private constructor(
         }
     }
 
-    open class QueryOne(element: ExecutableElement, daoModel: DaoModel) : NamedMethod(element, daoModel) {
+    open class QueryOne(element: ExecutableElement, daoHandler: DaoHandler) : NamedMethod(element, daoHandler) {
         init {
             if (!crudEntity.type.isSameType(resultHelper.returnType)) {
                 throw HandlerException("The return type of method must be ${crudEntity.type}")
@@ -360,7 +360,7 @@ abstract class NamedMethod private constructor(
         }
     }
 
-    class Delete(element: ExecutableElement, daoModel: DaoModel) : NamedMethod(element, daoModel) {
+    class Delete(element: ExecutableElement, daoHandler: DaoHandler) : NamedMethod(element, daoHandler) {
         init {
             returnUpdateCount = true
         }
@@ -376,7 +376,7 @@ abstract class NamedMethod private constructor(
         }
     }
 
-    class Count(element: ExecutableElement, daoModel: DaoModel) : NamedMethod(element, daoModel) {
+    class Count(element: ExecutableElement, daoHandler: DaoHandler) : NamedMethod(element, daoHandler) {
         init {
             resultHelper.returnType.apply {
                 if (!isSameType(Long::class.type) && !isSameType(Int::class.type)) {
