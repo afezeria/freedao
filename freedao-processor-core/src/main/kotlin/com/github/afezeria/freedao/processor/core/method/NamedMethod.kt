@@ -305,15 +305,19 @@ abstract class NamedMethod private constructor(
             Asc, Desc
         }
 
+        val queryPrefix = "(select|query|find)By[A-Za-z0-9]+".toRegex()
+        val queryOnePrefix = "(select|query|find)OneBy[A-Za-z0-9]+".toRegex()
+        val countPrefix = "countBy[A-Za-z0-9]+".toRegex()
+        val deletePrefix = "(delete|remove)By[A-Za-z0-9]+".toRegex()
 
         operator fun invoke(element: ExecutableElement, daoHandler: DaoHandler): NamedMethod? {
             val name = element.simpleName.toString()
             return name.run {
                 when {
-                    startsWith("queryBy") || startsWith("findBy") -> Query(element, daoHandler)
-                    startsWith("queryOneBy") || startsWith("findOneBy") -> QueryOne(element, daoHandler)
-                    startsWith("countBy") -> Count(element, daoHandler)
-                    startsWith("deleteBy") -> Delete(element, daoHandler)
+                    matches(queryPrefix) -> Query(element, daoHandler)
+                    matches(queryOnePrefix) -> QueryOne(element, daoHandler)
+                    matches(countPrefix) -> Count(element, daoHandler)
+                    matches(deletePrefix) -> Delete(element, daoHandler)
                     else -> null
                 }
             }
