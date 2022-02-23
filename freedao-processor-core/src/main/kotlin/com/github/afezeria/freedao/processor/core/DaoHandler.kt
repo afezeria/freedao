@@ -46,14 +46,7 @@ class DaoHandler(val element: TypeElement) {
             element.getAnnotation(Dao::class.java)
                 .mirroredType { crudEntity }
                 .takeIf { !it.isSameType(Any::class) }
-                ?.let { ObjectModel(it) }
-                ?.let {
-                    if (it !is EntityObjectModel) {
-                        throw HandlerException("The value of Dao.crudEntity must be annotated with table")
-                    } else {
-                        it
-                    }
-                }
+                ?.let { EntityObjectModel(it) }
     }
 
     fun render() {

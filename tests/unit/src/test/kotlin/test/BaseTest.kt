@@ -113,6 +113,11 @@ abstract class BaseTest {
         }
     }
 
+    fun Compilation.assertErrorMessageEquals(msg: String) {
+        assert(errorMessages.size == 1)
+        assert(errorMessages[0] == msg)
+    }
+
 
     fun compileJava(path: Path): Compilation {
         val javaFileObject = JavaFileObjects.forResource(path.normalize().toAbsolutePath().toUri().toURL())

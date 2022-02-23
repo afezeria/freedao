@@ -10,6 +10,8 @@ import javax.lang.model.type.*
 import javax.lang.model.util.Elements
 import javax.lang.model.util.Types
 import javax.tools.Diagnostic
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.contract
 import kotlin.reflect.KClass
 
 /**
@@ -32,7 +34,7 @@ fun TypeMirror.isSameType(other: KClass<*>) = typeUtils.isSameType(this, other.t
 fun TypeMirror.isSubtype(other: KClass<*>) = typeUtils.isSubtype(this, other.type)
 fun TypeMirror.isAssignable(other: KClass<*>) = typeUtils.isAssignable(this, other.type)
 
-fun TypeMirror.erasure() = typeUtils.erasure(this)
+fun TypeMirror.erasure(): TypeMirror = typeUtils.erasure(this)
 
 fun TypeMirror.unboxed(): PrimitiveType = typeUtils.unboxedType(this)
 fun TypeMirror.boxed(): TypeMirror = if (this is PrimitiveType) {
@@ -59,13 +61,13 @@ val DeclaredType.simpleName: String
         return asElement().simpleName.toString()
     }
 
-fun <T : Annotation> T.mirroredType(block: T.() -> Unit): DeclaredType {
+fun <T : Annotation> T.mirroredType(block: T.() -> Unit): TypeMirror {
     try {
         block()
         //unreachable
         throw IllegalStateException()
     } catch (e: MirroredTypeException) {
-        return e.typeMirror as DeclaredType
+        return e.typeMirror
     }
 }
 
@@ -242,17 +244,21 @@ fun TypeMirror.parameterized(type: DeclaredType, enclosingElementType: DeclaredT
 }
 
 
+@OptIn(ExperimentalContracts::class)
 fun TypeMirror.isCustomJavaBean(): Boolean {
+    contract {
+        returns(true) implies (this@isCustomJavaBean is DeclaredType)
+    }
     if (this !is DeclaredType) {
         return false
     }
 
-    if (simpleName.startsWith("java")) {
+    if (toString().startsWith("java")) {
         return false
     }
-    if (this.isSameType(Any::class)) {
-        return false
-    }
+//    if (this.isSameType(Any::class)) {
+//        return false
+//    }
     if (this.isAssignable(Collection::class)) {
         return false
     }
@@ -301,20 +307,28 @@ fun <R> runCatchingHandlerExceptionOrThrow(element: Element, block: () -> R): R?
     return null
 }
 
+
 /**
- * 检查[handlerType]是否是一个合法的ResultTypeHandler，以及该handler是否和receiver的类型匹配
+ * 检查 this 是否是一个合法的ResultTypeHandler，以及该handler是否能够匹配[type]类型的返回值
  * @receiver TypeMirror
  * @param handlerType DeclaredType
  * @param typeNotMatchMsg Function0<String> 类型不匹配时抛出的异常的错误信息
  */
-fun TypeMirror.matchResultTypeHandler(
-    handlerType: DeclaredType,
-    typeNotMatchMsg: () -> String ={"$handlerType does not match $this type"},
-) {
-    if (handlerType.isSameType(ResultTypeHandler::class)){
-        return
+@OptIn(ExperimentalContracts::class)
+fun TypeMirror.isResultTypeHandlerAndMatchType(
+    type: TypeMirror,
+    typeNotMatchMsg: TypeMirror.() -> String = { "$this does not match $type type" },
+): DeclaredType {
+    contract {
+        returns() implies (this@isResultTypeHandlerAndMatchType is DeclaredType)
     }
-    val handlerElement = handlerType.asElement().enclosedElements
+    if (this !is DeclaredType) {
+        throw HandlerException("ResultTypeHandler must be Object")
+    }
+    if (this.isSameType(ResultTypeHandler::class)) {
+        return this
+    }
+    val handlerElement = this.asElement().enclosedElements
         .find {
             it is ExecutableElement
                     && it.kind == ElementKind.METHOD
@@ -323,8 +337,9 @@ fun TypeMirror.matchResultTypeHandler(
                     && it.parameters[0].asType().isSameType(Any::class)
                     && it.modifiers.containsAll(listOf(Modifier.PUBLIC, Modifier.STATIC))
         } as ExecutableElement?
-        ?: throw HandlerException("Invalid ResultTypeHandler:${handlerType}, missing method:handle(Object.class)")
-    if (!handlerElement.returnType.isAssignable(this)) {
+        ?: throw HandlerException("Invalid ResultTypeHandler:${this}, missing method:handle(Object.class)")
+    if (!handlerElement.returnType.isAssignable(type)) {
         throw HandlerException(typeNotMatchMsg())
     }
+    return this
 }

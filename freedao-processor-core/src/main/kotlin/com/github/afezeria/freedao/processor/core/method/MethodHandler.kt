@@ -48,6 +48,7 @@ abstract class MethodHandler protected constructor(
     lateinit var statementType: StatementType
 
     var resultHelper: ResultHelper = ResultHelper(daoHandler, element)
+    val mappings = ResultMappingsAnn.getMappings(this)
 
     lateinit var sqlBuildCodeBlock: CodeBlock
     lateinit var builder: MethodSpec.Builder

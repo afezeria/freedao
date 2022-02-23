@@ -43,7 +43,7 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
             ) {
                 throw HandlerException("The return type of count method must be Integer or Long")
             }
-            resultHelper.mappings +=
+            mappings +=
                 MappingData(source = "_cot",
                     target = "",
                     typeHandler = if (resultHelper.returnType.isSameType(Int::class)) {
@@ -98,7 +98,7 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
 
         init {
             returnUpdateCount = true
-            requireParameter(crudEntity.typeMirror)
+            requireParameter(crudEntity.type)
             insertProperties = crudEntity.properties
                 .filter { it.column.run { exist && insert } }
             if (insertProperties.isEmpty()) {
@@ -160,7 +160,7 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
 
         init {
             returnUpdateCount = true
-            requireParameter(crudEntity.typeMirror)
+            requireParameter(crudEntity.type)
             if (crudEntity.primaryKey.isEmpty()) {
                 throw HandlerException(
                     "The update method requires that the class specified by Dao.crudEntity must have primary key",
@@ -240,7 +240,7 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
             //language=xml
             return """
                 <select>
-                select ${resultHelper.mappings.joinToString { it.source }} from ${crudEntity.dbFullyQualifiedName}
+                select ${mappings.joinToString { it.source }} from ${crudEntity.dbFullyQualifiedName}
                 </select>
             """.trimIndent()
         }

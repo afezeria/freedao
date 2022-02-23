@@ -2,6 +2,11 @@ package com.github.afezeria.freedao.processor.core
 
 import com.github.afezeria.freedao.ResultTypeHandler
 import com.github.afezeria.freedao.annotation.Column
+import com.github.afezeria.freedao.annotation.ResultMappings
+import com.github.afezeria.freedao.processor.core.method.MethodHandler
+import javax.lang.model.element.ElementKind
+import javax.lang.model.element.ExecutableElement
+import javax.lang.model.element.Modifier
 import javax.lang.model.element.VariableElement
 import javax.lang.model.type.DeclaredType
 
@@ -23,12 +28,112 @@ class ColumnAnn(element: VariableElement) {
             exist = it?.exist ?: true
             insert = it?.insert ?: true
             update = it?.update ?: true
-            resultTypeHandle = it?.mirroredType { resultTypeHandle } ?: ResultTypeHandler::class.type
+            resultTypeHandle =
+                it?.mirroredType { resultTypeHandle }
+                    ?.isResultTypeHandlerAndMatchType(element.asType()) {
+                        "$this cannot handle field ${element.simpleName}:${element.asType()}"
+                    } ?: ResultTypeHandler::class.type
         }
-        //检查结果处理器和字段是否匹配
-        element.asType().matchResultTypeHandler(resultTypeHandle) {
-            "$resultTypeHandle cannot handle field ${element.simpleName}:${element.asType()}"
+    }
+}
+
+object ResultMappingsAnn {
+    fun getMappings(methodHandler: MethodHandler): MutableList<MappingData> {
+        val resultMappings = methodHandler.element.getAnnotation(ResultMappings::class.java)?.apply {
+            if (onlyCustomMapping && value.isEmpty()) {
+                throw HandlerException("Invalid result mapping, value cannot be empty when onlyCustomMapping is true")
+            }
         }
+        val itemType = methodHandler.resultHelper.itemType
+        var mappings: MutableList<MappingData> = mutableListOf()
+        when {
+            itemType.isCustomJavaBean() -> {
+                val model = EntityObjectModel(itemType)
+                //映射结果为java bean
+                //处理构造器参数映射
+                val constructor = (
+                        itemType.asElement().enclosedElements.filter {
+                            it is ExecutableElement && it.kind == ElementKind.CONSTRUCTOR && it.modifiers.contains(
+                                Modifier.PUBLIC)
+                        }.minByOrNull { (it as ExecutableElement).parameters.size }
+                            ?: throw HandlerException("Return type $itemType must have a public constructor")
+                        ) as ExecutableElement
+                constructor.parameters.forEachIndexed { index, param ->
+
+                    val prop =
+                        model.properties.find {
+                            it.name == param.simpleName.toString() && it.type.isSameType(param.asType().boxed())
+                        }
+                            ?: throw HandlerException("Constructor parameter name must be the same as field name:${itemType}.${param.simpleName}")
+                    mappings += MappingData(prop.element, index)
+                }
+
+                //处理属性映射
+                model.properties
+                    .filter { it.hasSetter && mappings.none { m -> m.target == it.name } }
+                    .forEach {
+                        mappings += MappingData(
+                            source = it.column.name,
+                            target = it.name,
+                            typeHandler = it.column.resultTypeHandle,
+                            targetType = it.type.boxed() as DeclaredType,
+                            constructorParameterIndex = -1
+                        )
+                    }
+
+
+                resultMappings?.apply {
+                    val customMappings = value.mapNotNullTo(mutableListOf()) {
+                        //检查mapping注解的值是否合法
+                        val prop =
+                            model.properties.find { p -> p.name == it.target }
+                                ?: throw HandlerException("${itemType.typeName} is missing the ${it.target} field")
+                        val handlerType = it.mirroredType { typeHandler }
+                            .isResultTypeHandlerAndMatchType(prop.type) {
+                                "$this cannot handle ${prop.name}:${prop.type} field"
+                            }
+
+                        mappings.indexOfFirst { m -> m.target == it.target }
+                            //如果索引为-1表示该属性没有setter方法且不在构造器参数中
+                            .takeIf { it != -1 }
+                            ?.let { idx ->
+                                val autoMapping = mappings.removeAt(idx)
+                                MappingData(
+                                    source = it.source,
+                                    target = it.target,
+                                    typeHandler = handlerType,
+                                    targetType = autoMapping.targetType,
+                                    constructorParameterIndex = autoMapping.constructorParameterIndex
+                                )
+                            }
+                    }
+                    if (onlyCustomMapping) {
+                        mappings = customMappings
+                    } else {
+                        mappings += customMappings
+                    }
+                }
+            }
+            else -> {
+                val t = if (itemType.isAssignable(Map::class.type)) {
+                    methodHandler.resultHelper.mapValueType!!
+                } else {
+                    itemType
+                }
+                //itemType既不是自定义bean也不是map时只能是单值类型，比如：Integer,LocalDateTime,String
+                resultMappings?.apply {
+                    value.forEach {
+                        val handlerType = it.mirroredType { typeHandler }
+                            .isResultTypeHandlerAndMatchType(t) {
+                                "$this does not match $t type"
+                            }
+
+                        mappings += MappingData(it.source, it.target, handlerType)
+                    }
+                }
+            }
+        }
+        return mappings
     }
 }
 

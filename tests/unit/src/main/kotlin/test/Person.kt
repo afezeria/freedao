@@ -146,3 +146,13 @@ open class PersonAnyId(
     var id: Any? = null,
     var name: String? = null,
 )
+@Table(
+    name = "person",
+    primaryKeys = ["id"]
+)
+open class PersonWithoutInsertableProperty(
+    @Column(insert = false)
+    var id: Any? = null,
+    @Column(insert = false)
+    var name: String? = null,
+)

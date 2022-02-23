@@ -29,7 +29,9 @@ abstract class XmlElement {
         xmlNode = node
         node.apply {
             //节点类型为text时attributes为null
-            attributes.apply {
+            //忽略idea警告，这里的attributes可能为null
+            //不能用hasAttributes()判断，当attributes不为null但大小为0时，hashAttributes()会返回false
+            attributes?.apply {
                 //检查XmlElement子类中用Attribute声明的代理属性是否为空并赋值
                 for ((name, validator) in validatorMap) {
                     attributeMap[name] = validator(getNamedItem(name)?.nodeValue)

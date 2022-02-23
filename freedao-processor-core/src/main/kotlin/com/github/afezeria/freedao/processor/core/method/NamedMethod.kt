@@ -383,7 +383,7 @@ abstract class NamedMethod private constructor(
                     throw HandlerException("The return type of count method must be Integer or Long")
                 }
             }
-            resultHelper.mappings += MappingData(source = "_cot",
+            mappings += MappingData(source = "_cot",
                 target = "",
                 typeHandler = if (resultHelper.returnType.isSameType(Int::class)) {
                     Long2IntegerResultHandler::class.type

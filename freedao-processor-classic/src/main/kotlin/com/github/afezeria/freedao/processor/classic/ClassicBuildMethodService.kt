@@ -254,10 +254,10 @@ class ClassicBuildMethodService : BuildMethodService {
                     addStatement("$itemVar = new \$T$diamondStr()", resultHelper.itemType)
                 }
                 //集合内容为map
-                if (resultHelper.mappings.isNotEmpty()) {
+                if (methodHandler.mappings.isNotEmpty()) {
                     beginControlFlow("while ($resultSetVar.next())")
                     addInitItemStatement()
-                    resultHelper.mappings.forEach {
+                    methodHandler.mappings.forEach {
                         when {
                             //有类型转换器
                             !it.typeHandler.isSameType(ResultTypeHandler::class) -> {
@@ -309,7 +309,7 @@ class ClassicBuildMethodService : BuildMethodService {
                 beginControlFlow("while ($resultSetVar.next())")
                 add("$itemVar = new \$T$diamondStr(\n", resultHelper.itemType)
                 indent()
-                resultHelper.mappings.filter { it.constructorParameterIndex > -1 }
+                methodHandler.mappings.filter { it.constructorParameterIndex > -1 }
                     .sortedBy { it.constructorParameterIndex }
                     .forEachIndexed { index, it ->
                         if (index > 0) {
@@ -338,7 +338,7 @@ class ClassicBuildMethodService : BuildMethodService {
                 unindent()
                 add(");\n")
                 //集合项为javabean时mapping必定不为空集合
-                resultHelper.mappings
+                methodHandler.mappings
                     .filter { it.constructorParameterIndex == -1 }
                     .forEach {
                         val setter = "set${it.target.replaceFirstChar { it.uppercaseChar() }}"
@@ -372,9 +372,9 @@ class ClassicBuildMethodService : BuildMethodService {
         } else {
             //返回单列
             beginControlFlow("while ($resultSetVar.next())")
-            if (resultHelper.mappings.isNotEmpty() && !resultHelper.mappings[0].typeHandler.isSameType(ResultTypeHandler::class)) {
+            if (methodHandler.mappings.isNotEmpty() && !methodHandler.mappings[0].typeHandler.isSameType(ResultTypeHandler::class)) {
                 //有类型转换
-                addStatement("$itemVar = \$T.handle($resultSetVar.getObject(1))", resultHelper.mappings[0].typeHandler)
+                addStatement("$itemVar = \$T.handle($resultSetVar.getObject(1))", methodHandler.mappings[0].typeHandler)
             } else if (resultHelper.itemType.isSameType(Any::class)) {
                 //未指定单列类型或类型为Object
                 addStatement("$itemVar = $resultSetVar.getObject(1)", resultHelper.itemType)
