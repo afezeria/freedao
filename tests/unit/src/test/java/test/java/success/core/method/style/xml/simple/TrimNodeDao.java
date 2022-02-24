@@ -13,7 +13,7 @@ import java.util.List;
 public interface TrimNodeDao {
     @XmlTemplate("""
             <select>
-              select * from person where id in (<trim prefixOverrides='' postfixOverrides=','>#{id1},#{id2},</trim>)
+              select * from person where id in (<trim prefixOverrides='' suffixOverrides=','>#{id1},#{id2},</trim>)
             </select>
                         """)
     List<Person> query(Long id1, Long id2);

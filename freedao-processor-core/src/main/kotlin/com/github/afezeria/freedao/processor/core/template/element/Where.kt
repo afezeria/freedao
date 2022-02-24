@@ -4,6 +4,6 @@ class Where : Trim() {
     init {
         validatorMap["prefix"] = { "where " }
         validatorMap["prefixOverrides"] = { "and |or " }
-        validatorMap["postfixOverrides"] = { "" }
+        validatorMap["suffixOverrides"] = { "" }
     }
 }

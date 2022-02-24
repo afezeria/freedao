@@ -4,6 +4,6 @@ class Set : Trim() {
     init {
         validatorMap["prefix"] = { "set " }
         validatorMap["prefixOverrides"] = { "" }
-        validatorMap["postfixOverrides"] = { "," }
+        validatorMap["suffixOverrides"] = { "," }
     }
 }

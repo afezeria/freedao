@@ -127,7 +127,7 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
             val parameterName = element.parameters[0].simpleName.toString()
             val columns = insertProperties.joinToString(
                 separator = "",
-                prefix = "<trim prefixOverrides='' postfixOverrides=','>",
+                prefix = "<trim prefixOverrides='' suffixOverrides=','>",
                 postfix = "</trim>") {
                 //language=xml
                 """
@@ -136,7 +136,7 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
             }
             val values = insertProperties.joinToString(
                 separator = "",
-                prefix = "<trim prefixOverrides='' postfixOverrides=','>",
+                prefix = "<trim prefixOverrides='' suffixOverrides=','>",
                 postfix = "</trim>") {
                 //language=xml
                 """

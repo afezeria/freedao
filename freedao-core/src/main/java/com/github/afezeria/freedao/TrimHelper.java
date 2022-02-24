@@ -8,7 +8,7 @@ public class TrimHelper {
     public static StringBuilder appendAndTrim(StringBuilder source,
                                               String prefix,
                                               String[] prefixOverrides,
-                                              String[] postfixOverrides) {
+                                              String[] suffixOverrides) {
         boolean ret = true;
         for (int i = 0; i < source.length(); i++) {
             if (!Character.isWhitespace(source.charAt(i))) {
@@ -50,7 +50,7 @@ public class TrimHelper {
                 break;
             }
         }
-        for (String s : postfixOverrides) {
+        for (String s : suffixOverrides) {
             if (right - left < s.length()) {
                 break;
             }

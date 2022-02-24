@@ -19,7 +19,7 @@ open class Trim : XmlElement() {
     /**
      * 要从末尾移除的文本
      */
-    private val postfixOverrides by Attribute()
+    private val suffixOverrides by Attribute()
 
     fun getTrimWord(string: String): String {
         return string.split(splitRegex).map { it.replace(replaceRegex, "|") }
@@ -29,7 +29,7 @@ open class Trim : XmlElement() {
     override fun render() {
         context.newScope { builderName ->
             super.render()
-            val postfixArr = postfixOverrides.split(splitRegex).map { it.replace(replaceRegex, "|") }
+            val postfixArr = suffixOverrides.split(splitRegex).map { it.replace(replaceRegex, "|") }
                 .sortedBy { it.length }
             val prefixArr = prefixOverrides.split(splitRegex).map { it.replace(replaceRegex, "|") }
                 .sortedBy { it.length }

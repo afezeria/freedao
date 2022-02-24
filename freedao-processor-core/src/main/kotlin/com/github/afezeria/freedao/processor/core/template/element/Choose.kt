@@ -8,7 +8,7 @@ class Choose : XmlElement() {
     override fun render() {
         children.removeIf {
             it is TextElement
-                    && it.contents.all { p -> p.second.isBlank() }
+                    && it.xmlNode.textContent.isBlank()
         }
         if (children.any { it !is When && it !is Otherwise }) {
             throwWithPosition("The child node of choose node can only be when node or otherwise node")
