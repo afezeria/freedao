@@ -30,7 +30,6 @@ class RootElement(methodHandler: MethodHandler) : XmlElement() {
         }
 
         init(document.childNodes.item(0))
-        println()
     }
 
     fun buildCodeBlock(): CodeBlock {

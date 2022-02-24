@@ -6,7 +6,6 @@ import org.w3c.dom.Node
 import org.xml.sax.Attributes
 import org.xml.sax.Locator
 import org.xml.sax.helpers.DefaultHandler
-import java.io.ByteArrayInputStream
 import java.io.InputStream
 import java.util.*
 import javax.xml.parsers.DocumentBuilderFactory
@@ -77,8 +76,4 @@ object PositionalXMLReader {
             }
         }
     }
-}
-
-fun parseXml(text: String): Document {
-    return PositionalXMLReader.readXML(ByteArrayInputStream(text.toByteArray()))
 }

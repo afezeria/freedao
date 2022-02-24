@@ -4,42 +4,34 @@ import com.github.afezeria.freedao.processor.core.template.TemplateHandler
 import com.github.afezeria.freedao.processor.core.template.XmlElement
 import java.util.*
 
-class TextElement(pureText: Boolean, content: String) : XmlElement() {
-
-    val contents = mutableListOf(pureText to content)
-    fun append(element: TextElement) {
-        contents.addAll(element.contents)
-    }
+class TextElement : XmlElement() {
 
     override fun render() {
         val list = mutableListOf<Pair<String?, String?>>()
         val parameterList = mutableListOf<String>()
-        for ((pure, content) in contents) {
-            if (pure) {
-                list += content to null
-            } else {
-                //将文本按字符串参数分割
-                val split = content.split(namedStringParameterRegex).mapTo(LinkedList()) { it }
-                val stringParameterList =
-                    namedStringParameterRegex.findAll(content).mapTo(LinkedList()) { it.groupValues[1] }
-                //将每个分组中的sql参数替换成占位符
-                split.forEachIndexed { index, s ->
-                    split[index] = s.replace(namedSqlParameterRegex) {
-                        parameterList += it.groupValues[1]
-                        context.placeholderGen.gen()
-                    }
-                }
-                while (split.isNotEmpty() || stringParameterList.isNotEmpty()) {
-                    //纯文本放在first 需要运行时替换的文本放在 second
-                    if (split.isNotEmpty()) {
-                        list += split.pop() to null
-                    }
-                    if (stringParameterList.isNotEmpty()) {
-                        list += null to stringParameterList.pop()
-                    }
-                }
+
+        val content = xmlNode.textContent
+        //将文本按字符串参数分割
+        val split = content.split(namedStringParameterRegex).mapTo(LinkedList()) { it }
+        val stringParameterList =
+            namedStringParameterRegex.findAll(content).mapTo(LinkedList()) { it.groupValues[1] }
+        //将每个分组中的sql参数替换成占位符
+        split.forEachIndexed { index, s ->
+            split[index] = s.replace(namedSqlParameterRegex) {
+                parameterList += it.groupValues[1]
+                context.placeholderGen.gen()
             }
         }
+        while (split.isNotEmpty() || stringParameterList.isNotEmpty()) {
+            //纯文本放在first 需要运行时替换的文本放在 second
+            if (split.isNotEmpty()) {
+                list += split.pop() to null
+            }
+            if (stringParameterList.isNotEmpty()) {
+                list += null to stringParameterList.pop()
+            }
+        }
+
         context.currentScope { builderName ->
             var str = ""
             for ((text, variable) in list) {

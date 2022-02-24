@@ -48,15 +48,20 @@ abstract class XmlElement {
             childNodes.takeIf { hasChildNodes() }?.apply {
                 (0 until length).forEach { idx ->
                     item(idx).let { child ->
-                        createElement(child)?.let {
-                            if (it is TextElement && children.isNotEmpty() && children.last() is TextElement) {
-                                //合并多个相邻的text节点
-                                (children.last() as TextElement).append(it)
-                            } else {
-                                it.parent = this@XmlElement
-                                it.init(child)
-                                children += it
-                            }
+                        createElement(child).let {
+                            //当前使用sax解析xml，sax不会区分cdata和text元素
+                            // 相邻的cdata和text会被解析成一个text节点，所以这里现在不需要合并text节点的操作
+//                            if (it is TextElement && children.isNotEmpty() && children.last() is TextElement) {
+//                                //合并多个相邻的text节点
+//                                (children.last() as TextElement).append(it)
+//                            } else {
+//                                it.parent = this@XmlElement
+//                                it.init(child)
+//                                children += it
+//                            }
+                            it.parent = this@XmlElement
+                            it.init(child)
+                            children += it
                         }
                     }
                 }
@@ -86,17 +91,27 @@ abstract class XmlElement {
         children.forEach { it.render() }
     }
 
-    private fun createElement(node: Node): XmlElement? {
+    private fun createElement(node: Node): XmlElement {
+        //用DOM解析时会区分comment节点和cdata节点，所以else需要返回null
+        //用SAX解析时xml中的cdata元素拿到的是text节点，comment节点会被忽略
+//        return when (node.nodeType) {
+//            //common text node
+//            3.toShort() -> TextElement(false, node.textContent)
+//            //cdata node
+//            4.toShort() -> TextElement(true, node.textContent)
+//            //element node
+//            1.toShort() -> elementBuilderMap[node.nodeName.replaceFirstChar { it.uppercaseChar() }]?.call()
+//                ?: throw HandlerException("Invalid node:${node.nodeName}")
+//            else -> null
+//        }
         return when (node.nodeType) {
-            //comment text node
-            3.toShort() -> TextElement(false, node.textContent)
-            //cdata node
-            4.toShort() -> TextElement(true, node.textContent)
+            //common text node
+            3.toShort() -> TextElement()
             //element node
             1.toShort() -> elementBuilderMap[node.nodeName.replaceFirstChar { it.uppercaseChar() }]?.call()
                 ?: throw HandlerException("Invalid node:${node.nodeName}")
-            //暂时没遇到那种情况会走到这
-            else -> throw IllegalStateException()
+            //现在用SAX解析xml暂时没遇到那种情况会走到这
+            else -> throw IllegalStateException("unreachable")
         }
     }
 
