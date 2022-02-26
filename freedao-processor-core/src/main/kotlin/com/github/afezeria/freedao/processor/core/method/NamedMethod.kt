@@ -6,13 +6,13 @@ import com.github.afezeria.freedao.processor.core.*
 import java.util.*
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.VariableElement
-import javax.lang.model.type.DeclaredType
 import javax.lang.model.type.TypeMirror
 import kotlin.reflect.full.primaryConstructor
 
 abstract class NamedMethod private constructor(
     element: ExecutableElement, daoHandler: DaoHandler,
 ) : MethodHandler(element, daoHandler) {
+
 
     var crudEntity: EntityObjectModel
     var dbProperties: List<BeanProperty>
@@ -167,7 +167,7 @@ abstract class NamedMethod private constructor(
         }
     }
 
-    protected fun buildSelectList(): String {
+    protected open fun buildSelectList(): String {
         return crudEntity.properties.filter { it.column.exist }.joinToString { it.toSelectItem() }
     }
 
@@ -183,156 +183,16 @@ abstract class NamedMethod private constructor(
         }.takeIf { it.isNotBlank() }?.let { "order by $it" } ?: ""
     }
 
-
-    companion object {
-        private val methodNameSplitRegex = "^(.*?By)(.*)$".toRegex()
-
-        private val length2ConditionKeys = listOf(
-            3 to listOf("LessThanEqual", "GreaterThanEqual"),
-            2 to listOf("IsNull", "LessThan", "GreaterThan", "NotNull", "NotIn", "NotLike"),
-            1 to listOf("Between", "Like", "Not", "In", "True", "False"),
-        )
-        private val length2ConnectKeys = listOf(2 to listOf("OrderBy"), 1 to listOf("And", "Or"))
-
-        fun findConditionKey(list: LinkedList<String>): String? {
-            var s = ""
-            for ((length, keys) in length2ConditionKeys) {
-                if (list.size >= length) {
-                    if (list.subList(0, length).joinToString("") in keys) {
-                        repeat(length) { s += list.pop() }
-                        return s
-                    }
-                }
-            }
-            return null
-        }
-
-        fun findConnectKey(list: LinkedList<String>): String {
-            var s = ""
-            for ((length, keys) in length2ConnectKeys) {
-                if (list.size > length) {
-                    if (list.subList(0, length).joinToString("") in keys) {
-                        repeat(length) { s += list.pop() }
-                        break
-                    }
-                }
-            }
-            return s
-        }
-
-        /**
-         * 支持的where子句条件关键字
-         * @property property BeanProperty? 匹配的bean属性
-         * @property params List<VariableElement> 匹配的方法参数
-         * @property requiredParameterTypesFn Function0<List<TypeMirror>> 返回需要的参数的类型列表
-         * @property renderFn Function0<String> 返回sql的条件字符串
-         * @constructor
-         */
-        sealed class Condition(
-            private val requiredParameterTypesFn: Condition.() -> List<TypeMirror> = { listOf(property!!.type) },
-            private val renderFn: Condition.() -> String,
-        ) {
-            var property: BeanProperty? = null
-            val params = mutableListOf<VariableElement>()
-            val column: String
-                get() = property!!.column.name.sqlQuote()
-
-            val requiredParameterTypes by lazy { requiredParameterTypesFn(this) }
-            fun render() = renderFn(this)
-
-
-            companion object {
-                private val name2Constructor =
-                    Condition::class.sealedSubclasses.associate { it.simpleName to it.primaryConstructor }
-
-                operator fun invoke(name: String): Condition {
-                    return name2Constructor[name]?.call() ?: throw IllegalStateException()
-                }
-            }
-
-            class LessThanEqual : Condition(renderFn = { "$column &lt;= #{${params[0].simpleName}}" })
-            class GreaterThanEqual : Condition(renderFn = { "$column &gt;= #{${params[0].simpleName}}" })
-            class NotNull :
-                Condition(requiredParameterTypesFn = { emptyList() }, renderFn = { "$column is not null" })
-
-            class IsNull : Condition(requiredParameterTypesFn = { emptyList() }, renderFn = { "$column is null" })
-
-            class LessThan : Condition(renderFn = { "$column &lt; #{${params[0].simpleName}}" })
-
-            class GreaterThan : Condition(renderFn = { "$column &gt; #{${params[0].simpleName}}" })
-
-            class NotIn : Condition(
-                requiredParameterTypesFn = { listOf(Collection::class.type(property!!.type)) },
-                renderFn = {
-                    "$column not in (<foreach collection='${params[0].simpleName}' item='item' separator=','>#{item}</foreach>)"
-                }
-            )
-
-            class NotLike : Condition(renderFn = { "$column not like #{${params[0].simpleName}}" })
-
-            class Between : Condition(
-                requiredParameterTypesFn = { listOf(property!!.type, property!!.type) },
-                renderFn = { "$column between #{${params[0].simpleName}} and #{${params[1].simpleName}}" },
-            )
-
-            class Like : Condition(renderFn = { "$column like #{${params[0].simpleName}}" })
-
-            class Not : Condition(renderFn = { "$column &lt;&gt; #{${params[0].simpleName}}" })
-
-            class In : Condition(
-                requiredParameterTypesFn = { listOf(Collection::class.type(property!!.type)) },
-                renderFn = {
-                    "$column in (<foreach collection='${params[0].simpleName}' item='item' separator=','>#{item}</foreach>)"
-                }
-            )
-
-            class True : Condition(requiredParameterTypesFn = { emptyList() }, renderFn = { "$column = true" })
-
-            class False : Condition(requiredParameterTypesFn = { emptyList() }, renderFn = { "$column = false" })
-
-            /**
-             * Is不能作为关键字出现在方法名中
-             * 当字段名后没有接其他条件关键字或Order时当作Is处理
-             */
-            class Is : Condition(renderFn = { "$column = #{${params[0].simpleName}}" })
-
-            class And : Condition(requiredParameterTypesFn = { emptyList() }, renderFn = { "and" })
-
-            class Or : Condition(requiredParameterTypesFn = { emptyList() }, renderFn = { "or" })
-        }
-
-        enum class OrderEnum {
-            Asc, Desc
-        }
-
-        val queryPrefix = "(select|query|find)By[A-Za-z0-9]+".toRegex()
-        val queryOnePrefix = "(select|query|find)OneBy[A-Za-z0-9]+".toRegex()
-        val countPrefix = "countBy[A-Za-z0-9]+".toRegex()
-        val deletePrefix = "(delete|remove)By[A-Za-z0-9]+".toRegex()
-
-        operator fun invoke(element: ExecutableElement, daoHandler: DaoHandler): NamedMethod? {
-            val name = element.simpleName.toString()
-            return name.run {
-                when {
-                    matches(queryPrefix) -> Query(element, daoHandler)
-                    matches(queryOnePrefix) -> QueryOne(element, daoHandler)
-                    matches(countPrefix) -> Count(element, daoHandler)
-                    matches(deletePrefix) -> Delete(element, daoHandler)
-                    else -> null
-                }
-            }
-        }
-
-    }
-
     open class Query(element: ExecutableElement, daoHandler: DaoHandler) : NamedMethod(element, daoHandler) {
         init {
-            val returnType = resultHelper.returnType
-            if (!returnType.erasure().isAssignable(Collection::class)) {
+            init()
+        }
+
+        open fun init() {
+            if (!resultHelper.returnType.erasure().isAssignable(Collection::class)) {
                 throw HandlerException("The return type of method must be a collection")
             }
-            returnType as DeclaredType
-            if (!crudEntity.type.isSameType(returnType.findTypeArgument(Collection::class.type, "E")!!)) {
+            if (!crudEntity.type.isSameType(resultHelper.itemType)) {
                 throw HandlerException("The element type of the return type must be a ${crudEntity.type.typeName}")
             }
         }
@@ -347,22 +207,59 @@ abstract class NamedMethod private constructor(
         }
     }
 
-    open class QueryOne(element: ExecutableElement, daoHandler: DaoHandler) : NamedMethod(element, daoHandler) {
-        init {
+    open class QueryOne(element: ExecutableElement, daoHandler: DaoHandler) : Query(element, daoHandler) {
+        override fun init() {
             if (!crudEntity.type.isSameType(resultHelper.returnType)) {
                 throw HandlerException("The return type of method must be ${crudEntity.type}")
             }
         }
+    }
 
-        override fun getTemplate(): String {
-            //language=xml
-            return """
-                    <select>
-                    select ${buildSelectList()} from ${crudEntity.dbFullyQualifiedName} ${buildWhereClause()} ${buildOrderClause()}
-                    </select>
-                """.trimIndent()
+
+    open class DtoQuery(element: ExecutableElement, daoHandler: DaoHandler) : Query(element, daoHandler) {
+        override fun init() {
+            if (!resultHelper.returnType.erasure().isAssignable(Collection::class)) {
+                throw HandlerException("The return type of method must be a collection")
+            }
+            if (!resultHelper.itemType.isCustomJavaBean()) {
+                throw HandlerException("The element type of the return type must be a java bean")
+            }
+            checkMapping()
+        }
+
+        open fun checkMapping() {
+            //从映射中移除crudEntity中不存在的字段
+            mappings.removeIf { m ->
+                dbProperties.find { m.source == it.column.name || (m.target == it.name && it.column.exist) }
+                    ?.takeIf { it.type.isAssignable(m.targetType!!) }
+                    ?.let {
+                        m.source = it.column.name
+                        //dto的映射中没有指定结果集处理器且使用entity的中对应字段的处理器
+                        if (m.typeHandler.isSameType(ResultTypeHandler::class)) {
+                            m.typeHandler = it.column.resultTypeHandle
+                        }
+                        false
+                    } ?: true
+            }
+            if (mappings.isEmpty()) {
+                throw HandlerException("There are no fields in common between entity(${crudEntity.type}) and dto(${resultHelper.itemType})")
+            }
+        }
+
+        override fun buildSelectList(): String {
+            return mappings.joinToString { "${it.source.sqlQuote()} as ${it.source.sqlQuote()}" }
         }
     }
+
+    class DtoQueryOne(element: ExecutableElement, daoHandler: DaoHandler) : DtoQuery(element, daoHandler) {
+        override fun init() {
+            if (!resultHelper.itemType.isCustomJavaBean()) {
+                throw HandlerException("The return type of the return type must be a java bean")
+            }
+            checkMapping()
+        }
+    }
+
 
     class Delete(element: ExecutableElement, daoHandler: DaoHandler) : NamedMethod(element, daoHandler) {
         init {
@@ -406,5 +303,155 @@ abstract class NamedMethod private constructor(
                     </select>
                 """.trimIndent()
         }
+    }
+
+    companion object {
+
+        private val methodNameSplitRegex = "^(.*?By)(.*)$".toRegex()
+        private val length2ConditionKeys = listOf(
+            3 to listOf("LessThanEqual", "GreaterThanEqual"),
+            2 to listOf("IsNull", "LessThan", "GreaterThan", "NotNull", "NotIn", "NotLike"),
+            1 to listOf("Between", "Like", "Not", "In", "True", "False"),
+        )
+        private val length2ConnectKeys = listOf(2 to listOf("OrderBy"), 1 to listOf("And", "Or"))
+        private val queryPrefix = "(select|query|find)By[A-Za-z0-9]+".toRegex()
+        private val queryOnePrefix = "(select|query|find)OneBy[A-Za-z0-9]+".toRegex()
+        private val dtoQueryPrefix = "dto(Select|Query|Find)By[A-Za-z0-9]+".toRegex()
+        private val dtoQueryOnePrefix = "dto(Select|Query|Find)OneBy[A-Za-z0-9]+".toRegex()
+        private val countPrefix = "countBy[A-Za-z0-9]+".toRegex()
+        private val deletePrefix = "(delete|remove)By[A-Za-z0-9]+".toRegex()
+
+        /**
+         * 查找条件关键字并将其从list中移除
+         *
+         * e.g. in: {"Is","Null","And","Name"} out: "IsNull" list:{"And","Name"}
+         * @param list LinkedList<String>
+         * @return String?
+         */
+        fun findConditionKey(list: LinkedList<String>): String? {
+            var s = ""
+            for ((length, keys) in length2ConditionKeys) {
+                if (list.size >= length) {
+                    if (list.subList(0, length).joinToString("") in keys) {
+                        repeat(length) { s += list.pop() }
+                        return s
+                    }
+                }
+            }
+            return null
+        }
+
+        /**
+         * 查找And/Or和OrderBy并将其从list中移除
+         *
+         * e.g. in: {"Order","By","Id","Asc"} out: "OrderBy" list:{"Id","Asc"}
+         * @param list LinkedList<String>
+         * @return String
+         */
+        fun findConnectKey(list: LinkedList<String>): String {
+            var s = ""
+            for ((length, keys) in length2ConnectKeys) {
+                if (list.size > length) {
+                    if (list.subList(0, length).joinToString("") in keys) {
+                        repeat(length) { s += list.pop() }
+                        break
+                    }
+                }
+            }
+            return s
+        }
+
+        operator fun invoke(element: ExecutableElement, daoHandler: DaoHandler): NamedMethod? {
+            val name = element.simpleName.toString()
+            return name.run {
+                when {
+                    matches(queryPrefix) -> Query(element, daoHandler)
+                    matches(queryOnePrefix) -> QueryOne(element, daoHandler)
+                    matches(dtoQueryPrefix) -> DtoQuery(element, daoHandler)
+                    matches(dtoQueryOnePrefix) -> DtoQueryOne(element, daoHandler)
+                    matches(countPrefix) -> Count(element, daoHandler)
+                    matches(deletePrefix) -> Delete(element, daoHandler)
+                    else -> null
+                }
+            }
+        }
+
+        /**
+         * 支持的where子句条件关键字
+         * @property property BeanProperty? 匹配的bean属性
+         * @property params List<VariableElement> 匹配的方法参数
+         * @property requiredParameterTypesFn Function0<List<TypeMirror>> 返回需要的参数的类型列表
+         * @property renderFn Function0<String> 返回sql的条件字符串
+         * @constructor
+         */
+        sealed class Condition(
+            private val requiredParameterTypesFn: Condition.() -> List<TypeMirror> = { listOf(property!!.type) },
+            private val renderFn: Condition.() -> String,
+        ) {
+
+
+            var property: BeanProperty? = null
+            val params = mutableListOf<VariableElement>()
+            val column: String
+                get() = property!!.column.name.sqlQuote()
+
+            val requiredParameterTypes by lazy { requiredParameterTypesFn(this) }
+
+            fun render() = renderFn(this)
+
+            class LessThanEqual : Condition(renderFn = { "$column &lt;= #{${params[0].simpleName}}" })
+            class GreaterThanEqual : Condition(renderFn = { "$column &gt;= #{${params[0].simpleName}}" })
+            class NotNull :
+                Condition(requiredParameterTypesFn = { emptyList() }, renderFn = { "$column is not null" })
+
+            class IsNull : Condition(requiredParameterTypesFn = { emptyList() }, renderFn = { "$column is null" })
+            class LessThan : Condition(renderFn = { "$column &lt; #{${params[0].simpleName}}" })
+            class GreaterThan : Condition(renderFn = { "$column &gt; #{${params[0].simpleName}}" })
+            class NotIn : Condition(
+                requiredParameterTypesFn = { listOf(Collection::class.type(property!!.type)) },
+                renderFn = {
+                    "$column not in (<foreach collection='${params[0].simpleName}' item='item' separator=','>#{item}</foreach>)"
+                }
+            )
+
+            class NotLike : Condition(renderFn = { "$column not like #{${params[0].simpleName}}" })
+            class Between : Condition(
+                requiredParameterTypesFn = { listOf(property!!.type, property!!.type) },
+                renderFn = { "$column between #{${params[0].simpleName}} and #{${params[1].simpleName}}" },
+            )
+
+            class Like : Condition(renderFn = { "$column like #{${params[0].simpleName}}" })
+            class Not : Condition(renderFn = { "$column &lt;&gt; #{${params[0].simpleName}}" })
+            class In : Condition(
+                requiredParameterTypesFn = { listOf(Collection::class.type(property!!.type)) },
+                renderFn = {
+                    "$column in (<foreach collection='${params[0].simpleName}' item='item' separator=','>#{item}</foreach>)"
+                }
+            )
+
+            class True : Condition(requiredParameterTypesFn = { emptyList() }, renderFn = { "$column = true" })
+            class False : Condition(requiredParameterTypesFn = { emptyList() }, renderFn = { "$column = false" })
+
+            /**
+             * Is不能作为关键字出现在方法名中
+             * 当字段名后没有接其他条件关键字或Order时当作Is处理
+             */
+            class Is : Condition(renderFn = { "$column = #{${params[0].simpleName}}" })
+            class And : Condition(requiredParameterTypesFn = { emptyList() }, renderFn = { "and" })
+            class Or : Condition(requiredParameterTypesFn = { emptyList() }, renderFn = { "or" })
+            companion object {
+                private val name2Constructor =
+                    Condition::class.sealedSubclasses.associate { it.simpleName to it.primaryConstructor }
+
+                operator fun invoke(name: String): Condition {
+                    return name2Constructor[name]?.call() ?: throw IllegalStateException()
+                }
+            }
+        }
+
+        enum class OrderEnum {
+            Asc, Desc
+        }
+
     }
 }

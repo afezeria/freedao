@@ -27,6 +27,7 @@ import kotlin.reflect.KClass
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.findAnnotations
 import kotlin.reflect.full.memberProperties
+import kotlin.reflect.jvm.javaField
 
 
 /**
@@ -56,14 +57,19 @@ abstract class BaseTest {
             execute(testResource.value)
 
             entities.forEach {
-                val name2value = it::class.memberProperties.mapTo(mutableListOf()) { p ->
-                    (p.findAnnotation<Column>()?.name?.takeIf { it.isNotEmpty() }
-                        ?: p.name.toSnakeCase()) to p.getter.call(it)
-                }.apply {
-                    if (!fillNull) {
-                        removeIf { it.second == null }
+                val name2value = it::class.memberProperties
+                    .filter { p ->
+                        p.javaField?.getAnnotation(Column::class.java)?.let { it.exist && (it.insert || it.update) }
+                            ?: true
                     }
-                }
+                    .mapTo(mutableListOf()) { p ->
+                        (p.javaField?.getAnnotation(Column::class.java)?.name?.takeIf { it.isNotEmpty() }
+                            ?: p.name.toSnakeCase()) to p.getter.call(it)
+                    }.apply {
+                        if (!fillNull) {
+                            removeIf { it.second == null }
+                        }
+                    }
 
                 execute(
                     """
@@ -201,6 +207,16 @@ abstract class BaseTest {
                 start()
             }
         }
+        private val pgH2Env by lazy {
+            arrayOf(
+                DbEnv(
+                    type = EnvType.MEMORY,
+                    name = "pg",
+                    jdbcUrl = "jdbc:h2:mem:;DB_CLOSE_DELAY=-1;INIT=RUNSCRIPT FROM 'classpath:sql/pg_init.sql';MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH",
+                    driverClassName = "org.h2.Driver",
+                ),
+            )
+        }
         private val h2Env by lazy {
             arrayOf(
                 DbEnv(
@@ -252,8 +268,9 @@ abstract class BaseTest {
         @JvmStatic
         @Parameters(name = "{index}: {0}")
         fun testParameters() = listOf(
+            *pgH2Env,
 //            *h2Env,
-            *localEnv,
+//            *localEnv,
 //            *containerEnv,
         )
 

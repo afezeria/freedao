@@ -48,7 +48,7 @@ object ResultMappingsAnn {
         var mappings: MutableList<MappingData> = mutableListOf()
         when {
             itemType.isCustomJavaBean() -> {
-                val model = EntityObjectModel(itemType)
+                val model = BeanObjectModel(itemType)
                 //映射结果为java bean
                 //处理构造器参数映射
                 val constructor = (
@@ -62,7 +62,7 @@ object ResultMappingsAnn {
 
                     val prop =
                         model.properties.find {
-                            it.name == param.simpleName.toString() && it.type.isSameType(param.asType().boxed())
+                            it.name == param.simpleName.toString() && it.type.boxed().isSameType(param.asType().boxed())
                         }
                             ?: throw HandlerException("Constructor parameter name must be the same as field name:${itemType}.${param.simpleName}")
                     mappings += MappingData(prop.element, index)
@@ -146,12 +146,13 @@ object ResultMappingsAnn {
  * @property constructorParameterIndex 在构造器参数中的位置，-1表示该字段使用setter方法设置
  */
 class MappingData(
-    val source: String,
+    var source: String,
     val target: String,
-    val typeHandler: DeclaredType,
+    var typeHandler: DeclaredType,
     val targetType: DeclaredType? = null,
     val constructorParameterIndex: Int = -1,
 ) {
+
 
     companion object {
         operator fun invoke(
@@ -163,9 +164,13 @@ class MappingData(
                 source = columnAnn.name,
                 target = element.simpleName.toString(),
                 typeHandler = columnAnn.resultTypeHandle,
-                targetType = element.asType() as DeclaredType,
+                targetType = element.asType().boxed() as DeclaredType,
                 constructorParameterIndex = constructorParameterIndex
             )
         }
+    }
+
+    override fun toString(): String {
+        return "MappingData(source='$source', target='$target', targetType=$targetType, constructorParameterIndex=$constructorParameterIndex)"
     }
 }

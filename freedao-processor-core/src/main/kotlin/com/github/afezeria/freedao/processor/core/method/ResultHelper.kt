@@ -16,6 +16,8 @@ class ResultHelper(val daoHandler: DaoHandler, val element: ExecutableElement) {
     var containerType: DeclaredType? = null
     var itemType: DeclaredType
 
+    var tooManyResultCheck = false
+
     //    var mapKeyType: DeclaredType? = null
     var mapValueType: DeclaredType? = null
 

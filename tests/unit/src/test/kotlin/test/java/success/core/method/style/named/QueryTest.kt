@@ -4,6 +4,7 @@ import org.junit.Test
 import test.BaseTest
 import test.Person
 import test.java.success.core.method.style.named.prefix.*
+import kotlin.test.assertContentEquals
 
 /**
  *
@@ -56,5 +57,39 @@ class QueryTest : BaseTest() {
         val impl = getJavaDaoInstance<SelectByNameDao>()
         val list = impl.selectByName("a")
         assert(list.size == 1)
+    }
+
+    @Test
+    fun dtoQueryByName() {
+        initData(Person(1, "a"), Person(2, "b"), Person(3, "a"))
+        val impl = getJavaDaoInstance<DtoQueryByNameDao>()
+        val list = impl.dtoQueryByName("a")
+        assert(list.size == 2)
+        assertContentEquals(list.map { it.id }, listOf(1, 3))
+        list.forEach {
+            it.apply {
+                assert(name == "a")
+                assert(fieldNotInEntity == null)
+                assert(nickName == null)
+            }
+        }
+    }
+
+    @Test
+    fun dtoExtendEntityResultTypeHandlerQuery() {
+        initData(Person(1, "a", age = 10))
+        val impl = getJavaDaoInstance<DtoQueryExtendEntityResultTypeHandlerDao>()
+        val list = impl.dtoQueryByName("a")
+        assert(list.size == 1)
+        assertContentEquals(list.map { it.stringAge }, listOf("10"))
+    }
+
+    @Test
+    fun dtoQueryOneByName() {
+        initData(Person(1, "a"), Person(2, "b"))
+        val impl = getJavaDaoInstance<DtoQueryOneByNameDao>()
+        val dto = impl.dtoQueryOneByName("a")
+        assert(dto.name == "a")
+        assert(dto.id == 1L)
     }
 }
