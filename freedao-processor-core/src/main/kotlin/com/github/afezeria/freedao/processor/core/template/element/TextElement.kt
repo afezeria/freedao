@@ -1,65 +1,84 @@
 package com.github.afezeria.freedao.processor.core.template.element
 
+import com.github.afezeria.freedao.ParameterTypeHandler
+import com.github.afezeria.freedao.processor.core.HandlerException
+import com.github.afezeria.freedao.processor.core.elementUtils
+import com.github.afezeria.freedao.processor.core.isParameterTypeHandlerAndMatchType
+import com.github.afezeria.freedao.processor.core.isSameType
 import com.github.afezeria.freedao.processor.core.template.TemplateHandler
 import com.github.afezeria.freedao.processor.core.template.XmlElement
 import java.util.*
 
 class TextElement : XmlElement() {
+    /**
+     * xml节点文本内容按字符串参数分割后的片段
+     * @property isVar Boolean true:模板变量,false:纯文本
+     * @property str String
+     * @constructor
+     */
+    private data class TextFragment(val isVar: Boolean, val str: String)
 
     override fun render() {
-        val list = mutableListOf<Pair<String?, String?>>()
-        val parameterList = mutableListOf<String>()
 
         val content = xmlNode.textContent
         //将文本按字符串参数分割
         val split = content.split(namedStringParameterRegex).mapTo(LinkedList()) { it }
-        val stringParameterList =
-            namedStringParameterRegex.findAll(content).mapTo(LinkedList()) { it.groupValues[1] }
-        //将每个分组中的sql参数替换成占位符
-        split.forEachIndexed { index, s ->
-            split[index] = s.replace(namedSqlParameterRegex) {
-                parameterList += it.groupValues[1]
-                context.placeholderGen.gen()
-            }
-        }
+        val stringParameterList = namedStringParameterRegex.findAll(content).mapTo(LinkedList()) { it.groupValues[1] }
+
+        val list = mutableListOf<TextFragment>()
         while (split.isNotEmpty() || stringParameterList.isNotEmpty()) {
-            //纯文本放在first 需要运行时替换的文本放在 second
             if (split.isNotEmpty()) {
-                list += split.pop() to null
+                list += TextFragment(false, split.pop())
             }
             if (stringParameterList.isNotEmpty()) {
-                list += null to stringParameterList.pop()
+                list += TextFragment(true, stringParameterList.pop())
             }
         }
 
         context.currentScope { builderName ->
             var str = ""
-            for ((text, variable) in list) {
-                if (text != null) {
-                    str += text
-                } else {
-                    variable!!
+            for ((isVar, text) in list) {
+                if (isVar) {
+                    //字符串替换
                     if (str.isNotEmpty()) {
                         addStatement("$builderName.append(\$S)", str)
                         str = ""
                     }
-                    val (tmpVar, _) = context.createInternalVariableByContextValue(variable)
+                    val (tmpVar, _) = context.createInternalVariableByContextValue(text)
                     addStatement("$builderName.append(\$T.toString(${tmpVar}))", Objects::class.java)
+                } else {
+                    str += text.replace(namedSqlParameterRegex) {
+                        //将字符串中的sql参数替换为占位符
+                        val (tmpVar, exprType) = context.createInternalVariableByContextValue(it.groupValues[1])
+                        val pair =
+                            it.groupValues[2].takeIf { it.isNotBlank() }?.run {
+                                (elementUtils.getTypeElement(this)
+                                    ?: throw HandlerException("class not found:$this")).asType()
+                                    .isParameterTypeHandlerAndMatchType(exprType)
+                            }
+                        if (pair == null || pair.first.isSameType(ParameterTypeHandler::class)) {
+                            addStatement("${TemplateHandler.sqlArgsVarName}.add(${tmpVar})")
+                        } else {
+                            val (handlerType, handleMethodParameterType) = pair
+                            if (exprType.isSameType(Any::class) && !handleMethodParameterType.isSameType(Any::class)) {
+                                addStatement("${TemplateHandler.sqlArgsVarName}.add($handlerType.handle(($handleMethodParameterType) ${tmpVar}))")
+                            } else {
+                                addStatement("${TemplateHandler.sqlArgsVarName}.add($handlerType.handle(${tmpVar}))")
+                            }
+                        }
+                        context.placeholderGen.gen()
+                    }
                 }
             }
+
             if (str.isNotEmpty()) {
                 addStatement("$builderName.append(\$S)", str)
             }
-            for (param in parameterList) {
-                val (tmpVar, _) = context.createInternalVariableByContextValue(param)
-                addStatement("${TemplateHandler.sqlArgsVarName}.add(${tmpVar})")
-            }
         }
-
     }
 
     companion object {
-        private val namedStringParameterRegex = "\\$\\{((?:[a-zA-Z0-1_]+\\.)*[a-zA-Z0-1_]+)}".toRegex()
-        private val namedSqlParameterRegex = "#\\{((?:[a-zA-Z0-9_]+\\.)*[a-zA-Z0-9_]+)}".toRegex()
+        val namedStringParameterRegex = "\\$\\{((?:[a-zA-Z0-9_]+\\.)*[a-zA-Z0-9_]+)}".toRegex()
+        val namedSqlParameterRegex = "#\\{((?:[a-zA-Z0-9_]+\\.)*[a-zA-Z0-9_]+)(?:,typeHandler=(.*?))?}".toRegex()
     }
 }

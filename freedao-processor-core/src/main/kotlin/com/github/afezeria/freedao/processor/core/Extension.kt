@@ -1,5 +1,6 @@
 package com.github.afezeria.freedao.processor.core
 
+import com.github.afezeria.freedao.ParameterTypeHandler
 import com.github.afezeria.freedao.ResultTypeHandler
 import com.squareup.javapoet.TypeName
 import java.io.PrintWriter
@@ -90,7 +91,8 @@ fun Element.hasGetter(): Boolean {
         is VariableElement -> {
             enclosingElement.enclosedElements.any {
                 it is ExecutableElement && it.simpleName.contentEquals(simpleName.getterName()) && it.returnType.isSameType(
-                    asType())
+                    asType()
+                )
             }
         }
         else -> false
@@ -108,7 +110,8 @@ fun KClass<*>.type(vararg typeArgs: TypeMirror): DeclaredType {
         throw IllegalArgumentException()
     }
 
-    return typeUtils.getDeclaredType(element,
+    return typeUtils.getDeclaredType(
+        element,
         *typeArgs.map { if (it is PrimitiveType) it.boxed() else it }.toTypedArray()
     )
 }
@@ -307,7 +310,7 @@ fun <R> runCatchingHandlerExceptionOrThrow(element: Element, block: () -> R): R?
 /**
  * 检查 this 是否是一个合法的ResultTypeHandler，以及该handler是否能够匹配[type]类型的返回值
  * @receiver TypeMirror
- * @param handlerType DeclaredType
+ * @param type DeclaredType
  * @param typeNotMatchMsg Function0<String> 类型不匹配时抛出的异常的错误信息
  */
 @OptIn(ExperimentalContracts::class)
@@ -338,4 +341,42 @@ fun TypeMirror.isResultTypeHandlerAndMatchType(
         throw HandlerException(typeNotMatchMsg())
     }
     return this
+}
+
+/**
+ * 检查 this 是否是一个合法的ParameterTypeHandler，以及该[type]是否能够匹配handle方法的参数类型
+ * @receiver TypeMirror
+ * @param type DeclaredType
+ * @param typeNotMatchMsg Function0<String> 类型不匹配时抛出的异常的错误信息
+ * @return 强转成DeclaredType的this和handle方法的第一个参数的类型
+ */
+@OptIn(ExperimentalContracts::class)
+fun TypeMirror.isParameterTypeHandlerAndMatchType(
+    type: TypeMirror,
+    typeNotMatchMsg: TypeMirror.() -> String = { "$this does not match $type type" },
+): Pair<DeclaredType, TypeMirror> {
+    contract {
+        returns() implies (this@isParameterTypeHandlerAndMatchType is DeclaredType)
+    }
+    if (this !is DeclaredType) {
+        throw HandlerException("ParameterTypeHandler must be Object")
+    }
+    if (this.isSameType(ParameterTypeHandler::class)) {
+        return this to Any::class.type
+    }
+    val handlerElement = this.asElement().enclosedElements
+        .find {
+            it is ExecutableElement
+                    && it.kind == ElementKind.METHOD
+                    && it.simpleName.toString() == "handle"
+                    && it.parameters.size == 1
+                    && it.modifiers.containsAll(listOf(Modifier.PUBLIC, Modifier.STATIC))
+        } as ExecutableElement?
+        ?: throw HandlerException("Invalid ParameterTypeHandler:${this}, missing method:handle")
+    if (!type.isSameType(Any::class)) {
+        if (!type.isAssignable(handlerElement.parameters[0].asType())) {
+            throw HandlerException(typeNotMatchMsg())
+        }
+    }
+    return this to handlerElement.parameters[0].asType()
 }
