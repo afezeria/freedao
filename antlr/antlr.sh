@@ -1,0 +1,2 @@
+#!/bin/sh
+java -jar $HOME/Applications/antlr-4.9.3-complete.jar -no-listener -visitor TestExpr.g4 -package "com.github.afezeria.freedao.processor.core.antlr" -o ../freedao-processor-core/src/main/java/com/github/afezeria/freedao/processor/core/antlr/
