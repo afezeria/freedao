@@ -48,6 +48,7 @@ class MainProcessor : AbstractProcessor() {
     override fun init(processingEnv: ProcessingEnvironment) {
         super.init(processingEnv)
         processingEnvironment = processingEnv
+        GlobalState.init()
     }
 
     private fun processElement(element: Element) {

@@ -28,15 +28,13 @@ val TypeMirror.typeName: TypeName
     get() = TypeName.get(this)
 
 fun TypeMirror.isSameType(other: TypeMirror) = typeUtils.isSameType(this, other)
-fun TypeMirror.isSubtype(other: TypeMirror) = typeUtils.isSubtype(this, other)
 fun TypeMirror.isAssignable(other: TypeMirror) = typeUtils.isAssignable(this, other)
+
 fun TypeMirror.isSameType(other: KClass<*>) = typeUtils.isSameType(this, other.type)
-fun TypeMirror.isSubtype(other: KClass<*>) = typeUtils.isSubtype(this, other.type)
 fun TypeMirror.isAssignable(other: KClass<*>) = typeUtils.isAssignable(this, other.type)
 
 fun TypeMirror.erasure(): TypeMirror = typeUtils.erasure(this)
 
-fun TypeMirror.unboxed(): PrimitiveType = typeUtils.unboxedType(this)
 fun TypeMirror.boxed(): TypeMirror = if (this is PrimitiveType) {
     typeUtils.boxedClass(this).asType()
 } else {
@@ -115,10 +113,8 @@ fun KClass<*>.type(vararg typeArgs: TypeMirror): DeclaredType {
     )
 }
 
-var quoteCharacter = '"'
-
 fun String.sqlQuote(): String {
-    return "${quoteCharacter}${this}${quoteCharacter}"
+    return "${global.quote}${this}${global.quote}"
 }
 
 val groupingRegex = Regex("[a-z]+|[0-9]+|[A-Z][a-z]+|[A-Z]++(?![a-z])|[A-Z]")
@@ -280,7 +276,7 @@ fun <R> runCatchingHandlerExceptionOrThrow(element: Element, block: () -> R): R?
     } catch (e: Throwable) {
         if (e is HandlerException) {
             processingEnvironment.messager.printMessage(Diagnostic.Kind.ERROR, e.message, element)
-            if (debug) {
+            if (global.debug) {
                 val stringWriter = StringWriter()
                 val printWriter = PrintWriter(stringWriter)
                 e.printStackTrace(printWriter)
@@ -291,7 +287,7 @@ fun <R> runCatchingHandlerExceptionOrThrow(element: Element, block: () -> R): R?
             }
         } else if (e.cause is HandlerException) {
             processingEnvironment.messager.printMessage(Diagnostic.Kind.ERROR, e.cause!!.message, element)
-            if (debug) {
+            if (global.debug) {
                 val stringWriter = StringWriter()
                 val printWriter = PrintWriter(stringWriter)
                 e.cause!!.printStackTrace(printWriter)

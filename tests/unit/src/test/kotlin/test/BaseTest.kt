@@ -4,7 +4,6 @@ import com.github.afezeria.freedao.annotation.Column
 import com.github.afezeria.freedao.annotation.Table
 import com.github.afezeria.freedao.processor.classic.contextVar
 import com.github.afezeria.freedao.processor.core.MainProcessor
-import com.github.afezeria.freedao.processor.core.debug
 import com.github.afezeria.freedao.processor.core.toSnakeCase
 import com.github.afezeria.freedao.runtime.classic.DaoContext
 import com.google.testing.compile.Compilation
@@ -35,9 +34,6 @@ import kotlin.reflect.jvm.javaField
  */
 @RunWith(Parameterized::class)
 abstract class BaseTest {
-    init {
-        debug = true
-    }
 
     @Parameter(0)
     lateinit var env: DbEnv
@@ -130,7 +126,7 @@ abstract class BaseTest {
 
         val compilation: Compilation = Compiler.javac()
             .withProcessors(MainProcessor())
-            .withOptions("-parameters")
+            .withOptions("-parameters", *env.aptArgs)
             .compile(javaFileObject)
         return compilation
     }
@@ -173,6 +169,17 @@ abstract class BaseTest {
         val jdbcUrl: String,
         val driverClassName: String,
     ) {
+
+        val aptArgs: Array<String>
+            get() {
+                return arrayOf("-Afreedao.debug=true",
+                    when (name) {
+                        "pg" -> "-Afreedao.quote=\""
+                        "mysql" -> "-Afreedao.quote=`"
+                        else -> ""
+                    }
+                )
+            }
 
         val dataSource: DataSource = HikariDataSource().apply {
             jdbcUrl = this@DbEnv.jdbcUrl
