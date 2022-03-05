@@ -10,6 +10,7 @@ import javax.lang.model.SourceVersion
 import javax.lang.model.element.Element
 import javax.lang.model.element.TypeElement
 import javax.tools.Diagnostic
+import kotlin.reflect.full.memberProperties
 import kotlin.system.measureTimeMillis
 
 
@@ -17,6 +18,14 @@ import kotlin.system.measureTimeMillis
  *
  */
 class MainProcessor : AbstractProcessor() {
+    override fun getSupportedOptions(): MutableSet<String> {
+        return mutableSetOf(
+            *GlobalState::class.memberProperties.map {
+                "freedao.${it.name}"
+            }.toTypedArray()
+        )
+    }
+
     override fun getSupportedSourceVersion(): SourceVersion {
         return SourceVersion.RELEASE_8
     }
@@ -37,9 +46,8 @@ class MainProcessor : AbstractProcessor() {
                             processElement(it)
                         }
                     }
-                    //NOTE级别要在gradle中开启debug模式才会输出，但是debug模式输出的其他信息太多了，实际上只能用WARNING级别
-                    processingEnvironment.messager.printMessage(Diagnostic.Kind.WARNING, "${time}ms")
-                    println("====================== $time")
+//                    processingEnvironment.messager.printMessage(Diagnostic.Kind.NOTE, "freedao processing time:${time}ms")
+                    println("========= freedao:${time}ms")
                 }
         }
         return false
