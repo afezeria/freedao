@@ -12,28 +12,34 @@ import java.time.LocalDateTime
 
 interface Entity
 
-@DDL(dialect = "mysql", value = """
+@DDL(
+    dialect = "mysql", value = """
 create table `person`
 (
     `id`   long auto_increment primary key,
     `name` varchar(200),
     `active` bool,
-    "age"         int,
-    "nick_name"   varchar(200),
+    `type`   varchar(20), 
+    `age`         int,
+    `nick_name`   varchar(200),
     `when_created` timestamp default now()
 )
-    """)
-@DDL(dialect = "pg", value = """
+    """
+)
+@DDL(
+    dialect = "pg", value = """
 create table "person"
 (
     "id"          bigserial primary key,
     "name"        varchar(200),
     "active"      bool,
+    "type"      varchar(20), 
     "age"         int,
     "nick_name"   varchar(200),
     "when_created" timestamp default now()
 )
-    """)
+    """
+)
 @Table(name = "person", primaryKeys = ["id"])
 open class Person(
     @field:Column(insert = false) @field:AutoFill open var id: Long? = null,
@@ -42,11 +48,23 @@ open class Person(
     open var whenCreated: LocalDateTime? = null,
     open var age: Int? = null,
     open var nickName: String? = null,
-    @Column(name = "age",
+    @Column(
+        name = "age",
         insert = false,
         update = false,
-        resultTypeHandle = StringResultTypeHandler::class) open var stringAge: String? = null,
+        resultTypeHandle = StringResultTypeHandler::class
+    )
+    open var stringAge: String? = null,
+    @Column(
+        parameterTypeHandle = Enum2StringParameterTypeHandler::class,
+        resultTypeHandle = PersonTypeResultTypeHandler::class,
+    )
+    open var type: PersonType? = null
 ) : Entity
+
+enum class PersonType {
+    TEACHER, STUDENT
+}
 
 
 @Table(name = "person", primaryKeys = ["id"])

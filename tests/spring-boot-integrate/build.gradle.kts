@@ -28,8 +28,13 @@ dependencies {
 //    }
 //}
 
-//java {
-//    toolchain {
-//        languageVersion.set(JavaLanguageVersion.of(17))
-//    }
-//}
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
+}
+
+tasks.named<JavaCompile>("compileJava") {
+    options.compilerArgs.add("-parameters")
+    options.compilerArgs.add("-Afreedao.debug=true")
+}

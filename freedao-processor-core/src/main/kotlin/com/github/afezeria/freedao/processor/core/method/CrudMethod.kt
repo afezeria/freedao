@@ -44,7 +44,8 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
                 throw HandlerException("The return type of count method must be Integer or Long")
             }
             mappings +=
-                MappingData(source = "_cot",
+                MappingData(
+                    source = "_cot",
                     target = "",
                     typeHandler = if (resultHelper.returnType.isSameType(Int::class)) {
                         Long2IntegerResultHandler::class.type
@@ -113,7 +114,7 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
             return """
                 <insert>
                 insert into ${crudEntity.dbFullyQualifiedName} (${insertProperties.joinToString { it.column.name.sqlQuote() }})
-                values (${insertProperties.joinToString { "#{$parameterName.${it.name}}" }})
+                values (${insertProperties.joinToString { it.sqlParameterStr(parameterName) }})
                 </insert>
             """.trimIndent()
         }
@@ -128,7 +129,8 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
             val columns = insertProperties.joinToString(
                 separator = "",
                 prefix = "<trim prefixOverrides='' suffixOverrides=','>",
-                postfix = "</trim>") {
+                postfix = "</trim>"
+            ) {
                 //language=xml
                 """
                     <if test="$parameterName.${it.name} != null">${it.column.name.sqlQuote()}, </if>
@@ -137,10 +139,11 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
             val values = insertProperties.joinToString(
                 separator = "",
                 prefix = "<trim prefixOverrides='' suffixOverrides=','>",
-                postfix = "</trim>") {
+                postfix = "</trim>"
+            ) {
                 //language=xml
                 """
-                    <if test="$parameterName.${it.name} != null">#{$parameterName.${it.name}}, </if>
+                    <if test="$parameterName.${it.name} != null">${it.sqlParameterStr(parameterName)}, </if>
                 """.trimIndent()
             }
             //language=xml
@@ -180,10 +183,10 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
             val properties = crudEntity.getProperties()
                 .filter { it.column.run { exist && update } }
             val set = properties.joinToString {
-                "${it.column.name.sqlQuote()} = #{$parameterName.${it.name}}"
+                "${it.column.name.sqlQuote()} = ${it.sqlParameterStr(parameterName)}"
             }
             val where = crudEntity.primaryKey.joinToString(" and ") {
-                "${it.column.name.sqlQuote()} = #{$parameterName.${it.name}}"
+                "${it.column.name.sqlQuote()} = ${it.sqlParameterStr(parameterName)}"
             }
             //language=xml
             return """
@@ -205,12 +208,12 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
                 //language=xml
                 """
                     <if test="$parameterName.${it.name} != null">
-                        ${it.column.name.sqlQuote()} = #{$parameterName.${it.name}},
+                        ${it.column.name.sqlQuote()} = ${it.sqlParameterStr(parameterName)},
                     </if>
                 """.trimIndent()
             }
             val where = crudEntity.primaryKey.joinToString(" and ") {
-                "${it.column.name.sqlQuote()} = #{$parameterName.${it.name}}"
+                "${it.column.name.sqlQuote()} = ${it.sqlParameterStr(parameterName)}"
             }
             //language=xml
             return """

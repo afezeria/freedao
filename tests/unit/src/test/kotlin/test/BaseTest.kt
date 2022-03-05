@@ -109,7 +109,6 @@ abstract class BaseTest {
             Path("./src/test/java/" + T::class.qualifiedName?.replace('.', '/') + ".java")
         ).let {
             CompilationSubject.assertThat(it).failed()
-            it.diagnostics().forEach { println(it.toString()) }
 
             block.invoke(it)
         }
@@ -128,6 +127,7 @@ abstract class BaseTest {
             .withProcessors(MainProcessor())
             .withOptions("-parameters", *env.aptArgs)
             .compile(javaFileObject)
+        compilation.diagnostics().forEach { println(it.toString()) }
         return compilation
     }
 

@@ -273,7 +273,6 @@ abstract class NamedMethod private constructor(
                     delete from ${crudEntity.dbFullyQualifiedName} ${buildWhereClause()}
                     </delete>
                 """.trimIndent()
-
         }
     }
 
@@ -284,7 +283,8 @@ abstract class NamedMethod private constructor(
                     throw HandlerException("The return type of count method must be Integer or Long")
                 }
             }
-            mappings += MappingData(source = "_cot",
+            mappings += MappingData(
+                source = "_cot",
                 target = "",
                 typeHandler = if (resultHelper.returnType.isSameType(Int::class)) {
                     Long2IntegerResultHandler::class.type
@@ -292,7 +292,8 @@ abstract class NamedMethod private constructor(
                     ResultTypeHandler::class.type
                 },
                 targetType = null,
-                constructorParameterIndex = -1)
+                constructorParameterIndex = -1
+            )
         }
 
         override fun getTemplate(): String {
@@ -399,33 +400,43 @@ abstract class NamedMethod private constructor(
 
             fun render() = renderFn(this)
 
-            class LessThanEqual : Condition(renderFn = { "$column &lt;= #{${params[0].simpleName}}" })
-            class GreaterThanEqual : Condition(renderFn = { "$column &gt;= #{${params[0].simpleName}}" })
+            /**
+             * 根据方法参数索引创建sql参数字符串
+             * @param methodParameterIndex Int
+             * @return String
+             */
+            fun createSqlParameter(methodParameterIndex: Int) =
+                "#{${params[methodParameterIndex].simpleName}${typeHandlerStr()}}"
+
+            fun typeHandlerStr() = property?.column?.parameterTypeHandle?.let { ",typeHandler=${it}" } ?: ""
+
+            class LessThanEqual : Condition(renderFn = { "$column &lt;= ${createSqlParameter(0)}" })
+            class GreaterThanEqual : Condition(renderFn = { "$column &gt;= ${createSqlParameter(0)}" })
             class NotNull :
                 Condition(requiredParameterTypesFn = { emptyList() }, renderFn = { "$column is not null" })
 
             class IsNull : Condition(requiredParameterTypesFn = { emptyList() }, renderFn = { "$column is null" })
-            class LessThan : Condition(renderFn = { "$column &lt; #{${params[0].simpleName}}" })
-            class GreaterThan : Condition(renderFn = { "$column &gt; #{${params[0].simpleName}}" })
+            class LessThan : Condition(renderFn = { "$column &lt; ${createSqlParameter(0)}" })
+            class GreaterThan : Condition(renderFn = { "$column &gt; ${createSqlParameter(0)}" })
             class NotIn : Condition(
                 requiredParameterTypesFn = { listOf(Collection::class.type(property!!.type)) },
                 renderFn = {
-                    "$column not in (<foreach collection='${params[0].simpleName}' item='item' separator=','>#{item}</foreach>)"
+                    "$column not in (<foreach collection='${params[0].simpleName}' item='item' separator=','>#{item${typeHandlerStr()}}</foreach>)"
                 }
             )
 
-            class NotLike : Condition(renderFn = { "$column not like #{${params[0].simpleName}}" })
+            class NotLike : Condition(renderFn = { "$column not like ${createSqlParameter(0)}" })
             class Between : Condition(
                 requiredParameterTypesFn = { listOf(property!!.type, property!!.type) },
-                renderFn = { "$column between #{${params[0].simpleName}} and #{${params[1].simpleName}}" },
+                renderFn = { "$column between ${createSqlParameter(0)} and ${createSqlParameter(1)}" },
             )
 
-            class Like : Condition(renderFn = { "$column like #{${params[0].simpleName}}" })
-            class Not : Condition(renderFn = { "$column &lt;&gt; #{${params[0].simpleName}}" })
+            class Like : Condition(renderFn = { "$column like ${createSqlParameter(0)}" })
+            class Not : Condition(renderFn = { "$column &lt;&gt; ${createSqlParameter(0)}" })
             class In : Condition(
                 requiredParameterTypesFn = { listOf(Collection::class.type(property!!.type)) },
                 renderFn = {
-                    "$column in (<foreach collection='${params[0].simpleName}' item='item' separator=','>#{item}</foreach>)"
+                    "$column in (<foreach collection='${params[0].simpleName}' item='item' separator=','>#{item${typeHandlerStr()}}</foreach>)"
                 }
             )
 
@@ -436,7 +447,7 @@ abstract class NamedMethod private constructor(
              * Is不能作为关键字出现在方法名中
              * 当字段名后没有接其他条件关键字或Order时当作Is处理
              */
-            class Is : Condition(renderFn = { "$column = #{${params[0].simpleName}}" })
+            class Is : Condition(renderFn = { "$column = ${createSqlParameter(0)}" })
             class And : Condition(requiredParameterTypesFn = { emptyList() }, renderFn = { "and" })
             class Or : Condition(requiredParameterTypesFn = { emptyList() }, renderFn = { "or" })
             companion object {

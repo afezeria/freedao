@@ -3,6 +3,7 @@ package test.java.success.core.method.style.named
 import org.junit.Test
 import test.BaseTest
 import test.Person
+import test.PersonType
 import test.java.success.core.method.style.named.prefix.*
 import kotlin.test.assertContentEquals
 
@@ -41,6 +42,22 @@ class QueryTest : BaseTest() {
         val impl = getJavaDaoInstance<QueryByNameDao>()
         val list = impl.queryByName("a")
         assert(list.size == 1)
+    }
+
+    @Test
+    fun queryWithParameterTypeHandler() {
+        initData<Person>()
+        initTable(
+            "person",
+            listOf(
+                mapOf("id" to 1, "type" to PersonType.TEACHER.name),
+                mapOf("id" to 2, "type" to PersonType.STUDENT.name),
+            )
+        )
+        val impl = getJavaDaoInstance<QueryByWithParameterTypeHandlerDao>()
+        val list = impl.queryByType(PersonType.TEACHER)
+        assert(list.size == 1)
+        assert(list[0].type == PersonType.TEACHER)
     }
 
     @Test

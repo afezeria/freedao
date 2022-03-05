@@ -20,6 +20,7 @@ class ColumnAnn(element: VariableElement) {
     val insert: Boolean
     val update: Boolean
     val resultTypeHandle: DeclaredType
+    val parameterTypeHandle: DeclaredType?
 
     init {
         val column = element.getAnnotation(Column::class.java)
@@ -33,6 +34,9 @@ class ColumnAnn(element: VariableElement) {
                     ?.isResultTypeHandlerAndMatchType(element.asType()) {
                         "$this cannot handle field ${element.simpleName}:${element.asType()}"
                     } ?: ResultTypeHandler::class.type
+            parameterTypeHandle = it?.mirroredType { parameterTypeHandle }
+                ?.isParameterTypeHandlerAndMatchType(element.asType())
+                ?.first
         }
     }
 }
@@ -54,7 +58,8 @@ object ResultMappingsAnn {
                 val constructor = (
                         itemType.asElement().enclosedElements.filter {
                             it is ExecutableElement && it.kind == ElementKind.CONSTRUCTOR && it.modifiers.contains(
-                                Modifier.PUBLIC)
+                                Modifier.PUBLIC
+                            )
                         }.minByOrNull { (it as ExecutableElement).parameters.size }
                             ?: throw HandlerException("Return type $itemType must have a public constructor")
                         ) as ExecutableElement
