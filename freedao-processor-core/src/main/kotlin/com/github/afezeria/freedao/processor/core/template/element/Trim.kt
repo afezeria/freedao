@@ -29,17 +29,17 @@ open class Trim : XmlElement() {
     override fun render() {
         context.newScope { builderName ->
             super.render()
-            val postfixArr = suffixOverrides.split(splitRegex).map { it.replace(replaceRegex, "|") }
+            val suffixArr = suffixOverrides.split(splitRegex).map { it.replace(replaceRegex, "|") }
                 .sortedBy { it.length }
             val prefixArr = prefixOverrides.split(splitRegex).map { it.replace(replaceRegex, "|") }
                 .sortedBy { it.length }
-            addStatement("\$L = \$T.appendAndTrim(\$L,\$S,new String[]{${prefixArr.joinToString { "\$S" }}},new String[]{${postfixArr.joinToString { "\$S" }}})",
+            addStatement("\$L = \$T.appendAndTrim(\$L,\$S,new String[]{${prefixArr.joinToString { "\$S" }}},new String[]{${suffixArr.joinToString { "\$S" }}})",
                 builderName,
                 TrimHelper::class.type,
                 builderName,
                 prefix,
                 *prefixArr.toTypedArray(),
-                *postfixArr.toTypedArray()
+                *suffixArr.toTypedArray()
             )
         }
     }

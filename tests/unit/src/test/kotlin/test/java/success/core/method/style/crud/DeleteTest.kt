@@ -2,19 +2,41 @@ package test.java.success.core.method.style.crud
 
 import org.junit.Test
 import test.BaseTest
+import test.Clazz
 import test.Person
+import test.java.success.core.method.style.crud.delete.DeleteWithCompositePrimaryKeyDao
 import test.java.success.core.method.style.crud.delete.PersonDeleteDao
+import kotlin.test.assertFails
 
 /**
  *
  */
 class DeleteTest : BaseTest() {
     @Test
-    fun success() {
+    fun failureWhenAllFieldAreNull() {
         initData(Person(1, "a"))
 
         val impl = getJavaDaoInstance<PersonDeleteDao>()
-        val updateCount = impl.delete(1)
-        assert(updateCount == 1)
+        assertFails {
+            impl.delete(Person())
+        }
+    }
+
+    @Test
+    fun deleteByMultipleField() {
+        initData(Clazz(1, 1, "a"), Clazz(1, 2, "a"))
+
+        val impl = getJavaDaoInstance<DeleteWithCompositePrimaryKeyDao>()
+        val delete = impl.delete(Clazz(1, 1))
+        assert(delete == 1)
+    }
+
+    @Test
+    fun deleteById() {
+        initData(Clazz(1, 1, "a"), Clazz(1, 2, "a"))
+
+        val impl = getJavaDaoInstance<DeleteWithCompositePrimaryKeyDao>()
+        val delete = impl.delete(Clazz(teacherId = 2))
+        assert(delete == 1)
     }
 }

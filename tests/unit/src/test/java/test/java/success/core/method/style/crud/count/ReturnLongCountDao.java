@@ -8,5 +8,5 @@ import test.Person;
  */
 @Dao(crudEntity = Person.class)
 public interface ReturnLongCountDao {
-    Long count();
+    Long count(Person person);
 }

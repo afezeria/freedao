@@ -4,7 +4,7 @@ import org.junit.Test
 import test.BaseTest
 import test.Person
 import test.java.failure.core.method.style.crud.insert.EntityHasNoInsertablePropertyInsertBadDao
-import test.java.failure.core.method.style.crud.insert.EntityHasNoInsertablePropertyInsertSelectiveBadDao
+import test.java.failure.core.method.style.crud.insert.EntityHasNoInsertablePropertyInsertNonNullFieldBadDao
 import test.java.failure.core.method.style.crud.insert.ParameterNotMatchInsertBadDao
 
 /**
@@ -27,8 +27,8 @@ class InsertTest : BaseTest() {
     }
 
     @Test
-    fun `insertSelective, crudEntity has not insertable property `() {
-        compileFailure<EntityHasNoInsertablePropertyInsertSelectiveBadDao> {
+    fun `insertNonNullField, crudEntity has not insertable property `() {
+        compileFailure<EntityHasNoInsertablePropertyInsertNonNullFieldBadDao> {
             assertErrorMessageEquals("The entity class specified by Dao.crudEntity has no property that can be used for insertion")
         }
     }

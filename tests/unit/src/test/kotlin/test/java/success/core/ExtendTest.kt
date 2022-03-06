@@ -11,14 +11,14 @@ import kotlin.test.assertContentEquals
  */
 class ExtendTest : BaseTest() {
     @Test
-    fun all() {
+    fun list() {
         initData(
             Person(1, "a"),
             Person(2, "b")
         )
 
-        val impl = getJavaDaoInstance<SubDao>()
-        val list = impl.all()
+        val impl = getJavaDaoInstance<SubAllDao>()
+        val list = impl.list(null)
         assert(list.size == 2)
         assertContentEquals(list.map { it.id }, listOf(1, 2))
     }
@@ -26,7 +26,7 @@ class ExtendTest : BaseTest() {
     @Test
     fun insert() {
         initData<Person>()
-        val impl = getJavaDaoInstance<SubDao>()
+        val impl = getJavaDaoInstance<SubInsertDao>()
         val entity = Person(name = "a")
         val updateCount = impl.insert(entity)
         assert(updateCount == 1)

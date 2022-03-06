@@ -33,7 +33,7 @@ class TemplateHandlerTest : BaseTest() {
     @Test
     fun `missing property`() {
         compileFailure<MissingPropertyBadDao> {
-            assertErrorMessageEquals("error expr:person.company, missing property:test.Person.company.")
+            assertErrorMessageEquals("error expr:person.company, missing property:test.Person.company")
         }
     }
 

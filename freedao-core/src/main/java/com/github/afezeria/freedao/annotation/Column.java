@@ -9,6 +9,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
+ * 字段注解
+ * <p>
+ * 当使用标准crud方法时如果有多个实体字段映射到同一个数据库字段，
+ * 且作为参数的实体的这些字段的值不为null且一致时会导致where条件为false
  */
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)

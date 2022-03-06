@@ -51,8 +51,25 @@ fun DeclaredType.getBeanPropertyType(
     name: String,
     errorMsg: () -> String = { "missing property:${this}.$name" },
 ): TypeMirror {
-    return asElement().enclosedElements.find { it.simpleName.toString() == name && it.hasGetter() }?.asType()
+    fun findPropertyAndOwnerElement(type: DeclaredType, propName: String): Pair<TypeMirror, DeclaredType>? {
+        val element = type.asElement() as TypeElement
+        val propType = element.enclosedElements
+            .find { it.simpleName.toString() == name && it.hasGetter() }
+            ?.asType()
+        return if (propType == null) {
+            element.superclass?.takeIf { it !is NoType }
+                ?.let { findPropertyAndOwnerElement(it as DeclaredType, propName) }
+        } else {
+            propType to type
+        }
+    }
+    val (propType, propOwnerType) = findPropertyAndOwnerElement(this, name)
         ?: throw HandlerException(errorMsg())
+    return propType.parameterized(this, propOwnerType)
+
+//
+//    return asElement().enclosedElements.find { it.simpleName.toString() == name && it.hasGetter() }?.asType()
+//        ?: throw HandlerException(errorMsg())
 }
 
 val DeclaredType.simpleName: String
@@ -77,9 +94,12 @@ fun Element.hasSetter(): Boolean {
     return when (this) {
         is VariableElement -> {
             enclosingElement.enclosedElements.any {
-                it is ExecutableElement && it.simpleName.contentEquals(simpleName.setterName())
+                it is ExecutableElement
+                        && it.simpleName.contentEquals(simpleName.setterName())
                         && it.parameters.size == 1
                         && it.parameters[0].asType().isSameType(asType())
+                        && it.modifiers.contains(Modifier.PUBLIC)
+                        && !it.modifiers.contains(Modifier.STATIC)
             }
         }
         else -> false
@@ -90,9 +110,12 @@ fun Element.hasGetter(): Boolean {
     return when (this) {
         is VariableElement -> {
             enclosingElement.enclosedElements.any {
-                it is ExecutableElement && it.simpleName.contentEquals(simpleName.getterName()) && it.returnType.isSameType(
-                    asType()
-                )
+                it is ExecutableElement
+                        && it.simpleName.contentEquals(simpleName.getterName())
+                        && it.parameters.size == 0
+                        && it.returnType.isSameType(asType())
+                        && it.modifiers.contains(Modifier.PUBLIC)
+                        && !it.modifiers.contains(Modifier.STATIC)
             }
         }
         else -> false

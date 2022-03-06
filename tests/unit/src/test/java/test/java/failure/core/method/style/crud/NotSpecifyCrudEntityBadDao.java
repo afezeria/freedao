@@ -10,5 +10,5 @@ import java.util.List;
  */
 @Dao
 public interface NotSpecifyCrudEntityBadDao {
-    List<Person> all();
+    List<Person> list();
 }

@@ -138,7 +138,9 @@ class TemplateHandler(map: Map<String, TypeMirror>) {
                         type = Int::class.type
                         text = "(${type}) $text.size()"
                     } else {
-                        type = declaredType.getBeanPropertyType(s) { "error expr:$originalText.$s, missing property:${declaredType}.$s." }
+                        type = declaredType.getBeanPropertyType(s) {
+                            "error expr:$originalText.$s, missing property:${declaredType}.$s"
+                        }
                         text = "$text.get${s.replaceFirstChar { it.uppercaseChar() }}()"
                     }
                 }

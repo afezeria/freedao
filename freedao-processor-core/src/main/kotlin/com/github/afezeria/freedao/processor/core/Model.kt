@@ -22,9 +22,13 @@ open class BeanObjectModel(val type: DeclaredType) {
         //处理父类属性
         var superType = element.superclass
         while (superType.isCustomJavaBean()) {
-            val el = (superType as DeclaredType).asElement() as TypeElement
+            val el = superType.asElement() as TypeElement
             el.enclosedElements
-                .filter { it.kind == ElementKind.FIELD && it.hasGetter() && properties.none { p -> p.name == it.simpleName.toString() } }
+                .filter {
+                    it.kind == ElementKind.FIELD
+                            && it.hasGetter()
+                            && properties.none { p -> p.name == it.simpleName.toString() }
+                }
                 .forEach {
                     properties += BeanProperty(it as VariableElement)
                 }
@@ -48,7 +52,7 @@ class EntityObjectModel private constructor(type: DeclaredType) : BeanObjectMode
                 schema = it.schema
             }
             primaryKey = properties.filter { prop ->
-                prop.name in it.primaryKeys
+                prop.column.name in it.primaryKeys
             }
         }
 

@@ -9,5 +9,5 @@ import test.Person;
 @Dao(crudEntity = Person.class)
 public interface ReturnIntegerCountDao {
 
-    Integer count();
+    Integer count(Person person);
 }

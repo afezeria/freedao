@@ -4,7 +4,7 @@ import org.junit.Test
 import test.BaseTest
 import test.Person
 import test.java.success.core.method.style.crud.update.PersonUpdateDao
-import test.java.success.core.method.style.crud.update.PersonUpdateSelectiveDao
+import test.java.success.core.method.style.crud.update.PersonUpdateNonNullFieldDao
 
 /**
  *
@@ -38,10 +38,10 @@ class UpdateTest : BaseTest() {
             assert(it["when_created"] != null)
         }
 
-        val impl = getJavaDaoInstance<PersonUpdateSelectiveDao>()
+        val impl = getJavaDaoInstance<PersonUpdateNonNullFieldDao>()
         val entity = Person(1, "b")
 
-        val update = impl.updateSelective(entity)
+        val update = impl.updateNonNullField(entity)
         assert(update == 1)
         env.find("person")[0].let {
             assert(it["name"] == "b")

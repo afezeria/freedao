@@ -4,7 +4,7 @@ import org.junit.Test
 import test.BaseTest
 import test.Person
 import test.java.success.core.method.style.crud.insert.PersonInsertDao
-import test.java.success.core.method.style.crud.insert.PersonInsertSelectiveDao
+import test.java.success.core.method.style.crud.insert.PersonInsertNonNullFieldDao
 import test.java.success.core.method.style.crud.insert.ReturnLongPersonInsertDao
 
 /**
@@ -28,9 +28,9 @@ class InsertTest : BaseTest() {
     @Test
     fun `insert non-null fields`() {
         initData<Person>()
-        val impl = getJavaDaoInstance<PersonInsertSelectiveDao>()
+        val impl = getJavaDaoInstance<PersonInsertNonNullFieldDao>()
         val entity = Person(name = "a")
-        val updateCount = impl.insertSelective(entity)
+        val updateCount = impl.insertNonNullField(entity)
         assert(updateCount == 1)
         assert(entity.id != null)
         env.find("person", "id = ${entity.id}")[0].let {

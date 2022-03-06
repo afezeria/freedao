@@ -20,9 +20,17 @@ class WhereNodeDaoTest : BaseTest() {
         val list1 = impl.query(1)
         assert(list1.size == 1)
         assertContentEquals(list1.map { it.id }, listOf(1))
+    }
 
-        val list2 = impl.query(null)
-        assert(list2.size == 2)
-        assertContentEquals(list2.map { it.id }, listOf(1, 2))
+    @Test
+    fun whereBodyIsBlank() {
+        initData(
+            Person(1, "a", active = true),
+            Person(2, "b", active = true),
+        )
+        val impl = getJavaDaoInstance<WhereNodeDao>()
+        val list1 = impl.query(null)
+        assert(list1.size == 2)
+        assertContentEquals(list1.map { it.id }, listOf(1, 2))
     }
 }

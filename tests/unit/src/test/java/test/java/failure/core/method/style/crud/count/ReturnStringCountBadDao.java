@@ -8,5 +8,5 @@ import test.Person;
  */
 @Dao(crudEntity = Person.class)
 public interface ReturnStringCountBadDao {
-    String count();
+    String count(Person person);
 }

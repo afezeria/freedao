@@ -10,5 +10,5 @@ import test.Person;
 @Dao(crudEntity = Person.class)
 public interface PersonDeleteDao {
 
-    int delete(@NotNull Long id);
+    int delete(@NotNull Person person);
 }

@@ -44,6 +44,8 @@ abstract class MethodHandler protected constructor(
                 variableElement,
             )
         }
+    val requiredParameters = mutableListOf<Parameter>()
+
     var returnUpdateCount = false
     lateinit var statementType: StatementType
 
@@ -114,6 +116,28 @@ abstract class MethodHandler protected constructor(
 
 
     abstract fun getTemplate(): String
+
+
+    fun requireParameterByTypes(vararg types: TypeMirror) {
+        var matched = false
+        var idx = 0
+        types.forEach { type ->
+            while (idx < parameters.size) {
+                if (parameters[idx].type.isAssignable(type)) {
+                    requiredParameters += parameters[idx]
+                    matched = true
+                    idx++
+                    return@forEach
+                } else {
+                    if (matched) {
+                        break
+                    }
+                    idx++
+                }
+            }
+            throw HandlerException("Missing parameter of type ${types[0]}")
+        }
+    }
 
     fun requireParameter(typeMirror: TypeMirror, name: String? = null) {
         if (name == null) {

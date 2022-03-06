@@ -14,7 +14,21 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
     init {
         crudEntity = daoHandler.crudEntity
             ?: throw HandlerException("Method $name requires Dao.crudEntity to be specified")
+        requireParameterByTypes(crudEntity.type)
+    }
 
+    val parameterName: String by lazy {
+        requiredParameters[0].name
+    }
+    val where: String by lazy {
+        crudEntity.properties.joinToString(separator = "\n") {
+            //language=Xml
+            """
+                    <if test='${parameterName}.${it.name} != null'>
+                    and ${it.column.name.sqlQuote()} = ${it.sqlParameterStr(parameterName)}
+                    </if>
+                """.trimIndent()
+        }
     }
 
 
@@ -27,10 +41,10 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
                 "count" -> Count(element, daoHandler)
                 "delete" -> Delete(element, daoHandler)
                 "insert" -> Insert(element, daoHandler)
-                "insertSelective" -> InsertSelective(element, daoHandler)
+                "insertNonNullField" -> InsertNonNullField(element, daoHandler)
                 "update" -> Update(element, daoHandler)
-                "updateSelective" -> UpdateSelective(element, daoHandler)
-                "all" -> All(element, daoHandler)
+                "updateNonNullField" -> UpdateNonNullField(element, daoHandler)
+                "list" -> ListMethod(element, daoHandler)
                 else -> null
             }
         }
@@ -62,6 +76,11 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
             return """
                 <select>
                 select count(*) as _cot from ${crudEntity.dbFullyQualifiedName}
+                <if test='${parameterName} != null'>
+                <where>
+                $where
+                </where>
+                </if>
                 </select>
             """.trimIndent()
         }
@@ -71,26 +90,49 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
         CrudMethod(element, daoHandler) {
         init {
             returnUpdateCount = true
-            if (crudEntity.primaryKey.isEmpty()) {
-                throw HandlerException(
-                    "The delete method requires that the Dao.crudEntity has primary key",
-                )
-            }
-            crudEntity.primaryKey.forEach { requireParameter(it.type) }
         }
 
         override fun getTemplate(): String {
-            val where = crudEntity.primaryKey.joinToString(separator = " and ") {
-                "${it.column.name.sqlQuote()} = #{${it.name}}"
-            }
             //language=xml
             return """
                 <delete>
-                delete from ${crudEntity.dbFullyQualifiedName} where $where
+                delete from ${crudEntity.dbFullyQualifiedName}
+                where
+                <if test='$parameterName != null'>
+                <trim suffixOverrides='' prefixOverrides='and '>
+                $where
+                </trim>
+                </if>
                 </delete>
             """.trimIndent()
         }
+    }
 
+    class ListMethod(element: ExecutableElement, daoHandler: DaoHandler) :
+        CrudMethod(element, daoHandler) {
+
+        init {
+            if (
+                !(resultHelper.returnType.isAssignable(Collection::class.type) &&
+                        resultHelper.itemType.isSameType(crudEntity.type))
+            ) {
+                throw HandlerException("The return type must be assignable to Collection<${crudEntity.type.typeName}>")
+            }
+        }
+
+        override fun getTemplate(): String {
+            //language=xml
+            return """
+                <select>
+                select ${mappings.joinToString { it.source }} from ${crudEntity.dbFullyQualifiedName}
+                <if test='${parameterName} != null'>
+                <where>
+                $where
+                </where>
+                </if>
+                </select>
+            """.trimIndent()
+        }
     }
 
     open class Insert(element: ExecutableElement, daoHandler: DaoHandler) :
@@ -99,7 +141,6 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
 
         init {
             returnUpdateCount = true
-            requireParameter(crudEntity.type)
             insertProperties = crudEntity.properties
                 .filter { it.column.run { exist && insert } }
             if (insertProperties.isEmpty()) {
@@ -108,7 +149,6 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
         }
 
         override fun getTemplate(): String {
-            val parameterName = parameters.find { it.type.isSameType(crudEntity.type) }!!.name
 
             //language=xml
             return """
@@ -121,11 +161,10 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
 
     }
 
-    class InsertSelective(element: ExecutableElement, daoHandler: DaoHandler) :
+    class InsertNonNullField(element: ExecutableElement, daoHandler: DaoHandler) :
         Insert(element, daoHandler) {
 
         override fun getTemplate(): String {
-            val parameterName = element.parameters[0].simpleName.toString()
             val columns = insertProperties.joinToString(
                 separator = "",
                 prefix = "<trim prefixOverrides='' suffixOverrides=','>",
@@ -163,7 +202,6 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
 
         init {
             returnUpdateCount = true
-            requireParameter(crudEntity.type)
             if (crudEntity.primaryKey.isEmpty()) {
                 throw HandlerException(
                     "The update method requires that the class specified by Dao.crudEntity must have primary key",
@@ -178,13 +216,13 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
             }
         }
 
-        override fun getTemplate(): String {
-            val parameterName = element.parameters[0].simpleName.toString()
-            val properties = crudEntity.getProperties()
-                .filter { it.column.run { exist && update } }
-            val set = properties.joinToString {
+        open fun setClause(): String {
+            return updateProperties.joinToString {
                 "${it.column.name.sqlQuote()} = ${it.sqlParameterStr(parameterName)}"
             }
+        }
+
+        override fun getTemplate(): String {
             val where = crudEntity.primaryKey.joinToString(" and ") {
                 "${it.column.name.sqlQuote()} = ${it.sqlParameterStr(parameterName)}"
             }
@@ -192,19 +230,20 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
             return """
                 <update>
                 update ${crudEntity.dbFullyQualifiedName}
-                set $set
+                <set>
+                ${setClause()}
+                </set>
                 where $where
                 </update>
             """.trimIndent()
         }
     }
 
-    class UpdateSelective(element: ExecutableElement, daoHandler: DaoHandler) :
+    class UpdateNonNullField(element: ExecutableElement, daoHandler: DaoHandler) :
         Update(element, daoHandler) {
 
-        override fun getTemplate(): String {
-            val parameterName = element.parameters[0].simpleName.toString()
-            val set = updateProperties.joinToString(separator = "", prefix = "<set>", postfix = "</set>") {
+        override fun setClause(): String {
+            return updateProperties.joinToString(separator = "") {
                 //language=xml
                 """
                     <if test="$parameterName.${it.name} != null">
@@ -212,40 +251,7 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
                     </if>
                 """.trimIndent()
             }
-            val where = crudEntity.primaryKey.joinToString(" and ") {
-                "${it.column.name.sqlQuote()} = ${it.sqlParameterStr(parameterName)}"
-            }
-            //language=xml
-            return """
-                <update>
-                update ${crudEntity.dbFullyQualifiedName}
-                $set
-                where $where
-                </update>
-            """.trimIndent()
         }
     }
 
-    class All(element: ExecutableElement, daoHandler: DaoHandler) :
-        CrudMethod(element, daoHandler) {
-
-        init {
-            if (
-                !(resultHelper.returnType.isAssignable(Collection::class.type) &&
-                        resultHelper.itemType.isSameType(crudEntity.type))
-            ) {
-                throw HandlerException("The return type must be assignable to Collection<${crudEntity.type.typeName}>")
-            }
-        }
-
-        override fun getTemplate(): String {
-
-            //language=xml
-            return """
-                <select>
-                select ${mappings.joinToString { it.source }} from ${crudEntity.dbFullyQualifiedName}
-                </select>
-            """.trimIndent()
-        }
-    }
 }
