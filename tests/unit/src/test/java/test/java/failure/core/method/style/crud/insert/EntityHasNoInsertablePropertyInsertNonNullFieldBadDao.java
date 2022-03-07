@@ -8,5 +8,5 @@ import test.PersonWithoutInsertableProperty;
  */
 @Dao(crudEntity = PersonWithoutInsertableProperty.class)
 public interface EntityHasNoInsertablePropertyInsertNonNullFieldBadDao {
-    int insertNonNullField(PersonWithoutInsertableProperty entity);
+    int insertNonNullFields(PersonWithoutInsertableProperty entity);
 }

@@ -27,7 +27,7 @@ class InsertTest : BaseTest() {
     }
 
     @Test
-    fun `insertNonNullField, crudEntity has not insertable property `() {
+    fun `insertNonNullFields, crudEntity has not insertable property `() {
         compileFailure<EntityHasNoInsertablePropertyInsertNonNullFieldBadDao> {
             assertErrorMessageEquals("The entity class specified by Dao.crudEntity has no property that can be used for insertion")
         }

@@ -10,5 +10,5 @@ import test.Person;
 @Dao(crudEntity = Person.class)
 public interface PersonUpdateNonNullFieldDao {
 
-    int updateNonNullField(@NotNull Person entity);
+    int updateNonNullFields(@NotNull Person entity);
 }

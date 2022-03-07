@@ -41,7 +41,7 @@ class UpdateTest : BaseTest() {
         val impl = getJavaDaoInstance<PersonUpdateNonNullFieldDao>()
         val entity = Person(1, "b")
 
-        val update = impl.updateNonNullField(entity)
+        val update = impl.updateNonNullFields(entity)
         assert(update == 1)
         env.find("person")[0].let {
             assert(it["name"] == "b")

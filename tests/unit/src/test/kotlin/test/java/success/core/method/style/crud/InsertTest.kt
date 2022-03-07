@@ -30,7 +30,7 @@ class InsertTest : BaseTest() {
         initData<Person>()
         val impl = getJavaDaoInstance<PersonInsertNonNullFieldDao>()
         val entity = Person(name = "a")
-        val updateCount = impl.insertNonNullField(entity)
+        val updateCount = impl.insertNonNullFields(entity)
         assert(updateCount == 1)
         assert(entity.id != null)
         env.find("person", "id = ${entity.id}")[0].let {

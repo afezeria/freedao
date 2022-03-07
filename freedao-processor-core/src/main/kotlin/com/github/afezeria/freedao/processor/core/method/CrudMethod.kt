@@ -41,9 +41,9 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
                 "count" -> Count(element, daoHandler)
                 "delete" -> Delete(element, daoHandler)
                 "insert" -> Insert(element, daoHandler)
-                "insertNonNullField" -> InsertNonNullField(element, daoHandler)
+                "insertNonNullFields" -> InsertNonNullFields(element, daoHandler)
                 "update" -> Update(element, daoHandler)
-                "updateNonNullField" -> UpdateNonNullField(element, daoHandler)
+                "updateNonNullFields" -> UpdateNonNullFields(element, daoHandler)
                 "list" -> ListMethod(element, daoHandler)
                 else -> null
             }
@@ -161,7 +161,7 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
 
     }
 
-    class InsertNonNullField(element: ExecutableElement, daoHandler: DaoHandler) :
+    class InsertNonNullFields(element: ExecutableElement, daoHandler: DaoHandler) :
         Insert(element, daoHandler) {
 
         override fun getTemplate(): String {
@@ -239,7 +239,7 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
         }
     }
 
-    class UpdateNonNullField(element: ExecutableElement, daoHandler: DaoHandler) :
+    class UpdateNonNullFields(element: ExecutableElement, daoHandler: DaoHandler) :
         Update(element, daoHandler) {
 
         override fun setClause(): String {
