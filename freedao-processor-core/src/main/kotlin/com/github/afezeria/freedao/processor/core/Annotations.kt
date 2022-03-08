@@ -1,6 +1,5 @@
 package com.github.afezeria.freedao.processor.core
 
-import com.github.afezeria.freedao.ResultTypeHandler
 import com.github.afezeria.freedao.annotation.Column
 import com.github.afezeria.freedao.annotation.ResultMappings
 import com.github.afezeria.freedao.processor.core.method.MethodHandler
@@ -19,7 +18,7 @@ class ColumnAnn(element: VariableElement) {
     val exist: Boolean
     val insert: Boolean
     val update: Boolean
-    val resultTypeHandle: DeclaredType
+    val resultTypeHandle: DeclaredType?
     val parameterTypeHandle: DeclaredType?
 
     init {
@@ -32,11 +31,12 @@ class ColumnAnn(element: VariableElement) {
             resultTypeHandle =
                 it?.mirroredType { resultTypeHandle }
                     ?.isResultTypeHandlerAndMatchType(element.asType()) {
-                        "$this cannot handle field ${element.simpleName}:${element.asType()}"
-                    } ?: ResultTypeHandler::class.type
+                        "The result type handler $this and the type of field ${element.simpleName} do not match"
+                    }
             parameterTypeHandle = it?.mirroredType { parameterTypeHandle }
-                ?.isParameterTypeHandlerAndMatchType(element.asType())
-                ?.first
+                ?.isParameterTypeHandlerAndMatchType(element.asType()) {
+                    "The parameter type handler $this and the type of field ${element.simpleName} do not match"
+                }?.first
         }
     }
 }
@@ -133,7 +133,11 @@ object ResultMappingsAnn {
                                 "$this does not match $t type"
                             }
 
-                        mappings += MappingData(it.source, it.target, handlerType)
+                        mappings += MappingData(
+                            source = it.source,
+                            target = it.target,
+                            typeHandler = handlerType
+                        )
                     }
                 }
             }
@@ -153,7 +157,7 @@ object ResultMappingsAnn {
 class MappingData(
     var source: String,
     val target: String,
-    var typeHandler: DeclaredType,
+    var typeHandler: DeclaredType?,
     val targetType: DeclaredType? = null,
     val constructorParameterIndex: Int = -1,
 ) {

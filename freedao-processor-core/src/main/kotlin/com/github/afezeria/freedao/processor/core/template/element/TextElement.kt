@@ -51,11 +51,12 @@ class TextElement : XmlElement() {
                         //将字符串中的sql参数替换为占位符
                         val (tmpVar, exprType) = context.createInternalVariableByContextValue(it.groupValues[1])
                         val pair =
-                            it.groupValues[2].takeIf { it.isNotBlank() }?.run {
-                                (elementUtils.getTypeElement(this)
-                                    ?: throw HandlerException("class not found:$this")).asType()
-                                    .isParameterTypeHandlerAndMatchType(exprType)
-                            }
+                            it.groupValues[2].takeIf { it.isNotBlank() }
+                                ?.run {
+                                    (elementUtils.getTypeElement(this)
+                                        ?: throw HandlerException("class not found:$this")).asType()
+                                        .isParameterTypeHandlerAndMatchType(exprType)
+                                }
                         if (pair == null || pair.first.isSameType(ParameterTypeHandler::class)) {
                             addStatement("${TemplateHandler.sqlArgsVarName}.add(${tmpVar})")
                         } else {

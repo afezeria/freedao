@@ -235,7 +235,7 @@ abstract class NamedMethod private constructor(
                     ?.let {
                         m.source = it.column.name
                         //dto的映射中没有指定结果集处理器且使用entity的中对应字段的处理器
-                        if (m.typeHandler.isSameType(ResultTypeHandler::class)) {
+                        if (m.typeHandler == null) {
                             m.typeHandler = it.column.resultTypeHandle
                         }
                         false
@@ -286,11 +286,7 @@ abstract class NamedMethod private constructor(
             mappings += MappingData(
                 source = "_cot",
                 target = "",
-                typeHandler = if (resultHelper.returnType.isSameType(Int::class)) {
-                    Long2IntegerResultHandler::class.type
-                } else {
-                    ResultTypeHandler::class.type
-                },
+                typeHandler = Long2IntegerResultHandler::class.type.takeIf { resultHelper.returnType.isSameType(Int::class) },
                 targetType = null,
                 constructorParameterIndex = -1
             )

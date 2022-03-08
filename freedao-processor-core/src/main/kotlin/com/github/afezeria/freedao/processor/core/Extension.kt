@@ -335,12 +335,14 @@ fun <R> runCatchingHandlerExceptionOrThrow(element: Element, block: () -> R): R?
  * @receiver TypeMirror
  * @param type DeclaredType
  * @param typeNotMatchMsg Function0<String> 类型不匹配时抛出的异常的错误信息
+ * @throws HandlerException 如果receiver不是一个合法的结果类型处理器
+ * @return 当receiver的类型为[ResultTypeHandler]时返回null，如果类型是一个合法的结果类型处理器则以DeclaredType类型返回该对象
  */
 @OptIn(ExperimentalContracts::class)
 fun TypeMirror.isResultTypeHandlerAndMatchType(
     type: TypeMirror,
     typeNotMatchMsg: TypeMirror.() -> String = { "$this does not match $type type" },
-): DeclaredType {
+): DeclaredType? {
     contract {
         returns() implies (this@isResultTypeHandlerAndMatchType is DeclaredType)
     }
@@ -348,7 +350,7 @@ fun TypeMirror.isResultTypeHandlerAndMatchType(
         throw HandlerException("ResultTypeHandler must be Object")
     }
     if (this.isSameType(ResultTypeHandler::class)) {
-        return this
+        return null
     }
     val handlerElement = this.asElement().enclosedElements
         .find {
@@ -371,13 +373,14 @@ fun TypeMirror.isResultTypeHandlerAndMatchType(
  * @receiver TypeMirror
  * @param type DeclaredType
  * @param typeNotMatchMsg Function0<String> 类型不匹配时抛出的异常的错误信息
- * @return 强转成DeclaredType的this和handle方法的第一个参数的类型
+ * @throws HandlerException 如果receiver不是一个合法的参数类型处理器
+ * @return receiver类型为[ParameterTypeHandler]时返回null，否则返回类型为DeclaredType的receiver对象和该对象的handle方法的第一个参数的类型
  */
 @OptIn(ExperimentalContracts::class)
 fun TypeMirror.isParameterTypeHandlerAndMatchType(
     type: TypeMirror,
     typeNotMatchMsg: TypeMirror.() -> String = { "$this does not match $type type" },
-): Pair<DeclaredType, TypeMirror> {
+): Pair<DeclaredType, TypeMirror>? {
     contract {
         returns() implies (this@isParameterTypeHandlerAndMatchType is DeclaredType)
     }
@@ -385,7 +388,7 @@ fun TypeMirror.isParameterTypeHandlerAndMatchType(
         throw HandlerException("ParameterTypeHandler must be Object")
     }
     if (this.isSameType(ParameterTypeHandler::class)) {
-        return this to Any::class.type
+        return null
     }
     val handlerElement = this.asElement().enclosedElements
         .find {

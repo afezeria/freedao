@@ -1,6 +1,5 @@
 package com.github.afezeria.freedao.processor.classic
 
-import com.github.afezeria.freedao.ResultTypeHandler
 import com.github.afezeria.freedao.StatementType
 import com.github.afezeria.freedao.processor.core.*
 import com.github.afezeria.freedao.processor.core.method.MethodHandler
@@ -205,8 +204,10 @@ class ClassicBuildMethodService : BuildMethodService {
                     beginControlFlow("while ($resultSetVar.next())")
                 }
 
+
                 dbAutoFillProperties.forEach {
-                    if (!it.column.resultTypeHandle.isSameType(ResultTypeHandler::class)) {
+                    //将generatedKeys的值填充回实体类
+                    if (it.column.resultTypeHandle != null) {
                         //有类型转换
                         addStatement(
                             "$itemVar.${it.setterName}(\$T.handle($resultSetVar.getObject(\$S)))",
@@ -290,7 +291,7 @@ class ClassicBuildMethodService : BuildMethodService {
                     methodHandler.mappings.forEach {
                         when {
                             //有类型转换器
-                            !it.typeHandler.isSameType(ResultTypeHandler::class) -> {
+                            it.typeHandler != null -> {
                                 addStatement(
                                     "$itemVar.put(\$S, \$T.handle($resultSetVar.getObject(\$S)))",
                                     it.source,
@@ -351,7 +352,7 @@ class ClassicBuildMethodService : BuildMethodService {
                         if (index > 0) {
                             add(",")
                         }
-                        if (!it.typeHandler.isSameType(ResultTypeHandler::class)) {
+                        if (it.typeHandler != null) {
                             //有类型转换
                             add(
                                 "\$T.handle($resultSetVar.getObject(\$S))",
@@ -382,7 +383,7 @@ class ClassicBuildMethodService : BuildMethodService {
                     .filter { it.constructorParameterIndex == -1 }
                     .forEach {
                         val setter = "set${it.target.replaceFirstChar { it.uppercaseChar() }}"
-                        if (!it.typeHandler.isSameType(ResultTypeHandler::class)) {
+                        if (it.typeHandler != null) {
                             //有类型转换
                             addStatement(
                                 "$itemVar.$setter(\$T.handle($resultSetVar.getObject(\$S)))",
@@ -416,9 +417,7 @@ class ClassicBuildMethodService : BuildMethodService {
         } else {
             //返回单列
             beginControlFlow("while ($resultSetVar.next())")
-            if (methodHandler.mappings.isNotEmpty() && !methodHandler.mappings[0].typeHandler.isSameType(
-                    ResultTypeHandler::class
-                )
+            if (methodHandler.mappings.isNotEmpty() && methodHandler.mappings[0].typeHandler != null
             ) {
                 //有类型转换
                 addStatement("$itemVar = \$T.handle($resultSetVar.getObject(1))", methodHandler.mappings[0].typeHandler)

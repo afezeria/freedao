@@ -1,7 +1,6 @@
 package com.github.afezeria.freedao.processor.core.method
 
 import com.github.afezeria.freedao.Long2IntegerResultHandler
-import com.github.afezeria.freedao.ResultTypeHandler
 import com.github.afezeria.freedao.processor.core.*
 import javax.lang.model.element.ExecutableElement
 
@@ -61,11 +60,7 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
                 MappingData(
                     source = "_cot",
                     target = "",
-                    typeHandler = if (resultHelper.returnType.isSameType(Int::class)) {
-                        Long2IntegerResultHandler::class.type
-                    } else {
-                        ResultTypeHandler::class.type
-                    },
+                    typeHandler = Long2IntegerResultHandler::class.type.takeIf { resultHelper.returnType.isSameType(Int::class) },
                     targetType = null,
                     constructorParameterIndex = -1
                 )
