@@ -12,7 +12,7 @@ import kotlin.test.assertContentEquals
  */
 class ListTest : BaseTest() {
     @Test
-    fun all() {
+    fun list() {
         initData(
             Person(1, "a"),
             Person(2, "b")

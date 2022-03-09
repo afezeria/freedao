@@ -4,7 +4,7 @@ package com.github.afezeria.freedao;
  * @author afezeria
  */
 public class Long2IntegerResultHandler {
-    public static Integer handle(Object result) {
+    public static Integer handleResult(Object result, Class<?> clazz) {
         if (result == null) {
             return null;
         }

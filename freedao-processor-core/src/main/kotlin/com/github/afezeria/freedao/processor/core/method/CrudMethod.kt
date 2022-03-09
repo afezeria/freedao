@@ -61,7 +61,7 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
                     source = "_cot",
                     target = "",
                     typeHandler = Long2IntegerResultHandler::class.type.takeIf { resultHelper.returnType.isSameType(Int::class) },
-                    targetType = null,
+                    targetType = Int::class.type.takeIf { resultHelper.returnType.isSameType(Int::class) },
                     constructorParameterIndex = -1
                 )
         }

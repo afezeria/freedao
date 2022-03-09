@@ -59,7 +59,14 @@ open class Person(
         parameterTypeHandle = Enum2StringParameterTypeHandler::class,
         resultTypeHandle = PersonTypeResultTypeHandler::class,
     )
-    open var type: PersonType? = null
+    open var type: PersonType? = null,
+    @Column(
+        name = "type",
+        insert = false,
+        update = false,
+    )
+    open var searchType: PersonType? = null
+
 ) : Entity
 
 enum class PersonType {

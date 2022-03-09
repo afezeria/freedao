@@ -62,9 +62,9 @@ class TextElement : XmlElement() {
                         } else {
                             val (handlerType, handleMethodParameterType) = pair
                             if (exprType.isSameType(Any::class) && !handleMethodParameterType.isSameType(Any::class)) {
-                                addStatement("${TemplateHandler.sqlArgsVarName}.add($handlerType.handle(($handleMethodParameterType) ${tmpVar}))")
+                                addStatement("${TemplateHandler.sqlArgsVarName}.add($handlerType.handleParameter(($handleMethodParameterType) ${tmpVar}))")
                             } else {
-                                addStatement("${TemplateHandler.sqlArgsVarName}.add($handlerType.handle(${tmpVar}))")
+                                addStatement("${TemplateHandler.sqlArgsVarName}.add($handlerType.handleParameter(${tmpVar}))")
                             }
                         }
                         context.placeholderGen.gen()

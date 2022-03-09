@@ -356,12 +356,15 @@ fun TypeMirror.isResultTypeHandlerAndMatchType(
         .find {
             it is ExecutableElement
                     && it.kind == ElementKind.METHOD
-                    && it.simpleName.toString() == "handle"
-                    && it.parameters.size == 1
+                    && it.simpleName.toString() == "handleResult"
+                    && it.parameters.size == 2
                     && it.parameters[0].asType().isSameType(Any::class)
+                    && it.parameters[1].asType()
+                .isSameType(Class::class.type(typeUtils.getWildcardType(Any::class.type, null)))
+//                    && it.parameters[1].asType().isSameType(Class::class)
                     && it.modifiers.containsAll(listOf(Modifier.PUBLIC, Modifier.STATIC))
         } as ExecutableElement?
-        ?: throw HandlerException("Invalid ResultTypeHandler:${this}, missing method:handle(Object.class)")
+        ?: throw HandlerException("Invalid ResultTypeHandler:${this}, missing method:public static Object handleResult(Object.class)")
     if (!handlerElement.returnType.isAssignable(type)) {
         throw HandlerException(typeNotMatchMsg())
     }
@@ -394,11 +397,11 @@ fun TypeMirror.isParameterTypeHandlerAndMatchType(
         .find {
             it is ExecutableElement
                     && it.kind == ElementKind.METHOD
-                    && it.simpleName.toString() == "handle"
+                    && it.simpleName.toString() == "handleParameter"
                     && it.parameters.size == 1
                     && it.modifiers.containsAll(listOf(Modifier.PUBLIC, Modifier.STATIC))
         } as ExecutableElement?
-        ?: throw HandlerException("Invalid ParameterTypeHandler:${this}, missing method:handle")
+        ?: throw HandlerException("Invalid ParameterTypeHandler:${this}, missing method:public static Object handleParameter")
     if (!type.isSameType(Any::class)) {
         if (!type.isAssignable(handlerElement.parameters[0].asType())) {
             throw HandlerException(typeNotMatchMsg())

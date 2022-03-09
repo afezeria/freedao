@@ -1,7 +1,6 @@
 package com.github.afezeria.freedao.processor.core.method
 
 import com.github.afezeria.freedao.Long2IntegerResultHandler
-import com.github.afezeria.freedao.ResultTypeHandler
 import com.github.afezeria.freedao.processor.core.*
 import java.util.*
 import javax.lang.model.element.ExecutableElement
@@ -172,6 +171,7 @@ abstract class NamedMethod private constructor(
     }
 
     protected fun buildWhereClause(): String {
+        println()
         return conditions.joinToString(separator = " ", prefix = "where ") { cond ->
             cond.render()
         }
@@ -287,7 +287,7 @@ abstract class NamedMethod private constructor(
                 source = "_cot",
                 target = "",
                 typeHandler = Long2IntegerResultHandler::class.type.takeIf { resultHelper.returnType.isSameType(Int::class) },
-                targetType = null,
+                targetType = Int::class.type.takeIf { resultHelper.returnType.isSameType(Int::class) },
                 constructorParameterIndex = -1
             )
         }

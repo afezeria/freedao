@@ -209,10 +209,13 @@ class ClassicBuildMethodService : BuildMethodService {
                     //将generatedKeys的值填充回实体类
                     if (it.column.resultTypeHandle != null) {
                         //有类型转换
+                        val targetType = it.type
                         addStatement(
-                            "$itemVar.${it.setterName}(\$T.handle($resultSetVar.getObject(\$S)))",
+                            "$itemVar.${it.setterName}((\$T) \$T.handleResult($resultSetVar.getObject(\$S), \$T.class))",
+                            targetType,
                             it.column.resultTypeHandle,
-                            it.column.name
+                            it.column.name,
+                            targetType,
                         )
                     } else {
                         //无类型转换器
@@ -281,22 +284,26 @@ class ClassicBuildMethodService : BuildMethodService {
                 "<>"
             }
             if (resultHelper.itemType.isAssignable(Map::class)) {
+                //集合内容为map
                 val addInitItemStatement = {
                     addStatement("$itemVar = new \$T$diamondStr()", resultHelper.itemType)
                 }
-                //集合内容为map
                 if (methodHandler.mappings.isNotEmpty()) {
+                    //有声明结果映射规则时只将规则中存在的属性添加到map
                     beginControlFlow("while ($resultSetVar.next())")
                     addInitItemStatement()
                     methodHandler.mappings.forEach {
                         when {
                             //有类型转换器
                             it.typeHandler != null -> {
+                                val targetType = it.targetType ?: Any::class.type
                                 addStatement(
-                                    "$itemVar.put(\$S, \$T.handle($resultSetVar.getObject(\$S)))",
+                                    "$itemVar.put(\$S, (\$T) \$T.handleResult($resultSetVar.getObject(\$S), \$T.class))",
                                     it.source,
+                                    targetType,
                                     it.typeHandler,
-                                    it.source
+                                    it.source,
+                                    targetType,
                                 )
                             }
                             //map的值的类型参数不为Object时调用jdbc的显示转换类型函数
@@ -320,6 +327,7 @@ class ClassicBuildMethodService : BuildMethodService {
                     }
                     endControlFlow()
                 } else {
+                    //未声明结果映射规则时将返回的所有结果都添加到map中
                     addStatement("\$T $metaDataVar = $resultSetVar.getMetaData()", ResultSetMetaData::class.type)
                     addStatement("int $columnCountVar = $metaDataVar.getColumnCount()")
                     beginControlFlow("while ($resultSetVar.next())")
@@ -354,10 +362,13 @@ class ClassicBuildMethodService : BuildMethodService {
                         }
                         if (it.typeHandler != null) {
                             //有类型转换
+                            val targetType = it.targetType ?: Any::class.type
                             add(
-                                "\$T.handle($resultSetVar.getObject(\$S))",
+                                "(\$T) \$T.handleResult($resultSetVar.getObject(\$S), \$T.class)",
+                                targetType,
                                 it.typeHandler,
-                                it.source
+                                it.source,
+                                targetType,
                             )
                         } else {
                             //无类型转换器
@@ -385,10 +396,13 @@ class ClassicBuildMethodService : BuildMethodService {
                         val setter = "set${it.target.replaceFirstChar { it.uppercaseChar() }}"
                         if (it.typeHandler != null) {
                             //有类型转换
+                            val targetType = it.targetType ?: Any::class.type
                             addStatement(
-                                "$itemVar.$setter(\$T.handle($resultSetVar.getObject(\$S)))",
+                                "$itemVar.$setter((\$T) \$T.handleResult($resultSetVar.getObject(\$S), \$T.class))",
+                                targetType,
                                 it.typeHandler,
-                                it.source
+                                it.source,
+                                targetType,
                             )
                         } else {
                             //无类型转换器
@@ -419,8 +433,14 @@ class ClassicBuildMethodService : BuildMethodService {
             beginControlFlow("while ($resultSetVar.next())")
             if (methodHandler.mappings.isNotEmpty() && methodHandler.mappings[0].typeHandler != null
             ) {
+                val targetType = methodHandler.mappings[0].targetType ?: Any::class.type
                 //有类型转换
-                addStatement("$itemVar = \$T.handle($resultSetVar.getObject(1))", methodHandler.mappings[0].typeHandler)
+                addStatement(
+                    "$itemVar = (\$T) \$T.handleResult($resultSetVar.getObject(1), \$T.class)",
+                    targetType,
+                    methodHandler.mappings[0].typeHandler,
+                    targetType,
+                )
             } else if (resultHelper.itemType.isSameType(Any::class)) {
                 //未指定单列类型或类型为Object
                 addStatement("$itemVar = $resultSetVar.getObject(1)", resultHelper.itemType)

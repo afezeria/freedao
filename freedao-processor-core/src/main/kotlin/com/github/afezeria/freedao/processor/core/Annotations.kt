@@ -1,5 +1,6 @@
 package com.github.afezeria.freedao.processor.core
 
+import com.github.afezeria.freedao.DefaultEnumTypeHandler
 import com.github.afezeria.freedao.annotation.Column
 import com.github.afezeria.freedao.annotation.ResultMappings
 import com.github.afezeria.freedao.processor.core.method.MethodHandler
@@ -23,6 +24,7 @@ class ColumnAnn(element: VariableElement) {
 
     init {
         val column = element.getAnnotation(Column::class.java)
+        val fieldType = element.asType()
         column.let {
             name = it?.name?.takeIf { it.isNotBlank() } ?: element.simpleName.toString().toSnakeCase()
             exist = it?.exist ?: true
@@ -32,11 +34,11 @@ class ColumnAnn(element: VariableElement) {
                 it?.mirroredType { resultTypeHandle }
                     ?.isResultTypeHandlerAndMatchType(element.asType()) {
                         "The result type handler $this and the type of field ${element.simpleName} do not match"
-                    }
+                    } ?: DefaultEnumTypeHandler::class.type.takeIf { fieldType.isAssignable(Enum::class.type) }
             parameterTypeHandle = it?.mirroredType { parameterTypeHandle }
                 ?.isParameterTypeHandlerAndMatchType(element.asType()) {
                     "The parameter type handler $this and the type of field ${element.simpleName} do not match"
-                }?.first
+                }?.first ?: DefaultEnumTypeHandler::class.type.takeIf { fieldType.isAssignable(Enum::class.type) }
         }
     }
 }

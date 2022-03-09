@@ -1,16 +1,17 @@
 package com.github.afezeria.freedao;
 
 /**
- * 处理数据库驱动返回值类型和对象字段类型的映射
+ * 结果类型处理器
  * <p>
- * 该类实际上只是个占位符
+ * 如果需要对返回结果进行处理请使用自定义类并添加 {@code public static Object handleResult(Object result,Class<?> clazz)}
+ * 方法，如果结果处理器设置为当前类型则不会对驱动结果进行处理
+ * </p>
  * <p>
- * 默认情况下会假设数据库驱动返回的值的类型和期望的类型一致，会直接进行赋值操作，而不会应用typeHandler
- * <p>
- * 自定义ResultTypeHandler必须包含名为handle的静态方法，参数个数为一，类型为java.lang.Object，返回类型为字段类型
+ * 参数为枚举类型且编译期可知时，默认将使用{@link com.github.afezeria.freedao.DefaultEnumTypeHandler}处理
+ * </p>
  */
 public class ResultTypeHandler {
-    public static Object handle(Object result) {
+    public static Object handleResult(Object result, Class<?> clazz) {
         return result;
     }
 }
