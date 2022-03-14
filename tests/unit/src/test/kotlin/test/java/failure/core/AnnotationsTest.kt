@@ -4,7 +4,6 @@ import com.github.afezeria.freedao.Long2IntegerResultHandler
 import org.junit.Test
 import test.BaseTest
 import test.Enum2StringParameterTypeHandler
-import test.Enum2StringResultTypeHandler
 import test.InvalidParameterTypeHandlerEntity
 
 /**

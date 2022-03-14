@@ -23,6 +23,15 @@ class CharacterResultTypeHandler {
 }
 
 
+class Object2StringParameterTypeHandler {
+    companion object {
+        @JvmStatic
+        fun handleParameter(e: Any?): String? {
+            return e?.toString()
+        }
+    }
+}
+
 class Enum2StringParameterTypeHandler {
     companion object {
         @JvmStatic
