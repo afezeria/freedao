@@ -42,7 +42,7 @@ abstract class BaseTest {
     inline fun <reified T : Entity> initData(vararg entities: T) = initData(T::class, false, *entities)
 
     @OptIn(ExperimentalStdlibApi::class)
-    fun <T : Any> initData(kClass: KClass<T>, fillNull: Boolean, vararg entities: Entity) {
+    fun <T : Entity> initData(kClass: KClass<T>, fillNull: Boolean = false, vararg entities: T) {
         env.dataSource.apply {
             val testResource =
                 kClass.findAnnotations<DDL>().find { it.dialect == env.name }
@@ -172,7 +172,8 @@ abstract class BaseTest {
 
         val aptArgs: Array<String>
             get() {
-                return arrayOf("-Afreedao.debug=true",
+                return arrayOf(
+                    "-Afreedao.debug=true",
                     when (name) {
                         "pg" -> "-Afreedao.quote=\""
                         "mysql" -> "-Afreedao.quote=`"
@@ -241,14 +242,16 @@ abstract class BaseTest {
             )
         }
         private val localEnv by lazy {
-            arrayOf(DbEnv(
-                type = EnvType.LOCAL,
-                name = "pg",
-                username = "test",
-                password = "123456",
-                jdbcUrl = "jdbc:postgresql://localhost:5432/test",
-                driverClassName = "org.postgresql.Driver",
-            ))
+            arrayOf(
+                DbEnv(
+                    type = EnvType.LOCAL,
+                    name = "pg",
+                    username = "test",
+                    password = "123456",
+                    jdbcUrl = "jdbc:postgresql://localhost:5432/test",
+                    driverClassName = "org.postgresql.Driver",
+                )
+            )
         }
 
         private val containerEnv by lazy {

@@ -1,7 +1,6 @@
 package test
 
 import org.intellij.lang.annotations.Language
-import java.lang.annotation.Inherited
 
 /**
  *
@@ -10,7 +9,6 @@ import java.lang.annotation.Inherited
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.CLASS)
 @Repeatable
-@Inherited
 annotation class DDL(
     val dialect: String,
     @Language("sql")

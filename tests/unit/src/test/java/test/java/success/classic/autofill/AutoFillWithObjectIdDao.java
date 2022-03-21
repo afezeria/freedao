@@ -1,4 +1,4 @@
-package test.java.success.classic;
+package test.java.success.classic.autofill;
 
 import com.github.afezeria.freedao.annotation.Dao;
 import com.github.afezeria.freedao.annotation.XmlTemplate;

@@ -7,6 +7,7 @@ import com.github.afezeria.freedao.processor.core.method.ResultHelper
 import com.github.afezeria.freedao.processor.core.spi.BuildMethodService
 import com.github.afezeria.freedao.processor.core.template.TemplateHandler
 import com.github.afezeria.freedao.processor.core.template.TemplateHandler.Companion.toVarName
+import com.github.afezeria.freedao.runtime.classic.AutoFill
 import com.github.afezeria.freedao.runtime.classic.LogHelper
 import com.github.afezeria.freedao.runtime.classic.SqlExecutor
 import com.github.afezeria.freedao.runtime.classic.SqlSignature
@@ -110,6 +111,46 @@ class ClassicBuildMethodService : BuildMethodService {
                     }
                     addStatement("\$T ${parameter.name.toVarName()} = (\$T) _params[\$L]", type, type, index)
                 }
+                if (EnableAutoFill(methodHandler)) {
+                    AutoFillStruct(methodHandler)?.apply AutoFill@{
+                        val props = autoFillProperties.mapNotNull {
+                            val ann = it.element.getAnnotation(AutoFill::class.java)!!
+                            if (ann.before
+                                && ((ann.insert && methodHandler.statementType == StatementType.INSERT)
+                                        || ann.update && methodHandler.statementType == StatementType.UPDATE)
+                            ) {
+                                ann to it
+                            } else {
+                                null
+                            }
+                        }
+                        if (props.isEmpty()) {
+                            return@AutoFill
+                        }
+                        if (isCollection) {
+                            beginControlFlow("for (\$T $itemVar : ${methodHandler.parameters[index].name.toVarName()})")
+                        } else {
+                            addStatement(
+                                "\$T $itemVar = (\$T) _params[\$L]",
+                                methodHandler.parameters[index].type,
+                                methodHandler.parameters[index].type,
+                                index
+                            )
+                        }
+                        props.forEach { (ann, prop) ->
+                            addStatement(
+                                "$itemVar.${prop.setterName}((\$T) \$T.gen($itemVar, \$S, \$T.class))",
+                                prop.type,
+                                ann.mirroredType { generator },
+                                prop.name,
+                                prop.type
+                            )
+                        }
+                        if (isCollection) {
+                            endControlFlow()
+                        }
+                    }
+                }
                 add("\n")
                 add(methodHandler.sqlBuildCodeBlock)
                 add("\n")
@@ -205,33 +246,37 @@ class ClassicBuildMethodService : BuildMethodService {
                 }
 
 
-                dbAutoFillProperties.forEach {
-                    //将generatedKeys的值填充回实体类
-                    if (it.column.resultTypeHandle != null) {
-                        //有类型转换
-                        val targetType = it.type
-                        addStatement(
-                            "$itemVar.${it.setterName}((\$T) \$T.handleResult($resultSetVar.getObject(\$S), \$T.class))",
-                            targetType,
-                            it.column.resultTypeHandle,
-                            it.column.name,
-                            targetType,
-                        )
-                    } else {
-                        //无类型转换器
-                        if (it.type.isSameType(Any::class)) {
-                            addStatement("$itemVar.${it.setterName}($resultSetVar.getObject(\$S))", it.column.name)
-                        } else {
-                            addStatement(
-                                "$itemVar.${it.setterName}($resultSetVar.getObject(\$S,\$T.class))",
-                                it.column.name,
-                                it.type
-                            )
+                autoFillProperties
+                    .forEach {
+                        val ann = it.element.getAnnotation(AutoFill::class.java)!!
+                        if (ann.before.not()
+                            && ((ann.insert && methodHandler.statementType == StatementType.INSERT)
+                                    || ann.update && methodHandler.statementType == StatementType.UPDATE)
+                        ) {
+                            val targetType = it.type
+                            //将generatedKeys的值填充回实体类
+                            if (it.column.resultTypeHandle != null) {
+                                //有类型转换
+                                addStatement(
+                                    "$itemVar.${it.setterName}((\$T) \$T.handleResult(\$T.gen($resultSetVar, \$S, Object.class), \$T.class))",
+                                    targetType,
+                                    it.column.resultTypeHandle,
+                                    ann.mirroredType { generator },
+                                    it.column.name,
+                                    targetType,
+                                )
+                            } else {
+                                addStatement(
+                                    "$itemVar.${it.setterName}((\$T) \$T.gen($resultSetVar, \$S, \$T.class))",
+                                    targetType,
+                                    ann.mirroredType { generator },
+                                    it.column.name,
+                                    targetType,
+                                )
+                            }
                         }
                     }
-                }
                 if (isCollection) {
-//                    addStatement("$containerVar.add($itemVar)")
                     addStatement("$idxVar++")
                     endControlFlow()
                 } else {

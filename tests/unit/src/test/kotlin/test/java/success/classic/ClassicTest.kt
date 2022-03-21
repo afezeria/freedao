@@ -3,8 +3,6 @@ package test.java.success.classic
 import org.junit.Test
 import test.BaseTest
 import test.Person
-import test.PersonAnyId
-import test.PersonStringId
 import java.time.LocalDateTime
 import kotlin.test.assertContentEquals
 
@@ -21,26 +19,6 @@ class ClassicTest : BaseTest() {
         val count = impl.batchInsert(list)
         assert(count == 2)
         assertContentEquals(list.map { it.id }, listOf(1, 2))
-    }
-
-    @Test
-    fun `auto fill with type handler`() {
-        initData<Person>()
-        val list = mutableListOf(PersonStringId(null, "a"), PersonStringId(null, "b"))
-        val impl = getJavaDaoInstance<AutoFillWithTypeHandlerDao>()
-        val count = impl.batchInsert(list)
-        assert(count == 2)
-        assertContentEquals(list.map { it.id }, listOf("1", "2"))
-    }
-
-    @Test
-    fun `auto fill with object id`() {
-        initData<Person>()
-        val list = mutableListOf(PersonAnyId(null, "a"), PersonAnyId(null, "b"))
-        val impl = getJavaDaoInstance<AutoFillWithObjectIdDao>()
-        val count = impl.batchInsert(list)
-        assert(count == 2)
-        assertContentEquals(list.map { it.id }, listOf(1L, 2L))
     }
 
     @Test

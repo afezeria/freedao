@@ -7,7 +7,7 @@ import com.github.afezeria.freedao.runtime.classic.DisableAutoFill
 
 object EnableAutoFill {
     private fun isInsertMethod(method: MethodHandler): Boolean {
-        return method.statementType == StatementType.INSERT
+        return method.statementType == StatementType.INSERT || method.statementType == StatementType.UPDATE
 //        return when (method) {
 //            is Insert -> true
 //            is XmlTemplateMethod -> {

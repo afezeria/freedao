@@ -130,7 +130,9 @@ class PersonWithoutPrimaryKey(
 
 @Table(name = "person", primaryKeys = ["id"])
 open class PersonStringId(
-    @Column(insert = false, resultTypeHandle = StringResultTypeHandler::class) @AutoFill var id: String? = null,
+    @Column(insert = false, resultTypeHandle = StringResultTypeHandler::class)
+    @AutoFill
+    var id: String? = null,
     var name: String? = null,
 )
 
@@ -161,3 +163,61 @@ data class PersonStringAgeDto(
 )
 
 data class DtoNoCommonFieldWithPerson(val `abcdefgh`: String)
+
+@DDL(
+    dialect = "mysql",
+    value = """
+create table `auto_fill_int_id`
+(
+    `id`   long auto_increment primary key,
+    `name` varchar(200),
+    `when_created` timestamp default now(),
+    `when_updated` timestamp default now()
+)
+    """
+)
+@DDL(
+    dialect = "pg",
+    value = """
+create table "auto_fill_int_id"
+(
+    "id"          bigserial primary key,
+    "name"        varchar(200),
+    "when_created" timestamp default now(),
+    "when_updated" timestamp default now()
+)
+    """
+)
+@Table(name = "auto_fill_int_id", primaryKeys = ["id"])
+open class AutoFillEntity : Entity
+
+@Table(name = "auto_fill_int_id", primaryKeys = ["id"])
+class DbGeneratedKeyEntity(
+    @field:Column(insert = false)
+    @field:AutoFill
+    var id: Long? = null,
+    var name: String? = null,
+) : AutoFillEntity()
+
+@Table(name = "auto_fill_int_id", primaryKeys = ["id"])
+class MultiDbGeneratedKeysEntity(
+    @field:Column(insert = false)
+    @field:AutoFill
+    var id: Long? = null,
+    var name: String? = null,
+    @field:AutoFill
+    @field:Column(insert = false)
+    var whenCreated: LocalDateTime? = null,
+) : AutoFillEntity()
+
+@Table(name = "auto_fill_int_id", primaryKeys = ["id"])
+class CustomIdGeneratorEntity(
+    @field:Column(insert = false)
+    @field:AutoFill(
+        before = true,
+        generator = NegativeLongIdGenerator::class
+    )
+    var id: Long? = null,
+    var name: String? = null,
+) : AutoFillEntity()
+

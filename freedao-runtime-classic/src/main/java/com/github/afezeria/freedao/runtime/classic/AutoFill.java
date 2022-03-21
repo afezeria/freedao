@@ -27,8 +27,8 @@ public @interface AutoFill {
     boolean update() default false;
 
     /**
-     * 用于生成字段值的类
-     * 默认值时表示字段值由数据库生成
+     * 用于获取字段值的类，默认值时表示字段值由数据库生成，
+     * 自定义的生成器需要提供和ValueGenerator.gen方法签名一致的函数
      */
-    Class<? extends ValueGenerator> generator() default ValueGenerator.class;
+    Class<?> generator() default DbGenerator.class;
 }
