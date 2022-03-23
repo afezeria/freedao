@@ -7,6 +7,6 @@ import test.CustomGeneratorEntity;
  * @author afezeria
  */
 @Dao(crudEntity = CustomGeneratorEntity.class)
-public interface CustomGeneratorWithBatchInsertDao {
+public interface CustomGeneratorDao {
     int insert(CustomGeneratorEntity entity);
 }

@@ -36,22 +36,23 @@ class ResultHelper(val daoHandler: DaoHandler, val element: ExecutableElement) {
             val originalItemType: DeclaredType
             if (type.isAssignable(Collection::class)) {
                 //多行返回值
-                containerType = if (type.isAbstractType()) {
+                val erasureType = type.erasure() as DeclaredType
+                containerType = if (type.isAbstract) {
                     when {
-                        type.erasure().isSameType(List::class) -> ArrayList::class
-                        type.erasure().isSameType(Set::class) -> HashSet::class
-                        type.erasure().isSameType(Collection::class) -> ArrayList::class
+                        erasureType.isSameType(List::class) -> ArrayList::class
+                        erasureType.isSameType(Set::class) -> HashSet::class
+                        erasureType.isSameType(Collection::class) -> ArrayList::class
                         else -> throw HandlerException("Invalid return type")
                     }.type
                 } else {
-                    type.erasure() as DeclaredType
+                    erasureType
                 }
-                originalItemType = requireNotNull(type.findTypeArgument(Collection::class.type, "E"))
+                originalItemType = type.findTypeArgument(Collection::class.type, "E")
             } else {
                 //单行返回值
                 originalItemType = type
             }
-            if (originalItemType.isAbstractType() && !originalItemType.erasure().isSameType(Map::class)) {
+            if (originalItemType.isAbstract && !originalItemType.erasure().isSameType(Map::class)) {
                 throw HandlerException("Invalid return type:$originalItemType, the abstract type of single row result can only be Map")
             }
             itemType = when {
@@ -60,21 +61,24 @@ class ResultHelper(val daoHandler: DaoHandler, val element: ExecutableElement) {
                 }
                 originalItemType.isAssignable(Map::class) -> {
                     //map的key的类型必须为字符串
-                    requireNotNull(originalItemType.findTypeArgument(Map::class.type, "K")).run {
-                        if (isSameType(Any::class) || isSameType(String::class)) {
-                            String::class.type
-                        } else {
-                            throw HandlerException("Invalid type argument:$this, the key type must be String")
-                        }
+                    val mapKeyType = originalItemType.findTypeArgument(Map::class.type, "K")
+                    if (!mapKeyType.isSameType(String::class)) {
+                        throw HandlerException("Invalid type argument:$mapKeyType, the key type must be String")
                     }
-                    mapValueType = requireNotNull(originalItemType.findTypeArgument(Map::class.type, "V")).run {
-                        if (isNotAbstractType()) {
-                            this
-                        } else {
+//                    requireNotNull(originalItemType.findTypeArgument(Map::class.type, "K")).run {
+////                        if (isSameType(Any::class) || isSameType(String::class)) {
+//                        if (isSameType(String::class)) {
+//                            String::class.type
+//                        } else {
+//                            throw HandlerException("Invalid type argument:$this, the key type must be String")
+//                        }
+//                    }
+                    mapValueType = originalItemType.findTypeArgument(Map::class.type, "V").apply {
+                        if (isAbstract) {
                             throw HandlerException("Invalid type argument:$this, the value type cannot be abstract")
                         }
                     }
-                    if (originalItemType.isAbstractType()) {
+                    if (originalItemType.isAbstract) {
                         HashMap::class.type
                     } else {
                         originalItemType

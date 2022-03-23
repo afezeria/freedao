@@ -156,7 +156,7 @@ object ResultMappingsAnn {
  * @property targetType 字段类型
  * @property constructorParameterIndex 在构造器参数中的位置，-1表示该字段使用setter方法设置
  */
-class MappingData(
+data class MappingData(
     var source: String,
     val target: String,
     var typeHandler: DeclaredType?,
@@ -179,9 +179,5 @@ class MappingData(
                 constructorParameterIndex = constructorParameterIndex
             )
         }
-    }
-
-    override fun toString(): String {
-        return "MappingData(source='$source', target='$target', targetType=$targetType, constructorParameterIndex=$constructorParameterIndex)"
     }
 }

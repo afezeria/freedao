@@ -2,7 +2,7 @@ package test.java.success.classic.autofill;
 
 import com.github.afezeria.freedao.annotation.Dao;
 import com.github.afezeria.freedao.annotation.XmlTemplate;
-import test.PersonAnyId;
+import test.CustomGeneratorEntity;
 
 import java.util.List;
 
@@ -10,12 +10,12 @@ import java.util.List;
  * @author afezeria
  */
 @Dao
-public interface AutoFillWithObjectIdDao {
+public interface CustomGeneratorBatchInsertDao {
     @XmlTemplate("""
             <insert>
-            insert into person (name)
+            insert into auto_fill_int_id (name)
             values <foreach collection='list' item='i' separator=','>(#{i.name})</foreach>
             </insert>
             """)
-    int batchInsert(List<PersonAnyId> list);
+    int batchInsert(List<CustomGeneratorEntity> list);
 }

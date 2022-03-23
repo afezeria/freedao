@@ -1,4 +1,4 @@
-package test.java.success.core.method.resulthelper;
+package test.java.failure.core.method.resulthelper;
 
 import com.github.afezeria.freedao.annotation.Dao;
 import com.github.afezeria.freedao.annotation.XmlTemplate;
@@ -10,7 +10,7 @@ import java.util.Map;
  * @author afezeria
  */
 @Dao
-public interface QueryReturnMapListWithoutTypeArgumentDao {
+public interface QueryReturnMapListWithoutTypeArgumentBadDao {
 
     @XmlTemplate("""
             <select>

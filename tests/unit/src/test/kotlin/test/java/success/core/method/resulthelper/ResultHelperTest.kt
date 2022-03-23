@@ -60,18 +60,6 @@ class ResultHelperTest : BaseTest() {
     }
 
     @Test
-    fun `query method return list of map without type argument`() {
-        initData(
-            Person(1, "a"),
-            Person(2, "a"),
-        )
-        val impl = getJavaDaoInstance<QueryReturnMapListWithoutTypeArgumentDao>()
-        val all = impl.query()
-        assert(all.size == 2)
-        assertContentEquals(all.map { it["id"] }, listOf(1L, 2L))
-    }
-
-    @Test
     fun `query method return list without type argument`() {
         initData(
             Person(1, "a"),

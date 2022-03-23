@@ -5,16 +5,17 @@ import com.github.afezeria.freedao.processor.core.*
 import com.github.afezeria.freedao.processor.core.spi.BuildMethodService
 import com.github.afezeria.freedao.processor.core.spi.MethodFactory
 import com.github.afezeria.freedao.processor.core.spi.ValidatorService
+import com.github.afezeria.freedao.processor.core.template.PositionalXMLReader
 import com.github.afezeria.freedao.processor.core.template.RootElement
 import com.squareup.javapoet.AnnotationSpec
 import com.squareup.javapoet.CodeBlock
 import com.squareup.javapoet.MethodSpec
 import com.squareup.javapoet.ParameterSpec
+import org.w3c.dom.Document
+import java.io.ByteArrayInputStream
 import java.util.*
 import javax.lang.model.element.ExecutableElement
-import javax.lang.model.element.VariableElement
 import javax.lang.model.type.DeclaredType
-import javax.lang.model.type.PrimitiveType
 import javax.lang.model.type.TypeMirror
 
 /**
@@ -47,38 +48,34 @@ abstract class MethodHandler protected constructor(
     val requiredParameters = mutableListOf<Parameter>()
 
     var returnUpdateCount = false
-    lateinit var statementType: StatementType
 
     var resultHelper: ResultHelper = ResultHelper(daoHandler, element)
     val mappings = ResultMappingsAnn.getMappings(this)
 
-    lateinit var sqlBuildCodeBlock: CodeBlock
+    val xmlDocument: Document by lazy {
+        PositionalXMLReader.readXML(ByteArrayInputStream(getTemplate().toByteArray()))
+    }
+    val sqlBuildCodeBlock: CodeBlock by lazy {
+        RootElement(this).buildCodeBlock()
+    }
+    val statementType: StatementType by lazy {
+        try {
+            StatementType.valueOf(xmlDocument.firstChild.nodeName.uppercase())
+        } catch (e: Exception) {
+            throw HandlerException("unknown statement type")
+        }
+    }
+
     lateinit var builder: MethodSpec.Builder
-    var methodSpec: MethodSpec? = null
 
     fun render(): MethodSpec {
-        //generate build sql code
-        sqlBuildCodeBlock = RootElement(this).buildCodeBlock()
-        when (statementType) {
-            StatementType.SELECT -> {
-                if (resultHelper.returnType is PrimitiveType) {
-                    throw HandlerException("select method cannot return primitive type")
-                }
-            }
-            StatementType.INSERT, StatementType.UPDATE, StatementType.DELETE -> {
-                if (!resultHelper.returnType.boxed().isSameType(Int::class)
-                    && !resultHelper.returnType.boxed().isSameType(Long::class)
-                ) {
-                    throw HandlerException("The return type of insert/update/delete method must be Integer or Long")
-                }
-            }
-        }
 
         ServiceLoader.load(ValidatorService::class.java, MainProcessor::class.java.classLoader)
             .forEach {
                 it.validation(this)
             }
 
+        //生成方法
         builder = MethodSpec.overriding(element).apply {
             returns(resultHelper.returnType.typeName)
             parameters.clear()
@@ -139,29 +136,6 @@ abstract class MethodHandler protected constructor(
         }
     }
 
-    fun requireParameter(typeMirror: TypeMirror, name: String? = null) {
-        if (name == null) {
-            when (
-                parameters.filter {
-                    typeUtils.isAssignable(it.type, typeMirror)
-                }.size
-            ) {
-                0 -> throw HandlerException("Missing parameter of type ${typeMirror.typeName}")
-                //valid
-                1 -> {}
-                else ->
-                    throw HandlerException("Duplicate ${typeMirror.typeName} type parameter")
-            }
-        } else {
-            if (parameters.none { it.name == name && typeUtils.isAssignable(it.type, typeMirror) }) {
-                val parameterDeclare =
-                    if (daoHandler.isJavaCode) "${typeMirror.typeName} $name"
-                    else "$name: ${typeMirror.typeName}"
-                throw HandlerException("missing parameter [$parameterDeclare]")
-            }
-        }
-    }
-
     companion object {
         private val notNullAnnotationSet = setOf("NotNull", "NonNull")
 
@@ -173,12 +147,6 @@ abstract class MethodHandler protected constructor(
                 require(size == 1)
                 get(0)
             }
-        }
-
-        fun BeanObjectModel.getProperties(): List<BeanProperty> {
-            return element.enclosedElements.filter {
-                it.hasGetter()
-            }.map { BeanProperty(it as VariableElement) }
         }
 
         private val methodFactories by lazy {

@@ -129,14 +129,6 @@ class PersonWithoutPrimaryKey(
 )
 
 @Table(name = "person", primaryKeys = ["id"])
-open class PersonStringId(
-    @Column(insert = false, resultTypeHandle = StringResultTypeHandler::class)
-    @AutoFill
-    var id: String? = null,
-    var name: String? = null,
-)
-
-@Table(name = "person", primaryKeys = ["id"])
 open class PersonAnyId(
     @Column(insert = false) @AutoFill var id: Any? = null,
     var name: String? = null,
@@ -189,35 +181,77 @@ create table "auto_fill_int_id"
     """
 )
 @Table(name = "auto_fill_int_id", primaryKeys = ["id"])
-open class AutoFillEntity : Entity
+open class AutoFillEntity(
+    open var id: Long? = null,
+    open var name: String? = null,
+    open var whenCreated: LocalDateTime? = null,
+    open var whenUpdated: LocalDateTime? = null,
+) : Entity
+
+@Table(name = "auto_fill_int_id", primaryKeys = ["id"])
+open class FillObjectTypeFieldByDbGeneratedKeyEntity(
+    @Column(insert = false) @AutoFill
+    var id: Any? = null,
+    var name: String? = null,
+) : Entity
+
+@Table(name = "auto_fill_int_id", primaryKeys = ["id"])
+open class FillValueHandledByTypeHandler(
+    @Column(insert = false, resultTypeHandle = StringResultTypeHandler::class)
+    @AutoFill
+    var id: String? = null,
+    var name: String? = null,
+) : Entity
+
 
 @Table(name = "auto_fill_int_id", primaryKeys = ["id"])
 class DbGeneratedKeyEntity(
     @field:Column(insert = false)
     @field:AutoFill
-    var id: Long? = null,
-    var name: String? = null,
+    override var id: Long? = null,
 ) : AutoFillEntity()
 
 @Table(name = "auto_fill_int_id", primaryKeys = ["id"])
 class MultiDbGeneratedKeysEntity(
     @field:Column(insert = false)
     @field:AutoFill
-    var id: Long? = null,
-    var name: String? = null,
+    override var id: Long? = null,
     @field:AutoFill
     @field:Column(insert = false)
-    var whenCreated: LocalDateTime? = null,
+    override var whenCreated: LocalDateTime? = null,
 ) : AutoFillEntity()
 
 @Table(name = "auto_fill_int_id", primaryKeys = ["id"])
-class CustomIdGeneratorEntity(
+class CustomGeneratorEntity(
     @field:Column(insert = false)
     @field:AutoFill(
         before = true,
         generator = NegativeLongIdGenerator::class
     )
-    var id: Long? = null,
-    var name: String? = null,
+    override var id: Long? = null,
 ) : AutoFillEntity()
 
+@Table(name = "auto_fill_int_id", primaryKeys = ["id"])
+class MultipleFieldCustomGeneratorEntity(
+    @field:Column(insert = false)
+    @field:AutoFill(
+        before = true,
+        generator = NegativeLongIdGenerator::class
+    )
+    override var id: Long? = null,
+    @field:Column(insert = false)
+    @field:AutoFill(
+        before = true,
+        update = true,
+        generator = LocalDateTimeGenerator::class
+    )
+    override var whenUpdated: LocalDateTime? = null,
+) : AutoFillEntity()
+
+@Table(name = "auto_fill_int_id", primaryKeys = ["id"])
+class FillByCustomGeneratorWhenUpdateEntity(
+    override var id: Long? = null,
+    override var name: String? = null,
+    @field:AutoFill(before = true, update = true, generator = LocalDateTimeGenerator::class)
+    override var whenUpdated: LocalDateTime? = null,
+) : AutoFillEntity()

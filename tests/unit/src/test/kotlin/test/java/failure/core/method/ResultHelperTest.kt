@@ -122,4 +122,20 @@ class ResultHelperTest : BaseTest() {
         }
     }
 
+    @Test
+    fun `query method return list of map without type argument`() {
+        compileFailure<QueryReturnMapListWithoutTypeArgumentBadDao> {
+            assertErrorMessageEquals("Invalid type argument:java.lang.Object, the key type must be String")
+        }
+//        initData(
+//            Person(1, "a"),
+//            Person(2, "a"),
+//        )
+//        val impl = getJavaDaoInstance<>()
+//        val all = impl.query()
+//        assert(all.size == 2)
+//        assertContentEquals(all.map { it["id"] }, listOf(1L, 2L))
+    }
+
+
 }

@@ -18,6 +18,7 @@ import java.sql.PreparedStatement
 import java.sql.ResultSet
 import java.sql.ResultSetMetaData
 import java.sql.Statement
+import java.util.function.Function
 import javax.lang.model.element.Modifier
 import javax.lang.model.element.TypeElement
 import javax.lang.model.type.DeclaredType
@@ -75,17 +76,21 @@ class ClassicBuildMethodService : BuildMethodService {
             name,
             Modifier.PRIVATE,
             Modifier.FINAL,
-        ).initializer(CodeBlock.builder()
-            .add("new \$T(\$L,${methodHandler.daoHandler.implQualifiedName}.class,\$S,\$T.class${
-                methodHandler.parameters.joinToString { "${it.type.erasure().typeName}.class" }
-                    .takeIf { it.isNotBlank() }
-                    ?.let { ", $it" }
-                    ?: ""
-            })",
-                SqlSignature::class.type,
-                "${StatementType::class.qualifiedName}.${methodHandler.statementType}",
-                methodHandler.name,
-                methodHandler.resultHelper.returnType.erasure()).build()).build()
+        ).initializer(
+            CodeBlock.builder()
+                .add(
+                    "new \$T(\$L,${methodHandler.daoHandler.implQualifiedName}.class,\$S,\$T.class${
+                        methodHandler.parameters.joinToString { "${it.type.erasure().typeName}.class" }
+                            .takeIf { it.isNotBlank() }
+                            ?.let { ", $it" }
+                            ?: ""
+                    })",
+                    SqlSignature::class.type,
+                    "${StatementType::class.qualifiedName}.${methodHandler.statementType}",
+                    methodHandler.name,
+                    methodHandler.resultHelper.returnType.erasure()
+                ).build()
+        ).build()
         methodHandler.daoHandler.classBuilder.addField(field)
         return name
     }
@@ -93,7 +98,7 @@ class ClassicBuildMethodService : BuildMethodService {
     private fun addSqlBuilderField(methodHandler: MethodHandler, counter: Int): String {
         //Function<Object[], Object[]> insert_0_sqlBuilder
         val field = FieldSpec.builder(
-            java.util.function.Function::class.type(
+            Function::class.type(
                 typeUtils.getArrayType(Any::class.type),
                 typeUtils.getArrayType(Any::class.type),
             ).typeName,
@@ -128,7 +133,10 @@ class ClassicBuildMethodService : BuildMethodService {
                             return@AutoFill
                         }
                         if (isCollection) {
-                            beginControlFlow("for (\$T $itemVar : ${methodHandler.parameters[index].name.toVarName()})")
+                            beginControlFlow(
+                                "for (\$T $itemVar : ${methodHandler.parameters[index].name.toVarName()})",
+                                type,
+                            )
                         } else {
                             addStatement(
                                 "\$T $itemVar = (\$T) _params[\$L]",

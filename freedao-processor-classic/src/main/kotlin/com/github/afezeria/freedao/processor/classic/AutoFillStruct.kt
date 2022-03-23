@@ -45,9 +45,12 @@ class AutoFillStruct private constructor(
         private fun findAutoFillParameter(method: MethodHandler): AutoFillStruct? {
             return method.parameters.indexOfFirst {
                 it.type.run {
-                    this is DeclaredType && (isCustomJavaBean() || (isAssignable(Collection::class) && findTypeArgument(
-                        Collection::class.type, "E"
-                    )!!.isCustomJavaBean()))
+                    this is DeclaredType && (
+                            isCustomJavaBean() || (
+                                    isAssignable(Collection::class)
+                                            && findTypeArgument(Collection::class.type, "E").isCustomJavaBean()
+                                    )
+                            )
                 }
             }.takeIf { it != -1 }?.let { idx ->
                 val type = method.parameters[idx].type as DeclaredType
@@ -56,7 +59,7 @@ class AutoFillStruct private constructor(
                     AutoFillStruct(idx, null, type)
                 } else {
                     //批量更新或插入
-                    AutoFillStruct(idx, type, type.findTypeArgument(Collection::class.type, "E")!!)
+                    AutoFillStruct(idx, type, type.findTypeArgument(Collection::class.type, "E"))
                 }
             }
         }

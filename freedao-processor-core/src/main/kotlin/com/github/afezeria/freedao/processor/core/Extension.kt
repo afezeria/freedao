@@ -49,7 +49,7 @@ fun TypeMirror.boxed(): TypeMirror = if (this is PrimitiveType) {
  */
 fun DeclaredType.getBeanPropertyType(
     name: String,
-    errorMsg: () -> String = { "missing property:${this}.$name" },
+    errorMsg: () -> String,
 ): TypeMirror {
     fun findPropertyAndOwnerElement(type: DeclaredType, propName: String): Pair<TypeMirror, DeclaredType>? {
         val element = type.asElement() as TypeElement
@@ -66,10 +66,6 @@ fun DeclaredType.getBeanPropertyType(
     val (propType, propOwnerType) = findPropertyAndOwnerElement(this, name)
         ?: throw HandlerException(errorMsg())
     return propType.parameterized(this, propOwnerType)
-
-//
-//    return asElement().enclosedElements.find { it.simpleName.toString() == name && it.hasGetter() }?.asType()
-//        ?: throw HandlerException(errorMsg())
 }
 
 val DeclaredType.simpleName: String
@@ -129,9 +125,7 @@ val KClass<*>.type: DeclaredType
 
 fun KClass<*>.type(vararg typeArgs: TypeMirror): DeclaredType {
     val element = elementUtils.getTypeElement(javaObjectType.name)
-    if (typeArgs.isNotEmpty() && element.typeParameters.size != typeArgs.size) {
-        throw IllegalArgumentException()
-    }
+    assert(typeArgs.isEmpty() || (element.typeParameters.size == typeArgs.size))
 
     return typeUtils.getDeclaredType(
         element,
@@ -149,13 +143,23 @@ fun String.toSnakeCase(): String {
     return groupingRegex.findAll(this).joinToString("_") { it.value.lowercase() }
 }
 
-fun DeclaredType.isAbstractType(): Boolean = asElement().modifiers.contains(Modifier.ABSTRACT)
-fun DeclaredType.isNotAbstractType(): Boolean = !asElement().modifiers.contains(Modifier.ABSTRACT)
+val DeclaredType.isAbstract: Boolean
+    get() = asElement().modifiers.contains(Modifier.ABSTRACT)
 
-fun DeclaredType.findTypeArgument(superType: TypeMirror? = null, parameterName: String? = null): DeclaredType? {
-    if (superType != null && !this.isAssignable(superType)) {
-        throw HandlerException("$this can not assignable to $superType")
-    }
+/**
+ * 获取[this]在[superType]上的类型参数[parameterName]的实际类型
+ *
+ * @receiver DeclaredType 当前类型，一般是dao函数的返回值或参数的类型
+ * @param superType TypeMirror?
+ * @param parameterName String?
+ * @return DeclaredType?
+ * @throws HandlerException 如果[this]不是[superType]的子类
+ */
+fun DeclaredType.findTypeArgument(superType: TypeMirror, parameterName: String): DeclaredType {
+    assert(this.isAssignable(superType))
+//    if (!this.isAssignable(superType)) {
+//        throw HandlerException("$this can not assignable to $superType")
+//    }
     val typeParameters = (this.asElement() as TypeElement).typeParameters
     val map = if (typeArguments.size != typeParameters.size) {
         typeParameters.associate { parameterElement ->
@@ -170,26 +174,22 @@ fun DeclaredType.findTypeArgument(superType: TypeMirror? = null, parameterName: 
             parameterElement.simpleName.toString() to typeMirror
         }.toMap()
     }
-    return findTypeArgumentHelper(superType, parameterName, map)
+    //因为不允许实体类和接口有自己的范型参数，所以这里是肯定能够找到的
+    return findTypeArgumentHelper(superType, parameterName, map)!!
 }
 
 private fun DeclaredType.findTypeArgumentHelper(
-    targetType: TypeMirror? = null,
-    parameterName: String? = null,
+    targetType: TypeMirror,
+    parameterName: String,
     typeArgumentMap: Map<String, DeclaredType> = mutableMapOf(),
 ): DeclaredType? {
-    if (targetType == null || targetType.isSameType(typeUtils.erasure(this))) {
+    if (targetType.isSameType(typeUtils.erasure(this))) {
         val typeParameters = (asElement() as TypeElement).typeParameters
         if (typeParameters.isEmpty()) {
             throw HandlerException("${(this.asElement() as TypeElement).qualifiedName} has no type parameter")
         }
-        return if (parameterName == null) {
-            typeArgumentMap[typeParameters[0].simpleName.toString()]
-                ?: Any::class.type
-        } else {
-            typeArgumentMap[parameterName]
-                ?: throw HandlerException("${(this.asElement() as TypeElement).qualifiedName} has no type parameter $parameterName")
-        }
+        return typeArgumentMap[parameterName]
+            ?: throw HandlerException("${(this.asElement() as TypeElement).qualifiedName} has no type parameter $parameterName")
     }
     if (!this.isAssignable(targetType)) {
         return null
@@ -244,13 +244,13 @@ private fun DeclaredType.findTypeArgumentHelper(
 fun TypeMirror.parameterized(type: DeclaredType, enclosingElementType: DeclaredType): TypeMirror {
     return when (this) {
         is TypeVariable -> {
-            type.findTypeArgument(enclosingElementType, typeName.toString())!!
+            type.findTypeArgument(enclosingElementType, typeName.toString())
         }
         is DeclaredType -> {
             val map = typeArguments.map {
                 when (it) {
                     is TypeVariable -> {
-                        type.findTypeArgument(enclosingElementType, it.typeName.toString())!!
+                        type.findTypeArgument(enclosingElementType, it.typeName.toString())
                     }
                     else -> {
                         it.parameterized(type, enclosingElementType)
@@ -278,9 +278,6 @@ fun TypeMirror.isCustomJavaBean(): Boolean {
     if (toString().startsWith("java")) {
         return false
     }
-//    if (this.isSameType(Any::class)) {
-//        return false
-//    }
     if (this.isAssignable(Collection::class)) {
         return false
     }
@@ -306,17 +303,6 @@ fun <R> runCatchingHandlerExceptionOrThrow(element: Element, block: () -> R): R?
                 val stringWriter = StringWriter()
                 val printWriter = PrintWriter(stringWriter)
                 e.printStackTrace(printWriter)
-                processingEnvironment.messager.printMessage(
-                    Diagnostic.Kind.WARNING,
-                    stringWriter.toString()
-                )
-            }
-        } else if (e.cause is HandlerException) {
-            processingEnvironment.messager.printMessage(Diagnostic.Kind.ERROR, e.cause!!.message, element)
-            if (global.debug) {
-                val stringWriter = StringWriter()
-                val printWriter = PrintWriter(stringWriter)
-                e.cause!!.printStackTrace(printWriter)
                 processingEnvironment.messager.printMessage(
                     Diagnostic.Kind.WARNING,
                     stringWriter.toString()
