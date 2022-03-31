@@ -3,7 +3,7 @@ package com.github.afezeria.freedao.processor.classic
 import com.github.afezeria.freedao.processor.core.DaoHandler
 import com.github.afezeria.freedao.processor.core.spi.BuildDaoService
 import com.github.afezeria.freedao.processor.core.type
-import com.github.afezeria.freedao.runtime.classic.DaoContext
+import com.github.afezeria.freedao.runtime.classic.context.DaoContext
 import com.squareup.javapoet.FieldSpec
 import com.squareup.javapoet.TypeSpec
 import org.slf4j.Logger

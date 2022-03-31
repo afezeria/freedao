@@ -7,7 +7,7 @@ include("freedao-processor-spring")
 include("freedao-runtime-classic")
 include("freedao-spring-boot-starter")
 include("tests:unit")
-include("tests:spring-boot-integrate")
+include("tests:spring-boot-integration")
 
 
 enableFeaturePreview("VERSION_CATALOGS")

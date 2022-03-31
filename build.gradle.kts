@@ -17,9 +17,4 @@ subprojects {
     group = "com.github.afezeria.freedao"
     version = "0.0.1"
 
-
-//    tasks.withType<Test>().configureEach {
-//        useJUnitPlatform()
-//    }
-
 }

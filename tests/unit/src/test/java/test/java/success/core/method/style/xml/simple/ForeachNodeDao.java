@@ -3,7 +3,6 @@ package test.java.success.core.method.style.xml.simple;
 import com.github.afezeria.freedao.annotation.Dao;
 import com.github.afezeria.freedao.annotation.XmlTemplate;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.stereotype.Repository;
 import test.Person;
 
 import java.util.List;
@@ -12,7 +11,6 @@ import java.util.List;
  * @author afezeria
  */
 @Dao
-@Repository
 public interface ForeachNodeDao {
     @NotNull
     @XmlTemplate("""

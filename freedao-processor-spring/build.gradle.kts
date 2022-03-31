@@ -3,12 +3,12 @@ plugins {
 }
 
 dependencies {
-    api(libs.springContext)
     api(projects.freedaoProcessorClassic)
+    implementation(libs.spring.context)
 
 }
-//kotlin {
-//    jvmToolchain {
-//        (this as JavaToolchainSpec).languageVersion.set(JavaLanguageVersion.of(8))
-//    }
-//}
+kotlin {
+    jvmToolchain {
+        (this as JavaToolchainSpec).languageVersion.set(JavaLanguageVersion.of(8))
+    }
+}

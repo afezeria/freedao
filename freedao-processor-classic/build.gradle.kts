@@ -5,7 +5,6 @@ plugins {
 dependencies {
     api(projects.freedaoProcessorCore)
     api(projects.freedaoRuntimeClassic)
-    api(libs.springContext)
 }
 kotlin {
     jvmToolchain {

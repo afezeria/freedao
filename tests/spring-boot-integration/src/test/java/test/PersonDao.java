@@ -10,4 +10,8 @@ import java.util.List;
 @Dao(crudEntity = Person.class)
 public interface PersonDao {
     List<Person> queryByIdNotNull();
+
+    int insert(Person person);
+
+    Integer count(Person person);
 }

@@ -19,7 +19,7 @@ configure<com.bnorm.power.PowerAssertGradleExtension> {
 dependencies {
     implementation(projects.freedaoCore)
     implementation(projects.freedaoRuntimeClassic)
-    implementation(libs.springContext)
+//    implementation(libs.springContext)
 
     testImplementation(projects.freedaoProcessorCore)
     testImplementation(projects.freedaoProcessorClassic)

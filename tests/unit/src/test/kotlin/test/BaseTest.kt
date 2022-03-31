@@ -5,7 +5,7 @@ import com.github.afezeria.freedao.annotation.Table
 import com.github.afezeria.freedao.processor.classic.contextVar
 import com.github.afezeria.freedao.processor.core.MainProcessor
 import com.github.afezeria.freedao.processor.core.toSnakeCase
-import com.github.afezeria.freedao.runtime.classic.DaoContext
+import com.github.afezeria.freedao.runtime.classic.context.DaoContext
 import com.google.testing.compile.Compilation
 import com.google.testing.compile.CompilationSubject
 import com.google.testing.compile.Compiler
@@ -190,9 +190,10 @@ abstract class BaseTest {
         }
 
 
-        val context = DaoContext.builder().withDefault(LinkedHashMap<String?, DataSource?>().apply {
-            put("main", dataSource)
-        }).build()
+        val context = DaoContext.create(dataSource)
+//        DaoContext.builder().withDefault(LinkedHashMap<String?, DataSource?>().apply {
+//            put("main", dataSource)
+//        }).build()
 
         fun find(table: String, where: String = "1 = 1"): MutableList<MutableMap<String, Any?>> {
             return dataSource.execute("select * from $table where $where")
