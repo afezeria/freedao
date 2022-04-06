@@ -10,15 +10,18 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
 
     val crudEntity: EntityObjectModel
 
+    val parameterName: String
+
     init {
         crudEntity = daoHandler.crudEntity
             ?: throw HandlerException("Method $name requires Dao.crudEntity to be specified")
-        requireParameterByTypes(crudEntity.type)
+
+        val parameter = parameters.find { it.type.isAssignable(crudEntity.type) }
+            ?: throw HandlerException("Missing parameter of type ${crudEntity.type}")
+        parameterName = parameter.name
     }
 
-    val parameterName: String by lazy {
-        requiredParameters[0].name
-    }
+
     val where: String by lazy {
         crudEntity.properties.joinToString(separator = "\n") {
             //language=Xml

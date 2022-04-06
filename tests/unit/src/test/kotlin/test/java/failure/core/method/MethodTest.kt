@@ -16,6 +16,13 @@ class MethodTest : BaseTest() {
     }
 
     @Test
+    fun invalidParameterName() {
+        compileFailure<InvalidParameterNameBadDao> {
+            assertErrorMessageEquals("Invalid parameter name:_test")
+        }
+    }
+
+    @Test
     fun methodHasTypeParameter() {
         compileFailure<MethodHasTypeParameterBadDao> {
             assertErrorMessageEquals("Method cannot have TypeParameter")

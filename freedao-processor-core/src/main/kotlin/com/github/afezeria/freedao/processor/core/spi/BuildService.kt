@@ -8,7 +8,7 @@ import com.github.afezeria.freedao.processor.core.method.MethodHandler
  *
  * @author afezeria
  */
-interface ValidatorService {
-    fun validation(daoHandler: DaoHandler) {}
-    fun validation(methodHandler: MethodHandler) {}
+interface BuildService {
+    fun beforeBuildDao(daoHandler: DaoHandler)
+    fun beforeBuildMethod(methodHandler: MethodHandler)
 }

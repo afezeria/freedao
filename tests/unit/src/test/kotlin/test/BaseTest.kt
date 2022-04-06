@@ -1,7 +1,6 @@
 package test
 
 import com.github.afezeria.freedao.annotation.Column
-import com.github.afezeria.freedao.annotation.Table
 import com.github.afezeria.freedao.processor.classic.contextVar
 import com.github.afezeria.freedao.processor.core.MainProcessor
 import com.github.afezeria.freedao.processor.core.toSnakeCase
@@ -23,10 +22,7 @@ import javax.tools.JavaFileObject
 import javax.tools.JavaFileObject.Kind.CLASS
 import kotlin.io.path.Path
 import kotlin.reflect.KClass
-import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.findAnnotations
-import kotlin.reflect.full.memberProperties
-import kotlin.reflect.jvm.javaField
 
 
 /**
@@ -47,20 +43,19 @@ abstract class BaseTest {
             val testResource =
                 kClass.findAnnotations<DDL>().find { it.dialect == env.name }
                     ?: throw IllegalStateException()
-            val table = kClass.findAnnotation<Table>()
-                ?: throw IllegalStateException()
-            execute("drop table if exists ${table.name}")
+            val tableName = getTableNameFromCreateTableStatement(testResource.value)
+            execute("drop table if exists $tableName")
             execute(testResource.value)
 
             entities.forEach {
-                val name2value = it::class.memberProperties
-                    .filter { p ->
-                        p.javaField?.getAnnotation(Column::class.java)?.let { it.exist && (it.insert || it.update) }
+                val name2value = it::class.java.declaredFields
+                    .filter { f ->
+                        f.getAnnotation(Column::class.java)?.let { it.exist && (it.insert || it.update) }
                             ?: true
-                    }
-                    .mapTo(mutableListOf()) { p ->
-                        (p.javaField?.getAnnotation(Column::class.java)?.name?.takeIf { it.isNotEmpty() }
-                            ?: p.name.toSnakeCase()) to p.getter.call(it)
+                    }.mapTo(mutableListOf()) { f ->
+                        f.trySetAccessible()
+                        (f.getAnnotation(Column::class.java)?.name?.takeIf { it.isNotEmpty() }
+                            ?: f.name.toSnakeCase()) to f.get(it)
                     }.apply {
                         if (!fillNull) {
                             removeIf { it.second == null }
@@ -69,7 +64,7 @@ abstract class BaseTest {
 
                 execute(
                     """
-                    insert into ${table.name} (${name2value.joinToString { it.first }}) 
+                    insert into $tableName (${name2value.joinToString { it.first }}) 
                     values (${name2value.joinToString { "?" }})
                  """,
                     *name2value.map { it.second }.toTypedArray()
@@ -152,7 +147,7 @@ abstract class BaseTest {
         val declaredField = implClass.getDeclaredField(contextVar).apply {
             isAccessible = true
         }
-        declaredField.set(instance, env.context)
+        declaredField.set(instance, env.contextWrapper)
         @Suppress("UNCHECKED_CAST")
         return instance as T
     }
@@ -189,11 +184,18 @@ abstract class BaseTest {
             driverClassName = this@DbEnv.driverClassName
         }
 
+        val defaultContext = DaoContext.create(dataSource)
 
-        val context = DaoContext.create(dataSource)
-//        DaoContext.builder().withDefault(LinkedHashMap<String?, DataSource?>().apply {
-//            put("main", dataSource)
-//        }).build()
+        val contextWrapper = object : DaoContext(defaultContext) {}
+
+        fun <T>  withContext(contextProvide: DbEnv.() -> DaoContext, closure: () -> T): T {
+            val field = DaoContext::class.java.declaredFields.find { it.name == "delegate" }!!
+            field.trySetAccessible()
+            field.set(contextWrapper, contextProvide(this))
+            val value = closure()
+            field.set(contextWrapper, defaultContext)
+            return value
+        }
 
         fun find(table: String, where: String = "1 = 1"): MutableList<MutableMap<String, Any?>> {
             return dataSource.execute("select * from $table where $where")
@@ -205,6 +207,11 @@ abstract class BaseTest {
     }
 
     companion object {
+        private val regex = "create table\\W+(\\w+)".toRegex()
+        private fun getTableNameFromCreateTableStatement(string: String): String {
+            return regex.find(string)!!.groupValues[1]
+        }
+
         private val MYSQL_CONTAINER by lazy {
             MySQLContainer("mysql:8.0.28").apply {
                 start()

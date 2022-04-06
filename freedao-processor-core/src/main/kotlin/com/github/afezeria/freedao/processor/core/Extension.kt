@@ -83,15 +83,18 @@ fun <T : Annotation> T.mirroredType(block: T.() -> Unit): TypeMirror {
     }
 }
 
-fun Name.getterName(): String = "get" + toString().replaceFirstChar { it.uppercaseChar() }
-fun Name.setterName(): String = "set" + toString().replaceFirstChar { it.uppercaseChar() }
+val VariableElement.getterName: String
+    get() = "get" + toString().replaceFirstChar { it.uppercaseChar() }
+
+val VariableElement.setterName: String
+    get() = "set" + toString().replaceFirstChar { it.uppercaseChar() }
 
 fun Element.hasSetter(): Boolean {
     return when (this) {
         is VariableElement -> {
             enclosingElement.enclosedElements.any {
                 it is ExecutableElement
-                        && it.simpleName.contentEquals(simpleName.setterName())
+                        && it.simpleName.contentEquals(setterName)
                         && it.parameters.size == 1
                         && it.parameters[0].asType().isSameType(asType())
                         && it.modifiers.contains(Modifier.PUBLIC)
@@ -107,7 +110,7 @@ fun Element.hasGetter(): Boolean {
         is VariableElement -> {
             enclosingElement.enclosedElements.any {
                 it is ExecutableElement
-                        && it.simpleName.contentEquals(simpleName.getterName())
+                        && it.simpleName.contentEquals(getterName)
                         && it.parameters.size == 0
                         && it.returnType.isSameType(asType())
                         && it.modifiers.contains(Modifier.PUBLIC)

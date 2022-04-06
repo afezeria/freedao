@@ -3,7 +3,7 @@ package com.github.afezeria.freedao.processor.core
 import com.github.afezeria.freedao.DefaultEnumTypeHandler
 import com.github.afezeria.freedao.annotation.Column
 import com.github.afezeria.freedao.annotation.ResultMappings
-import com.github.afezeria.freedao.processor.core.method.MethodHandler
+import com.github.afezeria.freedao.processor.core.method.ResultHelper
 import javax.lang.model.element.ElementKind
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.Modifier
@@ -44,13 +44,13 @@ class ColumnAnn(element: VariableElement) {
 }
 
 object ResultMappingsAnn {
-    fun getMappings(methodHandler: MethodHandler): MutableList<MappingData> {
-        val resultMappings = methodHandler.element.getAnnotation(ResultMappings::class.java)?.apply {
+    fun getMappings(methodElement: ExecutableElement, resultHelper: ResultHelper): MutableList<MappingData> {
+        val resultMappings = methodElement.getAnnotation(ResultMappings::class.java)?.apply {
             if (onlyCustomMapping && value.isEmpty()) {
                 throw HandlerException("Invalid result mapping, value cannot be empty when onlyCustomMapping is true")
             }
         }
-        val itemType = methodHandler.resultHelper.itemType
+        val itemType = resultHelper.itemType
         var mappings: MutableList<MappingData> = mutableListOf()
         when {
             itemType.isCustomJavaBean() -> {
@@ -123,7 +123,7 @@ object ResultMappingsAnn {
             }
             else -> {
                 val t = if (itemType.isAssignable(Map::class.type)) {
-                    methodHandler.resultHelper.mapValueType!!
+                    resultHelper.mapValueType!!
                 } else {
                     itemType
                 }

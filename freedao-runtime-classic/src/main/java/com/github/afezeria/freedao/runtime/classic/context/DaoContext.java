@@ -42,7 +42,7 @@ public abstract class DaoContext {
     }
 
     public static DaoContext create(DataSource dataSource) {
-        return new ExecutorContext(new TransactionContext(dataSource));
+        return new ParameterContext(new ExecutorContext(new TransactionContext(dataSource)), null);
     }
 
 }

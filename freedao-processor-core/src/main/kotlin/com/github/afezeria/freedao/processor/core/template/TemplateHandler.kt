@@ -36,10 +36,12 @@ class TemplateHandler(map: Map<String, TypeMirror>) {
         parameterStack.addFirst(map.map { (k, v) ->
             k.toVarName() to v
         }.toMap(mutableMapOf()))
-        codeBlock.addStatement("\$T<\$T> $sqlArgsVarName = new \$T<>()",
+        codeBlock.addStatement(
+            "\$T<\$T> $sqlArgsVarName = new \$T<>()",
             List::class.java,
             Object::class.java,
-            ArrayList::class.java)
+            ArrayList::class.java
+        )
         codeBlock.addStatement("\$T $builderName = new \$T()", StringBuilder::class.java, StringBuilder::class.java)
     }
 
@@ -138,8 +140,13 @@ class TemplateHandler(map: Map<String, TypeMirror>) {
                         type = Int::class.type
                         text = "(${type}) $text.size()"
                     } else {
-                        type = declaredType.getBeanPropertyType(s) {
-                            "error expr:$originalText.$s, missing property:${declaredType}.$s"
+                        try {
+
+                            type = declaredType.getBeanPropertyType(s) {
+                                "error expr:$originalText.$s, missing property:${declaredType}.$s"
+                            }
+                        } catch (e: Exception) {
+                            throw e
                         }
                         text = "$text.get${s.replaceFirstChar { it.uppercaseChar() }}()"
                     }

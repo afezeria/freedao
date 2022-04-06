@@ -79,7 +79,9 @@ class TextElement : XmlElement() {
     }
 
     companion object {
-        val namedStringParameterRegex = "\\$\\{((?:[a-zA-Z0-9_]+\\.)*[a-zA-Z0-9_]+)}".toRegex()
-        val namedSqlParameterRegex = "#\\{((?:[a-zA-Z0-9_]+\\.)*[a-zA-Z0-9_]+)(?:,typeHandler=(.*?))?}".toRegex()
+        val namedStringParameterRegex = "\\$\\{([a-zA-Z0-9_]+(?:\\.\"[a-zA-Z0-9_]+\"|\\.[a-zA-Z0-9_]+)*)}".toRegex()
+
+        val namedSqlParameterRegex =
+            "#\\{([a-zA-Z0-9_]+(?:\\.\"[a-zA-Z0-9_]+\"|\\.[a-zA-Z0-9_]+)*)(?:,typeHandler=(.*?))?}".toRegex()
     }
 }

@@ -1,6 +1,8 @@
 plugins {
     kotlin("jvm")
-    id("io.freefair.lombok") version "6.3.0"
+    kotlin("plugin.lombok") version "1.6.20"
+
+    id("io.freefair.lombok") version "6.4.2"
     id("com.bnorm.power.kotlin-power-assert")
     jacoco
 }
@@ -25,6 +27,9 @@ dependencies {
     testImplementation(projects.freedaoProcessorClassic)
 
     testImplementation(libs.logback)
+
+    testCompileOnly("org.projectlombok:lombok:1.18.22")
+    testAnnotationProcessor("org.projectlombok:lombok:1.18.22")
 
     testImplementation(libs.kotlin.compile.test)
     testImplementation(libs.kotlin.test)

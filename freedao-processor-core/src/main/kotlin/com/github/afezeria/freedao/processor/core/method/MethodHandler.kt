@@ -3,8 +3,8 @@ package com.github.afezeria.freedao.processor.core.method
 import com.github.afezeria.freedao.StatementType
 import com.github.afezeria.freedao.processor.core.*
 import com.github.afezeria.freedao.processor.core.spi.BuildMethodService
+import com.github.afezeria.freedao.processor.core.spi.BuildService
 import com.github.afezeria.freedao.processor.core.spi.MethodFactory
-import com.github.afezeria.freedao.processor.core.spi.ValidatorService
 import com.github.afezeria.freedao.processor.core.template.PositionalXMLReader
 import com.github.afezeria.freedao.processor.core.template.RootElement
 import com.squareup.javapoet.AnnotationSpec
@@ -16,7 +16,6 @@ import java.io.ByteArrayInputStream
 import java.util.*
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.type.DeclaredType
-import javax.lang.model.type.TypeMirror
 
 /**
  *
@@ -33,9 +32,9 @@ abstract class MethodHandler protected constructor(
         }
     }
 
-    var parameters: List<Parameter> =
-        element.parameters.mapIndexed { index, variableElement ->
-            Parameter(
+    var parameters: MutableList<Parameter> =
+        element.parameters.mapIndexedTo(mutableListOf()) { index, variableElement ->
+            RealParameter(
                 index,
                 variableElement.simpleName.toString(),
                 variableElement.asType().parameterized(
@@ -45,19 +44,20 @@ abstract class MethodHandler protected constructor(
                 variableElement,
             )
         }
-    val requiredParameters = mutableListOf<Parameter>()
 
     var returnUpdateCount = false
 
     var resultHelper: ResultHelper = ResultHelper(daoHandler, element)
-    val mappings = ResultMappingsAnn.getMappings(this)
+    val mappings = ResultMappingsAnn.getMappings(element, resultHelper)
 
     val xmlDocument: Document by lazy {
         PositionalXMLReader.readXML(ByteArrayInputStream(getTemplate().toByteArray()))
     }
+
     val sqlBuildCodeBlock: CodeBlock by lazy {
         RootElement(this).buildCodeBlock()
     }
+
     val statementType: StatementType by lazy {
         try {
             StatementType.valueOf(xmlDocument.firstChild.nodeName.uppercase())
@@ -70,9 +70,9 @@ abstract class MethodHandler protected constructor(
 
     fun render(): MethodSpec {
 
-        ServiceLoader.load(ValidatorService::class.java, MainProcessor::class.java.classLoader)
+        ServiceLoader.load(BuildService::class.java, MainProcessor::class.java.classLoader)
             .forEach {
-                it.validation(this)
+                it.beforeBuildMethod(this)
             }
 
         //生成方法
@@ -80,15 +80,17 @@ abstract class MethodHandler protected constructor(
             returns(resultHelper.returnType.typeName)
             parameters.clear()
             addParameters(
-                this@MethodHandler.parameters.map {
-                    ParameterSpec.builder(
-                        it.type.typeName,
-                        it.name,
-                        *it.variableElement.modifiers.toTypedArray()
-                    ).addAnnotations(
-                        it.variableElement.annotationMirrors.map { ann -> AnnotationSpec.get(ann) }
-                    ).build()
-                }
+                this@MethodHandler.parameters
+                    .filterIsInstance<RealParameter>()
+                    .map {
+                        ParameterSpec.builder(
+                            it.type.typeName,
+                            it.name,
+                            *it.variableElement.modifiers.toTypedArray()
+                        ).addAnnotations(
+                            it.variableElement.annotationMirrors.map { ann -> AnnotationSpec.get(ann) }
+                        ).build()
+                    }
             )
             addAnnotations(
                 element.annotationMirrors.map {
@@ -113,28 +115,6 @@ abstract class MethodHandler protected constructor(
 
 
     abstract fun getTemplate(): String
-
-
-    fun requireParameterByTypes(vararg types: TypeMirror) {
-        var matched = false
-        var idx = 0
-        types.forEach { type ->
-            while (idx < parameters.size) {
-                if (parameters[idx].type.isAssignable(type)) {
-                    requiredParameters += parameters[idx]
-                    matched = true
-                    idx++
-                    return@forEach
-                } else {
-                    if (matched) {
-                        break
-                    }
-                    idx++
-                }
-            }
-            throw HandlerException("Missing parameter of type ${types[0]}")
-        }
-    }
 
     companion object {
         private val notNullAnnotationSet = setOf("NotNull", "NonNull")

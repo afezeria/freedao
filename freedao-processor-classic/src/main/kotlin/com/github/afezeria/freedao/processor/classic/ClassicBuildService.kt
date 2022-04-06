@@ -1,19 +1,23 @@
 package com.github.afezeria.freedao.processor.classic
 
 import com.github.afezeria.freedao.StatementType
+import com.github.afezeria.freedao.processor.core.DaoHandler
 import com.github.afezeria.freedao.processor.core.HandlerException
 import com.github.afezeria.freedao.processor.core.boxed
 import com.github.afezeria.freedao.processor.core.isSameType
 import com.github.afezeria.freedao.processor.core.method.MethodHandler
-import com.github.afezeria.freedao.processor.core.spi.ValidatorService
+import com.github.afezeria.freedao.processor.core.spi.BuildService
 import javax.lang.model.type.PrimitiveType
 
 /**
  *
  * @author afezeria
  */
-class ClassicValidatorService : ValidatorService {
-    override fun validation(methodHandler: MethodHandler) {
+class ClassicBuildService : BuildService {
+    override fun beforeBuildDao(daoHandler: DaoHandler) {
+    }
+
+    override fun beforeBuildMethod(methodHandler: MethodHandler) {
         methodHandler.apply {
             when (statementType) {
                 StatementType.SELECT -> {
@@ -30,8 +34,9 @@ class ClassicValidatorService : ValidatorService {
                 }
             }
         }
-
         AutoFillStruct.validation(methodHandler)
         EnableAutoFill.validation(methodHandler)
+        ContextParameter.init(methodHandler)
+
     }
 }

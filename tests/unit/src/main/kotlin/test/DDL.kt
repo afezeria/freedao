@@ -11,6 +11,6 @@ import org.intellij.lang.annotations.Language
 @Repeatable
 annotation class DDL(
     val dialect: String,
-    @Language("sql")
+    @Language("SQL")
     val value: String,
 )

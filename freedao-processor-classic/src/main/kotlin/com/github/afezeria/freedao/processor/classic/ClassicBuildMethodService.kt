@@ -3,6 +3,7 @@ package com.github.afezeria.freedao.processor.classic
 import com.github.afezeria.freedao.StatementType
 import com.github.afezeria.freedao.processor.core.*
 import com.github.afezeria.freedao.processor.core.method.MethodHandler
+import com.github.afezeria.freedao.processor.core.method.RealParameter
 import com.github.afezeria.freedao.processor.core.method.ResultHelper
 import com.github.afezeria.freedao.processor.core.spi.BuildMethodService
 import com.github.afezeria.freedao.processor.core.template.TemplateHandler
@@ -52,7 +53,7 @@ class ClassicBuildMethodService : BuildMethodService {
         val sqlVar = addSqlBuilderField(methodHandler, counter)
         val executorVar = addExecutorField(methodHandler, counter)
         return CodeBlock.builder().apply {
-            addStatement("Object[] $methodArgsVar = {${methodHandler.parameters.joinToString { it.name }}}")
+            addStatement("Object[] $methodArgsVar = {${methodHandler.parameters.filterIsInstance<RealParameter>().joinToString { it.name }}}")
             addStatement("Object[] $buildSqlResultVar = $contextVar.buildSql($signVar, $methodArgsVar, $sqlVar)")
 
             addStatement(
