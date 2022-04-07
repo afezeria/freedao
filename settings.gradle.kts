@@ -1,13 +1,13 @@
 rootProject.name = "freedao"
 
 include("freedao-core")
-include("freedao-processor-core")
-include("freedao-processor-classic")
-include("freedao-processor-spring")
-include("freedao-runtime-classic")
+include("freedao-core-processor")
+include("freedao-classic-processor")
+include("freedao-classic-runtime")
+include("freedao-spring-processor")
 include("freedao-spring-boot-starter")
-include("tests:unit")
-include("tests:spring-boot-integration")
+include("test-classic")
+include("test-spring-boot")
 
 
 enableFeaturePreview("VERSION_CATALOGS")

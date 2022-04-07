@@ -1,6 +1,6 @@
 package com.github.afezeria.freedao.runtime.spring;
 
-import com.github.afezeria.freedao.runtime.classic.context.DaoContext;
+import com.github.afezeria.freedao.classic.runtime.context.DaoContext;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.jdbc.support.SQLErrorCodeSQLExceptionTranslator;

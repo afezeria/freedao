@@ -4,6 +4,8 @@ plugins {
     kotlin("plugin.spring") version "1.6.10" apply false
     kotlin("jvm") version "1.6.20" apply false
     kotlin("kapt") version "1.6.20" apply false
+    kotlin("plugin.lombok") version "1.6.20" apply false
+    id("io.freefair.lombok") version "6.4.2" apply false
     id("com.bnorm.power.kotlin-power-assert") version "0.11.0" apply false
 }
 

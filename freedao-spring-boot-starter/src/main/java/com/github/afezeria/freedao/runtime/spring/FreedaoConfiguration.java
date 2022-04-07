@@ -1,7 +1,7 @@
 package com.github.afezeria.freedao.runtime.spring;
 
-import com.github.afezeria.freedao.runtime.classic.context.DaoContext;
-import com.github.afezeria.freedao.runtime.classic.context.ExecutorContext;
+import com.github.afezeria.freedao.classic.runtime.context.DaoContext;
+import com.github.afezeria.freedao.classic.runtime.context.ExecutorContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -12,7 +12,7 @@ import javax.sql.DataSource;
 /**
  *
  */
-@ConditionalOnMissingBean(type = "com.github.afezeria.freedao.runtime.classic.context.DaoContext")
+@ConditionalOnMissingBean(type = "com.github.afezeria.freedao.classic.runtime.context.DaoContext")
 @Configuration(proxyBeanMethods = false)
 public class FreedaoConfiguration {
     @Autowired

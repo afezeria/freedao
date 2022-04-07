@@ -5,7 +5,7 @@ plugins {
 }
 
 dependencies {
-    api(projects.freedaoRuntimeClassic)
+    api(projects.freedaoClassicRuntime)
     api(libs.spring.boot.jdbc)
     annotationProcessor(libs.spring.boot.configuration.processor)
 }
