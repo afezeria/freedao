@@ -12,7 +12,11 @@ public abstract class DataSourceSelectStrategy {
         private final ThreadLocal<Map<String[], Integer>> mapThreadLocal = ThreadLocal.withInitial(HashMap::new);
 
         @Override
-        public String get(String[] names) {
+        public String apply(Map<String, String[]> prefixMap) {
+            String[] names = getSelectableDatasourceName(prefixMap);
+            if (names == null) {
+                return null;
+            }
             if (names.length == 1) {
                 return names[0];
             }
@@ -33,7 +37,11 @@ public abstract class DataSourceSelectStrategy {
         private final Random random = new Random();
 
         @Override
-        public String get(String[] names) {
+        public String apply(Map<String, String[]> prefixMap) {
+            String[] names = getSelectableDatasourceName(prefixMap);
+            if (names == null) {
+                return null;
+            }
             if (names.length == 1) {
                 return names[0];
             }
@@ -43,12 +51,18 @@ public abstract class DataSourceSelectStrategy {
 
     public static DataSourceSelectStrategy DEFAULT = POLLING;
 
+    abstract public String apply(Map<String, String[]> prefixMap);
 
-    /**
-     * 获取数据源名称
-     *
-     * @param names 符合前缀的数据源名称数组
-     * @return
-     */
-    abstract public String get(String[] names);
+    public String[] getSelectableDatasourceName(Map<String, String[]> prefixMap) {
+        DS ds = DataSourceContextHolder.get();
+        if (ds == null) {
+            return null;
+        }
+        String[] arr;
+        arr = prefixMap.get(ds.value());
+        if (arr == null) {
+            throw new IllegalStateException("Cannot find datasource with prefix " + ds.value());
+        }
+        return arr;
+    }
 }

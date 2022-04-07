@@ -23,18 +23,7 @@ public class DynamicDataSource extends AbstractRoutingDataSource {
 
     @Override
     protected Object determineCurrentLookupKey() {
-        DS ds = DataSourceContextHolder.get();
-        if (ds == null) {
-            return null;
-        }
-        if (!ds.prefix()) {
-            return ds.value();
-        }
-        String[] arr = prefixMap.get(ds.value());
-        if (arr == null) {
-            throw new IllegalStateException("Cannot find datasource with prefix " + ds.value());
-        }
-        return strategy.get(arr);
+        return strategy.apply(prefixMap);
     }
 
     public static Map<String, String[]> getAllCommonPrefixAndStringArray(String[] strings) {
