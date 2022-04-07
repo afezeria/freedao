@@ -1,6 +1,7 @@
 package test;
 
 import com.github.afezeria.freedao.annotation.Dao;
+import com.github.afezeria.freedao.spring.runtime.DS;
 
 import java.util.List;
 
@@ -14,4 +15,7 @@ public interface PersonDao {
     int insert(Person person);
 
     Integer count(Person person);
+
+    @DS(Db.MASTER_1)
+    Person selectOneById(Integer id);
 }

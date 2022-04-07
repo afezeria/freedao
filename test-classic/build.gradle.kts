@@ -57,7 +57,9 @@ tasks.jacocoTestReport {
     dependsOn(tasks.test) // tests are required to run before generating the report
 
     sourceSets(
-        project(":freedao-core-processor").sourceSets.main.get(),
-        project(":freedao-classic-processor").sourceSets.main.get()
+        project(":" + projects.freedaoCoreProcessor.name).sourceSets.main.get(),
+        project(":" + projects.freedaoClassicProcessor.name).sourceSets.main.get()
+//        project(":freedao-core-processor").sourceSets.main.get(),
+//        project(":freedao-classic-processor").sourceSets.main.get()
     )
 }

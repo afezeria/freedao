@@ -13,7 +13,7 @@ public class Person {
 
     @Column(insert = false)
     @AutoFill
-    private Long id;
+    private Integer id;
     private String name;
     private Boolean active;
     private LocalDateTime whenCreated;

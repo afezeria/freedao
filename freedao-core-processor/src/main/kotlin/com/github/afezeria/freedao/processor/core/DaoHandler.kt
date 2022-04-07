@@ -25,7 +25,7 @@ class DaoHandler(val element: TypeElement) {
 
     var classBuilder: TypeSpec.Builder = TypeSpec.classBuilder(implClassName).apply {
         addSuperinterface(element.asType())
-        addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+        addModifiers(Modifier.PUBLIC)
         addAnnotations(
             element.annotationMirrors
                 .filter { !it.annotationType.isSameType(Dao::class) }

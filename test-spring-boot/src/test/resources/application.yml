@@ -2,9 +2,11 @@ logging:
   level:
     test: debug
 
-spring:
-  datasource:
-    url: jdbc:h2:mem:;DB_CLOSE_DELAY=-1;INIT=RUNSCRIPT FROM 'classpath:sql/pg_init.sql';MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+#spring:
+#  datasource:
+#    url: jdbc:h2:mem:;DB_CLOSE_DELAY=-1;INIT=RUNSCRIPT FROM 'classpath:sql/pg_init.sql';MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+#    hikari:
+#      jdbc-url:
 #freedao:
 #  active: true
 #  data-sources:
@@ -16,3 +18,11 @@ spring:
 #    main:
 #      jdbcUrl: jdbc:h2:mem:;DB_CLOSE_DELAY=-1;INIT=RUNSCRIPT FROM 'classpath:sql/pg_init.sql';MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
 #      driverClassName: org.h2.Driver
+freedao:
+  datasource:
+    datasource:
+      master_1:
+        jdbc-url: jdbc:h2:mem:;DB_CLOSE_DELAY=-1;INIT=RUNSCRIPT FROM 'classpath:sql/pg_init.sql';MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+      master_2:
+        jdbc-url: jdbc:h2:mem:;DB_CLOSE_DELAY=-1;INIT=RUNSCRIPT FROM 'classpath:sql/pg_master_2_init.sql';MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    primary: master_1

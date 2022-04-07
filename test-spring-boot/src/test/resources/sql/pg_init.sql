@@ -1,6 +1,6 @@
 create table "person"
 (
-    "id"           bigserial primary key,
+    "id"           serial primary key,
     "name"         text,
     "active"       bool,
     "when_created" date default now()

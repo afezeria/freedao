@@ -29,6 +29,7 @@ logback = { module = "ch.qos.logback:logback-classic", version = "1.2.10" }
 
 spring-context = { module = "org.springframework:spring-context", version = "5.3.14" }
 spring-boot-jdbc = { module = "org.springframework.boot:spring-boot-starter-jdbc" }
+spring-boot-aop = { module = "org.springframework.boot:spring-boot-starter-aop" }
 spring-boot-web = { module = "org.springframework.boot:spring-boot-starter-web" }
 spring-boot-test = { module = "org.springframework.boot:spring-boot-starter-test" }
 spring-boot-configuration-processor = { module = "org.springframework.boot:spring-boot-configuration-processor" }

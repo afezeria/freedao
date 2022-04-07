@@ -1,4 +1,4 @@
-package com.github.afezeria.freedao.runtime.spring;
+package com.github.afezeria.freedao.spring.runtime;
 
 import com.github.afezeria.freedao.classic.runtime.context.DaoContext;
 import org.springframework.dao.DataAccessException;
