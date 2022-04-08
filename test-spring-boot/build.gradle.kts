@@ -11,6 +11,7 @@ dependencies {
     testAnnotationProcessor(projects.freedaoSpringProcessor)
 
     testImplementation(libs.h2)
+    testImplementation(libs.postgresql)
     testImplementation(libs.spring.boot.test)
 }
 

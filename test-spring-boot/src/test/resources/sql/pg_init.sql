@@ -5,6 +5,6 @@ create table "person"
     "active"       bool,
     "when_created" date default now()
 );
-insert into "person"("name", "active")
-values ('a', true),
-       ('b', true);
+-- insert into "person"("name", "active")
+-- values ('a', true),
+--        ('b', true);

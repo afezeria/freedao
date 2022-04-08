@@ -23,8 +23,6 @@ public class TransactionContext extends DaoContext {
         this.dataSource = dataSource;
     }
 
-    private Boolean transactionFlag = false;
-
     private Connection currentConn = null;
 
     @Override

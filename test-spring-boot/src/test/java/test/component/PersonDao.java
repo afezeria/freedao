@@ -1,4 +1,4 @@
-package test;
+package test.component;
 
 import com.github.afezeria.freedao.annotation.Dao;
 import com.github.afezeria.freedao.spring.runtime.DS;

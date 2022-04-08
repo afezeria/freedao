@@ -1,13 +1,16 @@
 package test;
 
 import com.github.afezeria.freedao.classic.runtime.context.DaoContext;
-import com.github.afezeria.freedao.spring.runtime.DataSourceContextHolder;
-import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.support.TransactionTemplate;
+import test.component.DataInitUtil;
+import test.component.Person;
+import test.component.PersonDao;
+import test.component.PersonService;
 
 import java.util.Objects;
 
@@ -26,13 +29,12 @@ public class SpringBootIntegrateApplicationTests {
     TransactionTemplate transactionTemplate;
     @Autowired
     PersonService service;
+    @Autowired
+    DataInitUtil dataInitUtil;
 
-    @Test
-    public void multipleDatasourceTest() {
-        String[] ints = service.findClassNameAndPersonName(1);
-        Assertions.assertArrayEquals(ints, new String[]{"a", "a"});
-        assert DataSourceContextHolder.get() == null;
-
+    @BeforeEach
+    public void beforeEach() {
+        dataInitUtil.init();
     }
 
     @Test

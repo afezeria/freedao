@@ -1,4 +1,4 @@
-package test;
+package test.component;
 
 import com.github.afezeria.freedao.spring.runtime.DS;
 import org.springframework.beans.factory.annotation.Autowired;
