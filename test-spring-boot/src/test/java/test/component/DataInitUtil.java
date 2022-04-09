@@ -1,15 +1,13 @@
 package test.component;
 
-import com.github.afezeria.freedao.spring.runtime.FreedaoProperties;
-import com.zaxxer.hikari.HikariDataSource;
-import lombok.SneakyThrows;
+import com.github.afezeria.freedao.classic.runtime.DS;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.util.Map;
-import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * @author afezeria
@@ -17,53 +15,70 @@ import java.util.Objects;
 @Component
 public class DataInitUtil {
     @Autowired
-    FreedaoProperties properties;
+    JdbcTemplate template;
+    @Autowired
+    ApplicationContext applicationContext;
 
-    public static int tableSize = 20;
+    @Autowired
+    DataInitUtil self;
 
-    @SneakyThrows
     public void init() {
-        for (Map.Entry<String, HikariDataSource> entry : properties.getDatasource().entrySet()) {
-            HikariDataSource dataSource = entry.getValue();
-            try (Connection conn = dataSource.getConnection()) {
-                if (Objects.equals(entry.getKey(), Db.MASTER_1)) {
-                    conn.prepareStatement("drop table if exists person").execute();
-                    conn.prepareStatement("""
-                            create table "person"
-                            (
-                                "id"           serial primary key,
-                                "name"         text,
-                                "active"       bool,
-                                "when_created" timestamp default now()
-                            )
-                            """).execute();
-                    for (int i = 0; i < tableSize; i++) {
-                        PreparedStatement preparedStatement = conn.prepareStatement("""
-                                insert into person(name, active)
-                                values (?, true)
-                                """);
-                        preparedStatement.setObject(1, "a" + i);
-                        preparedStatement.execute();
-                    }
-                } else if (Objects.equals(entry.getKey(), Db.MASTER_2)) {
-                    conn.prepareStatement("drop table if exists clazz").execute();
-                    conn.prepareStatement("""
-                            create table "clazz"
-                            (
-                                "id"   bigserial primary key,
-                                "name" text
-                            )
-                            """).execute();
-                    for (int i = 0; i < tableSize; i++) {
-                        PreparedStatement preparedStatement = conn.prepareStatement("""
-                                insert into clazz(name)
-                                values (?)
-                                """);
-                        preparedStatement.setObject(1, "a" + i);
-                        preparedStatement.execute();
-                    }
-                }
-            }
-        }
+        self.initMaster1();
+        self.initMaster2();
+    }
+
+    public static int tableSize = 10;
+
+    /**
+     * 因为两个数据源用的是一个库，只需要初始化一次
+     */
+    @DS(Db.MASTER_1)
+    public void initMaster1() {
+        template.execute("""
+                drop table if exists t_order;
+                create table t_order
+                (
+                    id           serial primary key,
+                    name         text,
+                    when_created timestamp default now()
+                );
+                drop table if exists t_order_item;
+                create table t_order_item
+                (
+                    id serial primary key,
+                    order_id  int,
+                    name      text
+                );
+                """);
+        template.batchUpdate(
+                """
+                        insert into t_order (name)
+                        values (?)
+                        """,
+                IntStream.rangeClosed(1, tableSize)
+                        .mapToObj(i -> new Object[]{"a" + i})
+                        .collect(Collectors.toList())
+        );
+        template.batchUpdate(
+                """
+                        insert into t_order_item (order_id, name)
+                        values (?, ?)
+                        """,
+                IntStream.rangeClosed(1, tableSize + (tableSize / 2))
+                        .mapToObj(i -> new Object[]{i > tableSize ? i - tableSize : i, "b" + i})
+                        .collect(Collectors.toList())
+        );
+    }
+
+    @DS(Db.MASTER_2)
+    public void initMaster2() {
+        template.execute("""
+                drop table if exists temp_test_table;
+                create table temp_test_table
+                (
+                    name         text primary key
+                );
+                insert into temp_test_table (name) values ('a'),('b'),('c');
+                """);
     }
 }

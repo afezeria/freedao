@@ -17,14 +17,19 @@ freedao:
       master_1:
         username: test
         password: 123456
-        jdbc-url: jdbc:postgresql://localhost:5432/test
+        jdbc-url: jdbc:postgresql://localhost:5432/test?searchpath=public
         driver-class-name: org.postgresql.Driver
         pool-name: master_1
       master_2:
         username: test
         password: 123456
-        jdbc-url: jdbc:postgresql://localhost:5432/test
+        jdbc-url: jdbc:postgresql://localhost:5432/test?searchpath=test
         driver-class-name: org.postgresql.Driver
         pool-name: master_2
 
     primary: master_1
+
+
+spring:
+  main:
+    allow-circular-references: true

@@ -1,6 +1,7 @@
 package com.github.afezeria.freedao.classic.runtime;
 
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
@@ -10,6 +11,7 @@ import java.util.List;
  * @author afezeria
  */
 @Data
+@Slf4j
 public class Page<E> {
     /**
      * 总数
@@ -37,4 +39,25 @@ public class Page<E> {
 
     protected Page() {
     }
+
+    public void setPageSize(int pageSize) {
+        if (pageSize > FreedaoGlobalConfiguration.maxPageSizeLimit) {
+            this.pageSize = FreedaoGlobalConfiguration.maxPageSizeLimit;
+            log.debug("pageSize({}) exceeds the maxPageSizeLimit({})", pageSize, FreedaoGlobalConfiguration.maxPageSizeLimit);
+            return;
+        }
+        this.pageSize = pageSize;
+    }
+
+    public long getPages() {
+        if (pageSize == 0) {
+            return 0L;
+        }
+        long pages = count / pageSize;
+        if (count % pageSize != 0) {
+            pages++;
+        }
+        return pages;
+    }
+
 }

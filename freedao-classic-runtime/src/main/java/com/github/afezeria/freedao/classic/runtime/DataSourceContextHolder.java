@@ -1,4 +1,6 @@
-package com.github.afezeria.freedao.spring.runtime;
+package com.github.afezeria.freedao.classic.runtime;
+
+import com.github.afezeria.freedao.classic.runtime.DS;
 
 /**
  * @author afezeria

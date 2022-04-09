@@ -2,10 +2,8 @@ package com.github.afezeria.freedao.classic.runtime;
 
 import com.github.afezeria.freedao.classic.runtime.context.PaginationQueryContext;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
+import java.lang.annotation.Annotation;
+import java.util.*;
 import java.util.function.Supplier;
 
 import static com.github.afezeria.freedao.classic.runtime.FreedaoGlobalConfiguration.optimizeCountSql;
@@ -14,6 +12,58 @@ import static com.github.afezeria.freedao.classic.runtime.FreedaoGlobalConfigura
  * @author afezeria
  */
 public class DaoHelper {
+
+    /**
+     * {@link DaoHelper#ds(DS, Supplier)}
+     */
+    public static <T> T ds(String name, Supplier<T> supplier) {
+        return ds(name, true, supplier);
+    }
+
+    /**
+     * {@link DaoHelper#ds(DS, Supplier)}
+     */
+    public static <T> T ds(String name, boolean isPrefix, Supplier<T> supplier) {
+        return ds(new DS() {
+            @Override
+            public String value() {
+                return name;
+            }
+
+            @Override
+            public boolean prefix() {
+                return isPrefix;
+            }
+
+            @Override
+            public Class<? extends Annotation> annotationType() {
+                return null;
+            }
+        }, supplier);
+    }
+
+    /**
+     * 切换数据源，暂时只支持spring-boot
+     *
+     * @param ds
+     * @param supplier
+     * @param <T>
+     * @return
+     */
+    public static <T> T ds(DS ds, Supplier<T> supplier) {
+        DS outer = DataSourceContextHolder.get();
+        if (outer != null) {
+            if (outer.prefix() == ds.prefix() && Objects.equals(outer.value(), ds.value())) {
+                return supplier.get();
+            }
+        }
+        try {
+            DataSourceContextHolder.set(ds);
+            return supplier.get();
+        } finally {
+            DataSourceContextHolder.set(outer);
+        }
+    }
 
     public static <E> Page<E> pagination(int pageIndex, int pageSize, Supplier<Collection<E>> closure) {
         return pagination(pageIndex, pageSize, optimizeCountSql, closure);

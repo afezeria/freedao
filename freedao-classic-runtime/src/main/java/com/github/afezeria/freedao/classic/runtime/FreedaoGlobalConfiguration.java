@@ -5,4 +5,6 @@ package com.github.afezeria.freedao.classic.runtime;
  */
 public class FreedaoGlobalConfiguration {
     public static boolean optimizeCountSql = true;
+
+    public static int maxPageSizeLimit = 10000;
 }

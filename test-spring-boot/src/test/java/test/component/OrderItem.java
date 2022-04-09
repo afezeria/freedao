@@ -5,16 +5,12 @@ import com.github.afezeria.freedao.annotation.Table;
 import com.github.afezeria.freedao.classic.runtime.AutoFill;
 import lombok.Data;
 
-import java.time.LocalDateTime;
-
-@Table(primaryKeys = {"id", "name"})
+@Table(name = "t_order_item", primaryKeys = {"id"})
 @Data
-public class Person {
-
+public class OrderItem {
     @Column(insert = false)
     @AutoFill
     private Integer id;
+    private Integer orderId;
     private String name;
-    private Boolean active;
-    private LocalDateTime whenCreated;
 }

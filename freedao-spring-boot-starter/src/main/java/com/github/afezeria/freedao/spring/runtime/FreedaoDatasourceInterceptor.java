@@ -1,5 +1,7 @@
 package com.github.afezeria.freedao.spring.runtime;
 
+import com.github.afezeria.freedao.classic.runtime.DS;
+import com.github.afezeria.freedao.classic.runtime.DaoHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -8,16 +10,15 @@ import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 
 import java.lang.reflect.Method;
-import java.util.Objects;
 
 @Aspect
 @Slf4j
 public class FreedaoDatasourceInterceptor {
-    @Pointcut("@annotation(com.github.afezeria.freedao.spring.runtime.DS)")
+    @Pointcut("@annotation(com.github.afezeria.freedao.classic.runtime.DS)")
     public void annotatedMethod() {
     }
 
-    @Pointcut("@within(com.github.afezeria.freedao.spring.runtime.DS)")
+    @Pointcut("@within(com.github.afezeria.freedao.classic.runtime.DS)")
     public void annotatedClass() {
     }
 
@@ -32,17 +33,12 @@ public class FreedaoDatasourceInterceptor {
         if (annotation == null) {
             return joinPoint.proceed();
         }
-        DS outer = DataSourceContextHolder.get();
-        if (outer != null) {
-            if (outer.prefix() == annotation.prefix() && Objects.equals(outer.value(), annotation.value())) {
+        return DaoHelper.ds(annotation, () -> {
+            try {
                 return joinPoint.proceed();
+            } catch (Throwable e) {
+                throw new RuntimeException(e);
             }
-        }
-        try {
-            DataSourceContextHolder.set(annotation);
-            return joinPoint.proceed();
-        } finally {
-            DataSourceContextHolder.set(outer);
-        }
+        });
     }
 }
