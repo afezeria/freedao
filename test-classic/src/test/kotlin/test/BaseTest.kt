@@ -2,9 +2,9 @@ package test
 
 import com.github.afezeria.freedao.annotation.Column
 import com.github.afezeria.freedao.classic.processor.contextVar
+import com.github.afezeria.freedao.classic.runtime.context.DaoContext
 import com.github.afezeria.freedao.processor.core.MainProcessor
 import com.github.afezeria.freedao.processor.core.toSnakeCase
-import com.github.afezeria.freedao.classic.runtime.context.DaoContext
 import com.google.testing.compile.Compilation
 import com.google.testing.compile.CompilationSubject
 import com.google.testing.compile.Compiler
@@ -186,9 +186,9 @@ abstract class BaseTest {
 
         val defaultContext = DaoContext.create(dataSource)
 
-        val contextWrapper = object : DaoContext(defaultContext) {}
+        val contextWrapper = object : DaoContext() {}.apply { delegate = defaultContext }
 
-        fun <T>  withContext(contextProvide: DbEnv.() -> DaoContext, closure: () -> T): T {
+        fun <T> withContext(contextProvide: DbEnv.() -> DaoContext, closure: () -> T): T {
             val field = DaoContext::class.java.declaredFields.find { it.name == "delegate" }!!
             field.trySetAccessible()
             field.set(contextWrapper, contextProvide(this))

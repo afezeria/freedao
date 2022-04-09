@@ -10,10 +10,6 @@ import java.util.function.Function;
  *
  */
 public class ExecutorContext extends DaoContext {
-    public ExecutorContext(DaoContext delegate) {
-        super(delegate);
-    }
-
     @Override
     public Object[] buildSql(SqlSignature signature, Object[] args, Function<Object[], Object[]> sqlBuilder) {
         return sqlBuilder.apply(args);
@@ -21,6 +17,6 @@ public class ExecutorContext extends DaoContext {
 
     @Override
     public <T> T execute(SqlSignature signature, Object[] methodArgs, String sql, List<Object> sqlArgs, SqlExecutor<T> executor) {
-        return delegate.withTx(connection -> executor.execute(connection, methodArgs, sql, sqlArgs));
+        return getDelegate().withTx(connection -> executor.execute(connection, methodArgs, sql, sqlArgs));
     }
 }

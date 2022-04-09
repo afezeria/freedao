@@ -31,16 +31,12 @@ public class PaginationQueryContext extends DaoContext {
     private static final Logger logger = LoggerFactory.getLogger(PaginationQueryContext.class);
     public static ThreadLocal<Page<?>> local = new ThreadLocal<>();
 
-    public PaginationQueryContext(DaoContext delegate) {
-        super(delegate);
-    }
-
     @Override
     public <T> T execute(SqlSignature signature, Object[] methodArgs, String sql, List<Object> sqlArgs, SqlExecutor<T> executor) {
-        return delegate.withTx(connection -> {
+        return getDelegate().withTx(connection -> {
             Page<?> page = local.get();
             if (page == null) {
-                return delegate.execute(signature, methodArgs, sql, sqlArgs, executor);
+                return getDelegate().execute(signature, methodArgs, sql, sqlArgs, executor);
             }
             if (page.getRecords() != null) {
                 throw new IllegalStateException("the closure of DaoHelper.pagination can only contain one query");
@@ -66,7 +62,7 @@ public class PaginationQueryContext extends DaoContext {
             }
             //language=SQL
             String pagingSql = "select * from (" + sql + ") as _pagination limit " + page.getPageSize() + " offset " + offset;
-            return delegate.execute(signature, methodArgs, pagingSql, sqlArgs, executor);
+            return getDelegate().execute(signature, methodArgs, pagingSql, sqlArgs, executor);
         });
     }
 

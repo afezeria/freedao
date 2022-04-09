@@ -18,7 +18,6 @@ public class TransactionContext extends DaoContext {
     DataSource dataSource;
 
     public TransactionContext(DataSource dataSource) {
-        super(null);
         Objects.requireNonNull(dataSource);
         this.dataSource = dataSource;
     }

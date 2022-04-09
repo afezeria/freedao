@@ -19,7 +19,6 @@ public class SpringTransactionContext extends DaoContext {
     private final SQLErrorCodeSQLExceptionTranslator translator;
 
     public SpringTransactionContext(DataSource dataSource) {
-        super(null);
         this.dataSource = dataSource;
         this.translator = new SQLErrorCodeSQLExceptionTranslator(dataSource);
     }

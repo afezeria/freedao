@@ -1,9 +1,6 @@
 package test.java.success.classic
 
-import com.github.afezeria.freedao.classic.runtime.context.DaoContextParameterUtil
-import com.github.afezeria.freedao.classic.runtime.context.ExecutorContext
-import com.github.afezeria.freedao.classic.runtime.context.ParameterContext
-import com.github.afezeria.freedao.classic.runtime.context.TransactionContext
+import com.github.afezeria.freedao.classic.runtime.context.*
 import org.junit.Test
 import test.BaseTest
 import test.Person
@@ -21,10 +18,10 @@ class ContextParameterTest : BaseTest() {
     fun dynamicTableName() {
         initData(DynamicTableNameEntity().setName("a"))
         env.withContext({
-            ParameterContext(
-                ExecutorContext(
-                    TransactionContext(dataSource)
-                ), mapOf("year" to 2000)
+            DaoContext.create(
+                TransactionContext(dataSource),
+                ExecutorContext(),
+                ParameterContext(mapOf("year" to 2000))
             )
         }) {
             val impl = getJavaDaoInstance<DynamicTableNameDao>()
@@ -33,10 +30,10 @@ class ContextParameterTest : BaseTest() {
         }
 
         env.withContext({
-            ParameterContext(
-                ExecutorContext(
-                    TransactionContext(dataSource)
-                ), mapOf("year" to Supplier { 2000 })
+            DaoContext.create(
+                TransactionContext(dataSource),
+                ExecutorContext(),
+                ParameterContext(mapOf("year" to Supplier { 2000 }))
             )
         }) {
             val impl = getJavaDaoInstance<DynamicTableNameDao>()

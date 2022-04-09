@@ -12,8 +12,7 @@ import java.util.function.Supplier;
  */
 public class ParameterContext extends DaoContext {
 
-    public ParameterContext(DaoContext delegate, Map<String, Object> map) {
-        super(delegate);
+    public ParameterContext(Map<String, Object> map) {
         if (map != null) {
             initMap.putAll(map);
         }
@@ -31,7 +30,7 @@ public class ParameterContext extends DaoContext {
         System.arraycopy(args, 0, arr, 0, args.length);
         arr[args.length] = map;
 
-        return delegate.buildSql(signature, arr, sqlBuilder);
+        return getDelegate().buildSql(signature, arr, sqlBuilder);
     }
 
     static class ParameterMap extends HashMap<String, Object> {
