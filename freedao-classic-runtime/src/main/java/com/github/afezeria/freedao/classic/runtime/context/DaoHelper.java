@@ -1,6 +1,8 @@
-package com.github.afezeria.freedao.classic.runtime;
+package com.github.afezeria.freedao.classic.runtime.context;
 
-import com.github.afezeria.freedao.classic.runtime.context.PaginationQueryContext;
+import com.github.afezeria.freedao.classic.runtime.DS;
+import com.github.afezeria.freedao.classic.runtime.DataSourceContextHolder;
+import com.github.afezeria.freedao.classic.runtime.Page;
 
 import java.lang.annotation.Annotation;
 import java.util.*;
@@ -12,6 +14,34 @@ import static com.github.afezeria.freedao.classic.runtime.FreedaoGlobalConfigura
  * @author afezeria
  */
 public class DaoHelper {
+
+    /**
+     * 设置临时上下文参数
+     */
+    public static <T> T withContextParameter(String key, Object value, Supplier<T> block) {
+        ParameterContext.ParameterMap parameterMap =
+                Objects.requireNonNull(ParameterContext.local.get(), "ParameterContext not initialized");
+        parameterMap.put(key, value);
+        try {
+            return block.get();
+        } finally {
+            parameterMap.reset();
+        }
+    }
+
+    /**
+     * 设置临时上下文参数
+     */
+    public static <T> T withContextParameters(Map<String, Object> params, Supplier<T> block) {
+        ParameterContext.ParameterMap parameterMap =
+                Objects.requireNonNull(ParameterContext.local.get(), "ParameterContext not initialized");
+        parameterMap.putAll(params);
+        try {
+            return block.get();
+        } finally {
+            parameterMap.reset();
+        }
+    }
 
     /**
      * {@link DaoHelper#ds(DS, Supplier)}
@@ -45,10 +75,7 @@ public class DaoHelper {
     /**
      * 切换数据源，暂时只支持spring-boot
      *
-     * @param ds
-     * @param supplier
-     * @param <T>
-     * @return
+     * @param ds {@link DS}
      */
     public static <T> T ds(DS ds, Supplier<T> supplier) {
         DS outer = DataSourceContextHolder.get();

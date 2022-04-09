@@ -65,6 +65,11 @@ public class ParameterContext extends DaoContext {
             return tmp.put(key, value);
         }
 
+        @Override
+        public void putAll(Map<? extends String, ?> m) {
+            tmp.putAll(m);
+        }
+
         public void reset() {
             tmp.clear();
         }

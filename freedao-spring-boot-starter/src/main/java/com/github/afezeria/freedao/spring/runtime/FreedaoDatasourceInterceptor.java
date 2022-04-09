@@ -1,7 +1,7 @@
 package com.github.afezeria.freedao.spring.runtime;
 
 import com.github.afezeria.freedao.classic.runtime.DS;
-import com.github.afezeria.freedao.classic.runtime.DaoHelper;
+import com.github.afezeria.freedao.classic.runtime.context.DaoHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;

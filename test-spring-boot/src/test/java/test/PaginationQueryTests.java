@@ -1,6 +1,6 @@
 package test;
 
-import com.github.afezeria.freedao.classic.runtime.DaoHelper;
+import com.github.afezeria.freedao.classic.runtime.context.DaoHelper;
 import com.github.afezeria.freedao.classic.runtime.FreedaoGlobalConfiguration;
 import com.github.afezeria.freedao.classic.runtime.Page;
 import org.junit.jupiter.api.Assertions;

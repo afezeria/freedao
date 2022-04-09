@@ -19,9 +19,7 @@ class ContextParameterTest : BaseTest() {
         initData(DynamicTableNameEntity().setName("a"))
         env.withContext({
             DaoContext.create(
-                TransactionContext(dataSource),
-                ExecutorContext(),
-                ParameterContext(mapOf("year" to 2000))
+                TransactionContext(dataSource), ExecutorContext(), ParameterContext(mapOf("year" to 2000))
             )
         }) {
             val impl = getJavaDaoInstance<DynamicTableNameDao>()
@@ -31,9 +29,7 @@ class ContextParameterTest : BaseTest() {
 
         env.withContext({
             DaoContext.create(
-                TransactionContext(dataSource),
-                ExecutorContext(),
-                ParameterContext(mapOf("year" to Supplier { 2000 }))
+                TransactionContext(dataSource), ExecutorContext(), ParameterContext(mapOf("year" to Supplier { 2000 }))
             )
         }) {
             val impl = getJavaDaoInstance<DynamicTableNameDao>()
@@ -46,7 +42,19 @@ class ContextParameterTest : BaseTest() {
     fun tempContextParameter() {
         initData(Person(name = "a"), Person(name = "b"))
         val impl = getJavaDaoInstance<TempContextParameterDao>()
-        val entity = DaoContextParameterUtil.with("id", 1L) {
+        val entity = DaoHelper.withContextParameter("id", 1L) {
+            impl.select()
+        }
+        assert(entity.name == "a")
+        val select = impl.select()
+        assert(select == null)
+    }
+
+    @Test
+    fun multipleTempContextParameter() {
+        initData(Person(name = "a"), Person(name = "b"))
+        val impl = getJavaDaoInstance<TempContextParameterDao>()
+        val entity = DaoHelper.withContextParameters(mapOf("id" to 1L)) {
             impl.select()
         }
         assert(entity.name == "a")

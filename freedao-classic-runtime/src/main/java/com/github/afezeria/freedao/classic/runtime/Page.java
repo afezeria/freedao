@@ -37,7 +37,7 @@ public class Page<E> {
      */
     private boolean optimizeCountSql;
 
-    protected Page() {
+    public Page() {
     }
 
     public void setPageSize(int pageSize) {

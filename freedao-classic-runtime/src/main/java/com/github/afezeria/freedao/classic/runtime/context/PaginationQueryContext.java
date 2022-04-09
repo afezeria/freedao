@@ -1,7 +1,10 @@
 package com.github.afezeria.freedao.classic.runtime.context;
 
 import com.github.afezeria.freedao.StatementType;
-import com.github.afezeria.freedao.classic.runtime.*;
+import com.github.afezeria.freedao.classic.runtime.LogHelper;
+import com.github.afezeria.freedao.classic.runtime.Page;
+import com.github.afezeria.freedao.classic.runtime.SqlExecutor;
+import com.github.afezeria.freedao.classic.runtime.SqlSignature;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.ExpressionVisitorAdapter;
@@ -29,7 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class PaginationQueryContext extends DaoContext {
 
     private static final Logger logger = LoggerFactory.getLogger(PaginationQueryContext.class);
-    public static ThreadLocal<Page<?>> local = new ThreadLocal<>();
+    protected static ThreadLocal<Page<?>> local = new ThreadLocal<>();
 
     @Override
     public <T> T execute(SqlSignature signature, Object[] methodArgs, String sql, List<Object> sqlArgs, SqlExecutor<T> executor) {

@@ -6,6 +6,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
+ * 指定数据源标识以及匹配方式
+ *
  * @author afezeria
  */
 @Retention(RetentionPolicy.RUNTIME)
