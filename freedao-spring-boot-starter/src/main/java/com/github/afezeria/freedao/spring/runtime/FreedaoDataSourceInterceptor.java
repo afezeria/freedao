@@ -13,7 +13,7 @@ import java.lang.reflect.Method;
 
 @Aspect
 @Slf4j
-public class FreedaoDatasourceInterceptor {
+public class FreedaoDataSourceInterceptor {
     @Pointcut("@annotation(com.github.afezeria.freedao.classic.runtime.DS)")
     public void annotatedMethod() {
     }

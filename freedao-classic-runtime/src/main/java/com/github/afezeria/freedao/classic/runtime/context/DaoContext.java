@@ -29,8 +29,8 @@ public abstract class DaoContext {
         return delegate;
     }
 
-    public <T> T withTx(Function<Connection, T> supplier) {
-        return getDelegate().withTx(supplier);
+    public <T> T withConnection(Function<Connection, T> supplier) {
+        return getDelegate().withConnection(supplier);
     }
 
 

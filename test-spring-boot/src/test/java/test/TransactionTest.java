@@ -62,11 +62,11 @@ public class TransactionTest {
     @Test
     public void getConnection() {
         Object[] arr = new Object[2];
-        context.withTx(conn -> {
+        context.withConnection(conn -> {
             arr[0] = conn;
             return null;
         });
-        context.withTx(conn -> {
+        context.withConnection(conn -> {
             arr[1] = conn;
             return null;
         });

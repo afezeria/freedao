@@ -24,7 +24,7 @@ public class SpringTransactionContext extends DaoContext {
     }
 
     @Override
-    public <T> T withTx(Function<Connection, T> supplier) {
+    public <T> T withConnection(Function<Connection, T> supplier) {
         Connection connection = null;
         try {
             connection = DataSourceUtils.getConnection(dataSource);

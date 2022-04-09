@@ -56,7 +56,7 @@ public class FreedaoConfiguration {
     }
 
     @Bean
-    public FreedaoDatasourceInterceptor freedaoDatasourceInterceptor() {
-        return new FreedaoDatasourceInterceptor();
+    public FreedaoDataSourceInterceptor freedaoDatasourceInterceptor() {
+        return new FreedaoDataSourceInterceptor();
     }
 }

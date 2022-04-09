@@ -36,7 +36,7 @@ public class PaginationQueryContext extends DaoContext {
 
     @Override
     public <T> T execute(SqlSignature signature, Object[] methodArgs, String sql, List<Object> sqlArgs, SqlExecutor<T> executor) {
-        return getDelegate().withTx(connection -> {
+        return getDelegate().withConnection(connection -> {
             Page<?> page = local.get();
             if (page == null) {
                 return getDelegate().execute(signature, methodArgs, sql, sqlArgs, executor);

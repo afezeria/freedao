@@ -25,17 +25,14 @@ public class TransactionContext extends DaoContext {
     private Connection currentConn = null;
 
     @Override
-    public <T> T withTx(Function<Connection, T> function) {
+    public <T> T withConnection(Function<Connection, T> function) {
         try {
             if (currentConn != null) {
                 return function.apply(currentConn);
             } else {
                 try (Connection connection = dataSource.getConnection()) {
                     currentConn = connection;
-                    currentConn.setAutoCommit(false);
-                    T apply = function.apply(connection);
-                    currentConn.commit();
-                    return apply;
+                    return function.apply(connection);
                 } finally {
                     currentConn = null;
                 }

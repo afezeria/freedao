@@ -17,6 +17,6 @@ public class ExecutorContext extends DaoContext {
 
     @Override
     public <T> T execute(SqlSignature signature, Object[] methodArgs, String sql, List<Object> sqlArgs, SqlExecutor<T> executor) {
-        return getDelegate().withTx(connection -> executor.execute(connection, methodArgs, sql, sqlArgs));
+        return getDelegate().withConnection(connection -> executor.execute(connection, methodArgs, sql, sqlArgs));
     }
 }
