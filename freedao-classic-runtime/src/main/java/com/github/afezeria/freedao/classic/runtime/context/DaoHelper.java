@@ -121,11 +121,4 @@ public class DaoHelper {
         }
     }
 
-    public static void main(String[] args) {
-        List<String> l = new ArrayList<>();
-//        Page<String> with = with(1, 1, () -> l);
-        System.out.println(List.class.isAssignableFrom(Collection.class));
-        System.out.println(Collection.class.isAssignableFrom(List.class));
-        System.out.println(Collection.class.isAssignableFrom(Set.class));
-    }
 }

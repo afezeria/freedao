@@ -54,13 +54,4 @@ public class DynamicDataSource extends AbstractRoutingDataSource {
         }
         return s1.substring(0, i);
     }
-
-    public static void main(String[] args) {
-        Map<String, String[]> map = getAllCommonPrefixAndStringArray(new String[]{"a", "abc", "ab", "cde", "cc"});
-        for (Map.Entry<String, String[]> entry : map.entrySet()) {
-            System.out.println("key:\t" + entry.getKey());
-            System.out.println("value:\t" + Arrays.toString(entry.getValue()));
-        }
-    }
-
 }

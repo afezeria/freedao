@@ -68,15 +68,4 @@ public class TrimHelper {
         }
         return new StringBuilder().append(prefix).append(source, left, right + 1);
     }
-
-
-    public static void main(String[] args) {
-        StringBuilder target = new StringBuilder("abc ");
-        StringBuilder source = new StringBuilder(" and");
-//        appendAndTrim(target, source, "where", new String[]{"and", "or"}, new String[]{"1"});
-//        System.out.println(builder);
-//        builder.append(" and a = ? and c like '%d' where");
-//        trimPostfix(builder, "where");
-        System.out.println(target);
-    }
 }

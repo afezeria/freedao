@@ -19,7 +19,3 @@ class PlaceholderGen {
         return res
     }
 }
-
-fun main() {
-
-}

@@ -138,7 +138,6 @@ abstract class MethodHandler protected constructor(
 
         operator fun invoke(element: ExecutableElement, daoHandler: DaoHandler): MethodHandler {
             return XmlTemplateMethod(element, daoHandler)
-                ?: AnnotationStyleMethod(element, daoHandler)
                 ?: CrudMethod(element, daoHandler)
                 ?: NamedMethod(element, daoHandler)
                 ?: methodFactories.firstNotNullOfOrNull { it.create(element, daoHandler) }

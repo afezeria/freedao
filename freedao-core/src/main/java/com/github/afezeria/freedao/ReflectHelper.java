@@ -38,22 +38,4 @@ public class ReflectHelper {
             throw new RuntimeException(e);
         }
     }
-
-    static class A {
-        private String name;
-
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-    }
-
-    public static void main(String[] args) {
-        A a = new A();
-        a.name = "cc";
-        System.out.println(call(a, "name"));
-    }
 }
