@@ -15,6 +15,7 @@ class ResultHelper(val daoHandler: DaoHandler, val element: ExecutableElement) {
     val returnType: TypeMirror
     var containerType: DeclaredType? = null
     var itemType: DeclaredType
+    var originalItemType: DeclaredType
 
     var tooManyResultCheck = false
 
@@ -30,10 +31,11 @@ class ResultHelper(val daoHandler: DaoHandler, val element: ExecutableElement) {
             throw HandlerException("Invalid return type, cannot return void")
         } else if (returnType is PrimitiveType) {
             itemType = returnType.boxed() as DeclaredType
+            originalItemType = itemType
         } else {
             //检查类型
             val type = returnType as DeclaredType
-            val originalItemType: DeclaredType
+//            val originalItemType: DeclaredType
             if (type.isAssignable(Collection::class)) {
                 //多行返回值
                 val erasureType = type.erasure() as DeclaredType

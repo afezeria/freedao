@@ -1,10 +1,7 @@
 package com.github.afezeria.freedao.classic.runtime.context;
 
 import com.github.afezeria.freedao.StatementType;
-import com.github.afezeria.freedao.classic.runtime.LogHelper;
-import com.github.afezeria.freedao.classic.runtime.Page;
-import com.github.afezeria.freedao.classic.runtime.SqlExecutor;
-import com.github.afezeria.freedao.classic.runtime.SqlSignature;
+import com.github.afezeria.freedao.classic.runtime.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,11 +21,11 @@ public class PaginationQueryContext extends DaoContext {
     protected static ThreadLocal<Page<?>> local = new ThreadLocal<>();
 
     @Override
-    public <T> T execute(SqlSignature signature, Object[] methodArgs, String sql, List<Object> sqlArgs, SqlExecutor<T> executor) {
+    public <T, E> T execute(SqlSignature<T, E> signature, Object[] methodArgs, String sql, List<Object> sqlArgs, SqlExecutor<T, E> executor, ResultHandler<E> resultHandler) {
         return getDelegate().withConnection(connection -> {
             Page<?> page = local.get();
             if (page == null) {
-                return getDelegate().execute(signature, methodArgs, sql, sqlArgs, executor);
+                return getDelegate().execute(signature, methodArgs, sql, sqlArgs, executor, resultHandler);
             }
             if (page.getRecords() != null) {
                 throw new IllegalStateException("the closure of DaoHelper.pagination can only contain one query");
@@ -54,7 +51,7 @@ public class PaginationQueryContext extends DaoContext {
             }
             //language=SQL
             String pagingSql = "select * from (" + sql + ") as _pagination limit " + page.getPageSize() + " offset " + offset;
-            return getDelegate().execute(signature, methodArgs, pagingSql, sqlArgs, executor);
+            return getDelegate().execute(signature, methodArgs, pagingSql, sqlArgs, executor, resultHandler);
         });
     }
 

@@ -19,7 +19,10 @@ class ContextParameterTest : BaseTest() {
         initData(DynamicTableNameEntity().setName("a"))
         env.withContext({
             DaoContext.create(
-                TransactionContext(dataSource), ExecutorContext(), ParameterContext(mapOf("year" to 2000))
+                TransactionContext(dataSource),
+                ExecutorContext(),
+                ParameterContext(mapOf("year" to 2000)),
+                ProxyContext(),
             )
         }) {
             val impl = getJavaDaoInstance<DynamicTableNameDao>()
@@ -29,7 +32,10 @@ class ContextParameterTest : BaseTest() {
 
         env.withContext({
             DaoContext.create(
-                TransactionContext(dataSource), ExecutorContext(), ParameterContext(mapOf("year" to Supplier { 2000 }))
+                TransactionContext(dataSource),
+                ExecutorContext(),
+                ParameterContext(mapOf("year" to Supplier { 2000 })),
+                ProxyContext(),
             )
         }) {
             val impl = getJavaDaoInstance<DynamicTableNameDao>()

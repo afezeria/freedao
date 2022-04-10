@@ -1,9 +1,6 @@
 package com.github.afezeria.freedao.spring.runtime;
 
-import com.github.afezeria.freedao.classic.runtime.context.DaoContext;
-import com.github.afezeria.freedao.classic.runtime.context.ExecutorContext;
-import com.github.afezeria.freedao.classic.runtime.context.PaginationQueryContext;
-import com.github.afezeria.freedao.classic.runtime.context.ParameterContext;
+import com.github.afezeria.freedao.classic.runtime.context.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -34,7 +31,8 @@ public class FreedaoConfiguration {
                 new SpringTransactionContext(dataSource),
                 new ExecutorContext(),
                 new PaginationQueryContext(),
-                new ParameterContext(null)
+                new ParameterContext(null),
+                new ProxyContext()
         );
     }
 

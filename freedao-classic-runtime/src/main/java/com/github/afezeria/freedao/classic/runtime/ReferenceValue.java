@@ -1,11 +1,10 @@
-package com.github.afezeria.freedao.annotation;
+package com.github.afezeria.freedao.classic.runtime;
 
 /**
  * 标识引用字段
- *
  */
 public @interface ReferenceValue {
-    String joinName() default "";
+    String joinId() default "";
 
     String column() default "";
 

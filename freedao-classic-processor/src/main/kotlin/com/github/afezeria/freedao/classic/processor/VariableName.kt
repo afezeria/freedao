@@ -78,3 +78,8 @@ const val containerVar = "__list"
  * 返回结果变量/容器元素变量
  */
 const val itemVar = "__item"
+
+/**
+ * 结果集处理器变量
+ */
+const val resultHandlerVar = "__resultHandler"

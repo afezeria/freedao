@@ -1,5 +1,6 @@
 package com.github.afezeria.freedao.classic.runtime.context;
 
+import com.github.afezeria.freedao.classic.runtime.ResultHandler;
 import com.github.afezeria.freedao.classic.runtime.SqlExecutor;
 import com.github.afezeria.freedao.classic.runtime.SqlSignature;
 
@@ -43,12 +44,12 @@ public class TransactionContext extends DaoContext {
     }
 
     @Override
-    public Object[] buildSql(SqlSignature signature, Object[] args, Function<Object[], Object[]> sqlBuilder) {
+    public Object[] buildSql(SqlSignature<?, ?> signature, Object[] args, Function<Object[], Object[]> buildSqlClosure) {
         throw new IllegalStateException("method not implemented");
     }
 
     @Override
-    public <T> T execute(SqlSignature signature, Object[] methodArgs, String sql, List<Object> sqlArgs, SqlExecutor<T> executor) {
+    public <T, E> T execute(SqlSignature<T, E> signature, Object[] methodArgs, String sql, List<Object> sqlArgs, SqlExecutor<T, E> executor, ResultHandler<E> resultHandler) {
         throw new IllegalStateException("method not implemented");
     }
 }

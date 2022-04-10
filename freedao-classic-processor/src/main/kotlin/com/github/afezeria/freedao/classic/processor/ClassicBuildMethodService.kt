@@ -1,25 +1,23 @@
 package com.github.afezeria.freedao.classic.processor
 
 import com.github.afezeria.freedao.StatementType
+import com.github.afezeria.freedao.classic.runtime.AutoFill
+import com.github.afezeria.freedao.classic.runtime.LogHelper
+import com.github.afezeria.freedao.classic.runtime.SqlSignature
 import com.github.afezeria.freedao.processor.core.*
 import com.github.afezeria.freedao.processor.core.method.MethodHandler
 import com.github.afezeria.freedao.processor.core.method.RealParameter
 import com.github.afezeria.freedao.processor.core.method.ResultHelper
+import com.github.afezeria.freedao.processor.core.method.XmlTemplateMethod
 import com.github.afezeria.freedao.processor.core.spi.BuildMethodService
 import com.github.afezeria.freedao.processor.core.template.TemplateHandler
 import com.github.afezeria.freedao.processor.core.template.TemplateHandler.Companion.toVarName
-import com.github.afezeria.freedao.classic.runtime.AutoFill
-import com.github.afezeria.freedao.classic.runtime.LogHelper
-import com.github.afezeria.freedao.classic.runtime.SqlExecutor
-import com.github.afezeria.freedao.classic.runtime.SqlSignature
-import com.squareup.javapoet.AnnotationSpec
 import com.squareup.javapoet.CodeBlock
 import com.squareup.javapoet.FieldSpec
 import java.sql.PreparedStatement
 import java.sql.ResultSet
 import java.sql.ResultSetMetaData
 import java.sql.Statement
-import java.util.function.Function
 import javax.lang.model.element.Modifier
 import javax.lang.model.element.TypeElement
 import javax.lang.model.type.DeclaredType
@@ -37,32 +35,20 @@ class ClassicBuildMethodService : BuildMethodService {
 
     override fun build(methodHandler: MethodHandler): CodeBlock {
 
-//        @SuppressWarnings("unchecked")
-        //context.execute方法第三个参数Object->List<Object>会有个警告
-        methodHandler.builder.addAnnotation(
-            AnnotationSpec.builder(SuppressWarnings::class.java)
-                .addMember("value", "\$S", "unchecked")
-                .build()
-        )
-
-        val counter =
-            methodCounter.compute("${methodHandler.daoHandler.element.qualifiedName}.${methodHandler.name}") { _, v ->
-                v?.inc() ?: 0
-            }!!
+        val counter = methodCounter.compute(
+            "${methodHandler.daoHandler.element.qualifiedName}.${methodHandler.name}"
+        ) { _, v ->
+            v?.inc() ?: 0
+        }!!
         val signVar = addMethodSignatureField(methodHandler, counter)
-        val sqlVar = addSqlBuilderField(methodHandler, counter)
-        val executorVar = addExecutorField(methodHandler, counter)
-        return CodeBlock.builder().apply {
-            addStatement("Object[] $methodArgsVar = {${methodHandler.parameters.filterIsInstance<RealParameter>().joinToString { it.name }}}")
-            addStatement("Object[] $buildSqlResultVar = $contextVar.buildSql($signVar, $methodArgsVar, $sqlVar)")
-
-            addStatement(
-                "return $contextVar.execute($signVar, $methodArgsVar, (\$T) $buildSqlResultVar[0], (\$T) $buildSqlResultVar[1], $executorVar)",
-                String::class.type,
-                List::class.type(Any::class.type)
-            )
-
-        }.build()
+        return CodeBlock.builder()
+            .addStatement(
+                "return $contextVar.proxy($signVar${
+                    methodHandler.parameters.filterIsInstance<RealParameter>()
+                        .joinToString { it.name }
+                        .let { if (it.isEmpty()) "" else ", $it" }
+                })"
+            ).build()
     }
 
 
@@ -71,168 +57,172 @@ class ClassicBuildMethodService : BuildMethodService {
      * @param methodHandler MethodHandler
      */
     private fun addMethodSignatureField(methodHandler: MethodHandler, counter: Int): String {
-        val name = "${methodHandler.name}_${counter}_sign"
+        val signFieldName = "${methodHandler.name}_${counter}_sign"
         val field = FieldSpec.builder(
-            SqlSignature::class.type.typeName,
-            name,
-            Modifier.PRIVATE,
-            Modifier.FINAL,
-        ).initializer(
-            CodeBlock.builder()
-                .add(
-                    "new \$T(\$L,${methodHandler.daoHandler.implQualifiedName}.class,\$S,\$T.class${
-                        methodHandler.parameters.joinToString { "${it.type.erasure().typeName}.class" }
-                            .takeIf { it.isNotBlank() }
-                            ?.let { ", $it" }
-                            ?: ""
-                    })",
-                    SqlSignature::class.type,
-                    "${StatementType::class.qualifiedName}.${methodHandler.statementType}",
-                    methodHandler.name,
-                    methodHandler.resultHelper.returnType.erasure()
-                ).build()
-        ).build()
-        methodHandler.daoHandler.classBuilder.addField(field)
-        return name
-    }
-
-    private fun addSqlBuilderField(methodHandler: MethodHandler, counter: Int): String {
-        //Function<Object[], Object[]> insert_0_sqlBuilder
-        val field = FieldSpec.builder(
-            Function::class.type(
-                typeUtils.getArrayType(Any::class.type),
-                typeUtils.getArrayType(Any::class.type),
+            SqlSignature::class.type(
+                methodHandler.resultHelper.returnType,
+                methodHandler.resultHelper.originalItemType
             ).typeName,
-            "${methodHandler.name}_${counter}_sql",
+            signFieldName,
             Modifier.PRIVATE,
             Modifier.FINAL,
         ).initializer(
             CodeBlock.builder().apply {
-                add("_params -> {\n")
-                indent()
-                methodHandler.parameters.forEachIndexed { index, parameter ->
-                    var type = parameter.type
-                    if (type is PrimitiveType) {
-                        type = typeUtils.boxedClass(type).asType()
-                    }
-                    addStatement("\$T ${parameter.name.toVarName()} = (\$T) _params[\$L]", type, type, index)
-                }
-                if (EnableAutoFill(methodHandler)) {
-                    AutoFillStruct(methodHandler)?.apply AutoFill@{
-                        val props = autoFillProperties.mapNotNull {
-                            val ann = it.element.getAnnotation(AutoFill::class.java)!!
-                            if (ann.before
-                                && ((ann.insert && methodHandler.statementType == StatementType.INSERT)
-                                        || ann.update && methodHandler.statementType == StatementType.UPDATE)
-                            ) {
-                                ann to it
-                            } else {
-                                null
-                            }
-                        }
-                        if (props.isEmpty()) {
-                            return@AutoFill
-                        }
-                        if (isCollection) {
-                            beginControlFlow(
-                                "for (\$T $itemVar : ${methodHandler.parameters[index].name.toVarName()})",
-                                type,
-                            )
-                        } else {
-                            addStatement(
-                                "\$T $itemVar = (\$T) _params[\$L]",
-                                methodHandler.parameters[index].type,
-                                methodHandler.parameters[index].type,
-                                index
-                            )
-                        }
-                        props.forEach { (ann, prop) ->
-                            addStatement(
-                                "$itemVar.${prop.setterName}((\$T) \$T.gen($itemVar, \$S, \$T.class))",
-                                prop.type,
-                                ann.mirroredType { generator },
-                                prop.name,
-                                prop.type
-                            )
-                        }
-                        if (isCollection) {
-                            endControlFlow()
+                methodHandler.apply {
+                    add("new \$T<>(\n", SqlSignature::class.java)
+                    indent()
+                    //statementType
+                    add("\$T.\$L,\n", StatementType::class.java, statementType)
+                    add("\$L,\n", methodHandler is XmlTemplateMethod)
+                    add("this.getClass(),\n")
+                    add("\$S,\n", this.name)
+                    add("\$T.class,\n", resultHelper.returnType.erasure())
+                    resultHelper.containerType?.apply {
+                        add("\$T.class,\n", erasure())
+                    } ?: add("null,\n")
+                    add("\$T.class,\n", resultHelper.itemType.erasure())
+
+                    add("new Class[]{\n")
+                    indent()
+                    parameters.filterIsInstance<RealParameter>().let { params ->
+                        params.forEachIndexed { index, it ->
+                            add("\$T.class${if (index < (params.size - 1)) "," else ""}\n", it.type.erasure().typeName)
                         }
                     }
+                    unindent()
+                    add("},\n")
+                    add("\$L,\n", addSqlBuilderFieldTemp(this))
+                    add("\$L,\n", addExecutorFieldTemp(this))
+
+
+                    when (methodHandler.statementType) {
+                        StatementType.INSERT, StatementType.UPDATE, StatementType.DELETE -> {
+                            add("null\n")
+                        }
+                        else -> {
+                            add(buildSelectResultHandler(this))
+                        }
+                    }
+                    unindent()
+                    add(")")
                 }
-                add("\n")
-                add(methodHandler.sqlBuildCodeBlock)
-                add("\n")
-                addStatement("\$T l_sql_0 = l_builder_0.toString()", String::class.type)
-                addStatement("return new Object[]{l_sql_0, ${TemplateHandler.sqlArgsVarName}}")
-                unindent()
-                add("}")
             }.build()
         ).build()
         methodHandler.daoHandler.classBuilder.addField(field)
-
-        return field.name
+        return signFieldName
     }
 
-    private fun addExecutorField(methodHandler: MethodHandler, counter: Int): String? {
+    private fun addSqlBuilderFieldTemp(methodHandler: MethodHandler): CodeBlock {
+        return CodeBlock.builder().apply {
+            add("_params -> {\n")
+            indent()
+            methodHandler.parameters.forEachIndexed { index, parameter ->
+                var type = parameter.type
+                if (type is PrimitiveType) {
+                    type = typeUtils.boxedClass(type).asType()
+                }
+                addStatement("\$T ${parameter.name.toVarName()} = (\$T) _params[\$L]", type, type, index)
+            }
+            if (EnableAutoFill(methodHandler)) {
+                AutoFillStruct(methodHandler)?.apply AutoFill@{
+                    val props = autoFillProperties.mapNotNull {
+                        val ann = it.element.getAnnotation(AutoFill::class.java)!!
+                        if (ann.before
+                            && ((ann.insert && methodHandler.statementType == StatementType.INSERT)
+                                    || ann.update && methodHandler.statementType == StatementType.UPDATE)
+                        ) {
+                            ann to it
+                        } else {
+                            null
+                        }
+                    }
+                    if (props.isEmpty()) {
+                        return@AutoFill
+                    }
+                    if (isCollection) {
+                        beginControlFlow(
+                            "for (\$T $itemVar : ${methodHandler.parameters[index].name.toVarName()})",
+                            type,
+                        )
+                    } else {
+                        addStatement(
+                            "\$T $itemVar = (\$T) _params[\$L]",
+                            methodHandler.parameters[index].type,
+                            methodHandler.parameters[index].type,
+                            index
+                        )
+                    }
+                    props.forEach { (ann, prop) ->
+                        addStatement(
+                            "$itemVar.${prop.setterName}((\$T) \$T.gen($itemVar, \$S, \$T.class))",
+                            prop.type,
+                            ann.mirroredType { generator },
+                            prop.name,
+                            prop.type
+                        )
+                    }
+                    if (isCollection) {
+                        endControlFlow()
+                    }
+                }
+            }
+            add("\n")
+            add(methodHandler.sqlBuildCodeBlock)
+            add("\n")
+            addStatement("\$T l_sql_0 = l_builder_0.toString()", String::class.type)
+            addStatement("return new Object[]{l_sql_0, ${TemplateHandler.sqlArgsVarName}}")
+            unindent()
+            add("}")
+        }.build()
+    }
+
+    private fun addExecutorFieldTemp(methodHandler: MethodHandler): CodeBlock {
         val resultHelper = methodHandler.resultHelper
-        val field = FieldSpec.builder(
-            SqlExecutor::class.type(resultHelper.returnType).typeName,
-            "${methodHandler.name}_${counter}_executor",
-            Modifier.PRIVATE,
-            Modifier.FINAL,
-        ).initializer(
-            CodeBlock.builder().apply {
-                add(
-                    "($connVar, $methodArgsVar, $sqlVar, $argsVar) -> {\n",
-                    String::class.type,
-                    List::class.type(Any::class.type)
+        return CodeBlock.builder().apply {
+            add(
+                "($connVar, $methodArgsVar, $sqlVar, $argsVar, $resultHandlerVar) -> {\n",
+                String::class.type,
+                List::class.type(Any::class.type)
+            )
+            indent()
+            beginControlFlow("if ($logVar.isDebugEnabled())")
+            addStatement("\$T.logSql($logVar, $sqlVar)", LogHelper::class.type)
+            addStatement("\$T.logArgs($logVar, $argsVar)", LogHelper::class.type)
+            endControlFlow()
+
+
+            if (EnableAutoFill(methodHandler)) {
+                beginControlFlow(
+                    "try (\$T $stmtVar = $connVar.prepareStatement($sqlVar, \$T.RETURN_GENERATED_KEYS))",
+                    PreparedStatement::class.type,
+                    Statement::class.type
                 )
-                indent()
-                beginControlFlow("if ($logVar.isDebugEnabled())")
-                addStatement("\$T.logSql($logVar, $sqlVar)", LogHelper::class.type)
-                addStatement("\$T.logArgs($logVar, $argsVar)", LogHelper::class.type)
-                endControlFlow()
+            } else {
+                beginControlFlow(
+                    "try (\$T $stmtVar = $connVar.prepareStatement($sqlVar))",
+                    PreparedStatement::class.type
+                )
+            }
 
+            beginControlFlow("for (int $idxVar = 0; $idxVar < $argsVar.size(); $idxVar++)")
+            addStatement("$stmtVar.setObject($idxVar + 1, $argsVar.get($idxVar))")
+            endControlFlow()
 
-                if (EnableAutoFill(methodHandler)) {
-                    beginControlFlow(
-                        "try (\$T $stmtVar = $connVar.prepareStatement($sqlVar, \$T.RETURN_GENERATED_KEYS))",
-                        PreparedStatement::class.type,
-                        Statement::class.type
-                    )
-                } else {
-                    beginControlFlow(
-                        "try (\$T $stmtVar = $connVar.prepareStatement($sqlVar))",
-                        PreparedStatement::class.type
-                    )
+            addStatement("$stmtVar.execute()")
+
+            when (methodHandler.statementType) {
+                StatementType.INSERT, StatementType.UPDATE, StatementType.DELETE -> {
+                    handeUpdateMethodResultMapping(methodHandler, resultHelper)
                 }
-
-                beginControlFlow("for (int $idxVar = 0; $idxVar < $argsVar.size(); $idxVar++)")
-                addStatement("$stmtVar.setObject($idxVar + 1, $argsVar.get($idxVar))")
-                endControlFlow()
-
-                addStatement("$stmtVar.execute()")
-
-                when (methodHandler.statementType) {
-                    StatementType.INSERT, StatementType.UPDATE, StatementType.DELETE -> {
-                        handeUpdateMethodResultMapping(methodHandler, resultHelper)
-                    }
-                    else -> {
-                        handeSelectMethodResultMapping(methodHandler, resultHelper)
-                    }
+                else -> {
+                    handeSelectMethodResultMapping(resultHelper)
                 }
+            }
 
-                nextControlFlow("catch (\$T e)", Exception::class.type)
-                addStatement("throw new \$T(e)", RuntimeException::class.type)
-                endControlFlow()
-                unindent()
-                add("}")
-            }.build()
-        ).build()
-        methodHandler.daoHandler.classBuilder.addField(field)
-
-        return field.name
+            endControlFlow()
+            unindent()
+            add("}")
+        }.build()
     }
 
     private fun CodeBlock.Builder.handeUpdateMethodResultMapping(
@@ -253,8 +243,6 @@ class ClassicBuildMethodService : BuildMethodService {
                     addStatement("\$T $itemVar = (\$T) $methodArgsVar[${index}]", type, type)
                     beginControlFlow("while ($resultSetVar.next())")
                 }
-
-
                 autoFillProperties
                     .forEach {
                         val ann = it.element.getAnnotation(AutoFill::class.java)!!
@@ -302,7 +290,6 @@ class ClassicBuildMethodService : BuildMethodService {
     }
 
     private fun CodeBlock.Builder.handeSelectMethodResultMapping(
-        methodHandler: MethodHandler,
         resultHelper: ResultHelper
     ) {
 
@@ -330,192 +317,185 @@ class ClassicBuildMethodService : BuildMethodService {
                 resultHelper.returnType,
             )
         }
-        if (methodHandler.resultHelper.isStructuredItem) {
-            //返回结构化数据
-            val diamondStr = if ((resultHelper.itemType.asElement() as TypeElement).typeParameters.isEmpty()) {
-                ""
-            } else {
-                "<>"
-            }
-            if (resultHelper.itemType.isAssignable(Map::class)) {
-                //集合内容为map
-                val addInitItemStatement = {
-                    addStatement("$itemVar = new \$T$diamondStr()", resultHelper.itemType)
-                }
-                if (methodHandler.mappings.isNotEmpty()) {
-                    //有声明结果映射规则时只将规则中存在的属性添加到map
-                    beginControlFlow("while ($resultSetVar.next())")
-                    addInitItemStatement()
-                    methodHandler.mappings.forEach {
-                        when {
-                            //有类型转换器
-                            it.typeHandler != null -> {
-                                val targetType = it.targetType ?: Any::class.type
-                                addStatement(
-                                    "$itemVar.put(\$S, (\$T) \$T.handleResult($resultSetVar.getObject(\$S), \$T.class))",
-                                    it.source,
-                                    targetType,
-                                    it.typeHandler,
-                                    it.source,
-                                    targetType,
-                                )
-                            }
-                            //map的值的类型参数不为Object时调用jdbc的显示转换类型函数
-                            !resultHelper.mapValueType!!.isSameType(Any::class) -> {
-                                addStatement(
-                                    "$itemVar.put(\$S, $resultSetVar.getObject(\$S, \$T.class))",
-                                    it.source,
-                                    it.source,
-                                    resultHelper.mapValueType
-                                )
-                            }
-                            else -> {
-                                addStatement("$itemVar.put(\$S, $resultSetVar.getObject(\$S))", it.source, it.source)
-                            }
-                        }
-                    }
-                    if (returnMultipleRow) {
-                        addStatement("$containerVar.add($itemVar)")
-                    } else {
-                        addStatement("break")
-                    }
-                    endControlFlow()
-                } else {
-                    //未声明结果映射规则时将返回的所有结果都添加到map中
-                    addStatement("\$T $metaDataVar = $resultSetVar.getMetaData()", ResultSetMetaData::class.type)
-                    addStatement("int $columnCountVar = $metaDataVar.getColumnCount()")
-                    beginControlFlow("while ($resultSetVar.next())")
-                    addInitItemStatement()
-                    beginControlFlow("for (int $idxVar = 1; $idxVar <= $columnCountVar; $idxVar++)")
-                    addStatement("String $labelVar = $metaDataVar.getColumnLabel($idxVar)")
-                    if (resultHelper.mapValueType!!.isSameType(Any::class)) {
-                        addStatement("$itemVar.put($labelVar, $resultSetVar.getObject($labelVar))")
-                    } else {
-                        addStatement(
-                            "$itemVar.put($labelVar, $resultSetVar.getObject($labelVar, \$T.class))",
-                            resultHelper.mapValueType
-                        )
-                    }
-                    endControlFlow()
-                    if (returnMultipleRow) {
-                        addStatement("$containerVar.add($itemVar)")
-                    } else {
-                        addStatement("break")
-                    }
-                    endControlFlow()
-                }
-            } else {
-                beginControlFlow("while ($resultSetVar.next())")
-                add("$itemVar = new \$T$diamondStr(\n", resultHelper.itemType)
-                indent()
-                methodHandler.mappings.filter { it.constructorParameterIndex > -1 }
-                    .sortedBy { it.constructorParameterIndex }
-                    .forEachIndexed { index, it ->
-                        if (index > 0) {
-                            add(",")
-                        }
-                        if (it.typeHandler != null) {
-                            //有类型转换
-                            val targetType = it.targetType ?: Any::class.type
-                            add(
-                                "(\$T) \$T.handleResult($resultSetVar.getObject(\$S), \$T.class)",
-                                targetType,
-                                it.typeHandler,
-                                it.source,
-                                targetType,
-                            )
-                        } else {
-                            //无类型转换器
-                            //类型为javabean时targetType必定不为null
-                            requireNotNull(it.targetType).let { type ->
-                                if (type.isSameType(Any::class)) {
-                                    add("$resultSetVar.getObject(\$S)", it.source)
-                                } else {
-                                    add(
-                                        "$resultSetVar.getObject(\$S,\$T.class)",
-                                        it.source,
-                                        it.targetType
-                                    )
-                                }
-                            }
-                        }
-                        add("\n")
-                    }
-                unindent()
-                add(");\n")
-                //集合项为javabean时mapping必定不为空集合
-                methodHandler.mappings
-                    .filter { it.constructorParameterIndex == -1 }
-                    .forEach {
-                        val setter = "set${it.target.replaceFirstChar { it.uppercaseChar() }}"
-                        if (it.typeHandler != null) {
-                            //有类型转换
-                            val targetType = it.targetType ?: Any::class.type
-                            addStatement(
-                                "$itemVar.$setter((\$T) \$T.handleResult($resultSetVar.getObject(\$S), \$T.class))",
-                                targetType,
-                                it.typeHandler,
-                                it.source,
-                                targetType,
-                            )
-                        } else {
-                            //无类型转换器
-                            //类型为javabean时targetType必定不为null
-                            requireNotNull(it.targetType).let { type ->
-                                if (type.isSameType(Any::class)) {
-                                    addStatement("$itemVar.$setter($resultSetVar.getObject(\$S))", it.source)
-                                } else {
-                                    addStatement(
-                                        "$itemVar.$setter($resultSetVar.getObject(\$S,\$T.class))",
-                                        it.source,
-                                        it.targetType
-                                    )
-                                }
-                            }
-                        }
-                    }
-                if (returnMultipleRow) {
-                    addStatement("$containerVar.add($itemVar)")
-                } else {
-                    addStatement("break")
-                }
 
-                endControlFlow()
-            }
+        beginControlFlow("while ($resultSetVar.next())")
+        //__item = __handler.handle(__rs, __item)
+        addStatement("$itemVar = $resultHandlerVar.handle($resultSetVar, $itemVar)")
+        if (returnMultipleRow) {
+            addStatement("$containerVar.add($itemVar)")
         } else {
-            //返回单列
-            beginControlFlow("while ($resultSetVar.next())")
-            if (methodHandler.mappings.isNotEmpty() && methodHandler.mappings[0].typeHandler != null
-            ) {
-                val targetType = methodHandler.mappings[0].targetType ?: Any::class.type
-                //有类型转换
-                addStatement(
-                    "$itemVar = (\$T) \$T.handleResult($resultSetVar.getObject(1), \$T.class)",
-                    targetType,
-                    methodHandler.mappings[0].typeHandler,
-                    targetType,
-                )
-            } else if (resultHelper.itemType.isSameType(Any::class)) {
-                //未指定单列类型或类型为Object
-                addStatement("$itemVar = $resultSetVar.getObject(1)", resultHelper.itemType)
-            } else {
-                //无类型转换器
-                addStatement("$itemVar = $resultSetVar.getObject(1, \$T.class)", resultHelper.itemType)
-            }
-            if (returnMultipleRow) {
-                addStatement("$containerVar.add($itemVar)")
-            } else {
-                addStatement("break")
-            }
-
-            endControlFlow()
+            addStatement("break")
         }
+        endControlFlow()
 
         if (returnMultipleRow) {
             addStatement("return $containerVar")
         } else {
             addStatement("return $itemVar")
         }
+    }
+
+    private fun buildSelectResultHandler(methodHandler: MethodHandler): CodeBlock {
+        return CodeBlock.builder().apply {
+            add("($resultSetVar,$itemVar) -> {\n")
+            indent()
+            methodHandler.apply {
+                if (methodHandler.resultHelper.isStructuredItem) {            //返回结构化数据
+                    val diamondStr = if ((resultHelper.itemType.asElement() as TypeElement).typeParameters.isEmpty()) {
+                        ""
+                    } else {
+                        "<>"
+                    }
+                    if (resultHelper.itemType.isAssignable(Map::class)) {
+                        //集合内容为map
+                        addStatement("$itemVar = new \$T$diamondStr()", resultHelper.itemType)
+                        if (methodHandler.mappings.isNotEmpty()) {
+                            methodHandler.mappings.forEach {
+                                when {
+                                    //有类型转换器
+                                    it.typeHandler != null -> {
+                                        val targetType = it.targetType ?: Any::class.type
+                                        addStatement(
+                                            "$itemVar.put(\$S, (\$T) \$T.handleResult($resultSetVar.getObject(\$S), \$T.class))",
+                                            it.source,
+                                            targetType,
+                                            it.typeHandler,
+                                            it.source,
+                                            targetType,
+                                        )
+                                    }
+                                    //map的值的类型参数不为Object时调用jdbc的显示转换类型函数
+                                    !resultHelper.mapValueType!!.isSameType(Any::class) -> {
+                                        addStatement(
+                                            "$itemVar.put(\$S, $resultSetVar.getObject(\$S, \$T.class))",
+                                            it.source,
+                                            it.source,
+                                            resultHelper.mapValueType
+                                        )
+                                    }
+                                    else -> {
+                                        addStatement(
+                                            "$itemVar.put(\$S, $resultSetVar.getObject(\$S))",
+                                            it.source,
+                                            it.source
+                                        )
+                                    }
+                                }
+                            }
+                        } else {
+                            //未声明结果映射规则时将返回的所有结果都添加到map中
+                            addStatement(
+                                "\$T $metaDataVar = $resultSetVar.getMetaData()",
+                                ResultSetMetaData::class.type
+                            )
+                            addStatement("int $columnCountVar = $metaDataVar.getColumnCount()")
+                            beginControlFlow("for (int $idxVar = 1; $idxVar <= $columnCountVar; $idxVar++)")
+                            addStatement("String $labelVar = $metaDataVar.getColumnLabel($idxVar)")
+                            if (resultHelper.mapValueType!!.isSameType(Any::class)) {
+                                addStatement("$itemVar.put($labelVar, $resultSetVar.getObject($labelVar))")
+                            } else {
+                                addStatement(
+                                    "$itemVar.put($labelVar, $resultSetVar.getObject($labelVar, \$T.class))",
+                                    resultHelper.mapValueType
+                                )
+                            }
+                            endControlFlow()
+                        }
+                    } else {
+                        add("$itemVar = new \$T$diamondStr(\n", resultHelper.itemType)
+                        indent()
+                        methodHandler.mappings.filter { it.constructorParameterIndex > -1 }
+                            .sortedBy { it.constructorParameterIndex }
+                            .forEachIndexed { index, it ->
+                                if (index > 0) {
+                                    add(",")
+                                }
+                                if (it.typeHandler != null) {
+                                    //有类型转换
+                                    val targetType = it.targetType ?: Any::class.type
+                                    add(
+                                        "(\$T) \$T.handleResult($resultSetVar.getObject(\$S), \$T.class)",
+                                        targetType,
+                                        it.typeHandler,
+                                        it.source,
+                                        targetType,
+                                    )
+                                } else {
+                                    //无类型转换器
+                                    //类型为javabean时targetType必定不为null
+                                    requireNotNull(it.targetType).let { type ->
+                                        if (type.isSameType(Any::class)) {
+                                            add("$resultSetVar.getObject(\$S)", it.source)
+                                        } else {
+                                            add(
+                                                "$resultSetVar.getObject(\$S,\$T.class)",
+                                                it.source,
+                                                it.targetType
+                                            )
+                                        }
+                                    }
+                                }
+                                add("\n")
+                            }
+                        unindent()
+                        add(");\n")
+                        //集合项为javabean时mapping必定不为空集合
+                        methodHandler.mappings
+                            .filter { it.constructorParameterIndex == -1 }
+                            .forEach {
+                                val setter = "set${it.target.replaceFirstChar { it.uppercaseChar() }}"
+                                if (it.typeHandler != null) {
+                                    //有类型转换
+                                    val targetType = it.targetType ?: Any::class.type
+                                    addStatement(
+                                        "$itemVar.$setter((\$T) \$T.handleResult($resultSetVar.getObject(\$S), \$T.class))",
+                                        targetType,
+                                        it.typeHandler,
+                                        it.source,
+                                        targetType,
+                                    )
+                                } else {
+                                    //无类型转换器
+                                    //类型为javabean时targetType必定不为null
+                                    requireNotNull(it.targetType).let { type ->
+                                        if (type.isSameType(Any::class)) {
+                                            addStatement("$itemVar.$setter($resultSetVar.getObject(\$S))", it.source)
+                                        } else {
+                                            addStatement(
+                                                "$itemVar.$setter($resultSetVar.getObject(\$S,\$T.class))",
+                                                it.source,
+                                                it.targetType
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                    }
+                } else {
+                    //返回单列
+                    if (methodHandler.mappings.isNotEmpty() && methodHandler.mappings[0].typeHandler != null
+                    ) {
+                        val targetType = methodHandler.mappings[0].targetType ?: Any::class.type
+                        //有类型转换
+                        addStatement(
+                            "$itemVar = (\$T) \$T.handleResult($resultSetVar.getObject(1), \$T.class)",
+                            targetType,
+                            methodHandler.mappings[0].typeHandler,
+                            targetType,
+                        )
+                    } else if (resultHelper.itemType.isSameType(Any::class)) {
+                        //未指定单列类型或类型为Object
+                        addStatement("$itemVar = $resultSetVar.getObject(1)", resultHelper.itemType)
+                    } else {
+                        //无类型转换器
+                        addStatement("$itemVar = $resultSetVar.getObject(1, \$T.class)", resultHelper.itemType)
+                    }
+                }
+            }
+            addStatement("return $itemVar")
+            unindent()
+            add("}\n")
+        }.build()
     }
 
 }

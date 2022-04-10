@@ -69,7 +69,9 @@ class DaoHandler(val element: TypeElement) {
         buildDaoServices.forEach { service ->
             service.build(this, classBuilder)
         }
-        JavaFile.builder(packageName, classBuilder.build()).build()
+        JavaFile.builder(packageName, classBuilder.build())
+            .indent("    ")
+            .build()
             .writeTo(processingEnvironment.filer)
 
     }

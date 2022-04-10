@@ -1,5 +1,6 @@
 package com.github.afezeria.freedao.classic.runtime.context;
 
+import com.github.afezeria.freedao.classic.runtime.ResultHandler;
 import com.github.afezeria.freedao.classic.runtime.SqlExecutor;
 import com.github.afezeria.freedao.classic.runtime.SqlSignature;
 
@@ -34,12 +35,16 @@ public abstract class DaoContext {
     }
 
 
-    public Object[] buildSql(SqlSignature signature, Object[] args, Function<Object[], Object[]> sqlBuilder) {
-        return getDelegate().buildSql(signature, args, sqlBuilder);
+    public Object[] buildSql(SqlSignature<?, ?> signature, Object[] args, Function<Object[], Object[]> buildSqlClosure) {
+        return getDelegate().buildSql(signature, args, buildSqlClosure);
     }
 
-    public <T> T execute(SqlSignature signature, Object[] methodArgs, String sql, List<Object> sqlArgs, SqlExecutor<T> executor) {
-        return getDelegate().execute(signature, methodArgs, sql, sqlArgs, executor);
+    public <T, E> T execute(SqlSignature<T, E> signature, Object[] methodArgs, String sql, List<Object> sqlArgs, SqlExecutor<T, E> executor, ResultHandler<E> resultHandler) {
+        return getDelegate().execute(signature, methodArgs, sql, sqlArgs, executor, resultHandler);
+    }
+
+    public <T, E> T proxy(SqlSignature<T, E> signature, Object... methodArgs) {
+        return delegate.proxy(signature, methodArgs);
     }
 
     public static DaoContext create(DataSource dataSource) {
@@ -47,7 +52,8 @@ public abstract class DaoContext {
                 new TransactionContext(dataSource),
                 new ExecutorContext(),
                 new PaginationQueryContext(),
-                new ParameterContext(null)
+                new ParameterContext(null),
+                new ProxyContext()
         );
     }
 

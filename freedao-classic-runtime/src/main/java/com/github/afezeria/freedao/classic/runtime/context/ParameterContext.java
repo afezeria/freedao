@@ -23,14 +23,14 @@ public class ParameterContext extends DaoContext {
     protected static ThreadLocal<ParameterMap> local;
 
     @Override
-    public Object[] buildSql(SqlSignature signature, Object[] args, Function<Object[], Object[]> sqlBuilder) {
+    public Object[] buildSql(SqlSignature<?, ?> signature, Object[] args, Function<Object[], Object[]> buildSqlClosure) {
         ParameterMap map = local.get();
 
         Object[] arr = new Object[args.length + 1];
         System.arraycopy(args, 0, arr, 0, args.length);
         arr[args.length] = map;
 
-        return getDelegate().buildSql(signature, arr, sqlBuilder);
+        return getDelegate().buildSql(signature, arr, buildSqlClosure);
     }
 
     static class ParameterMap extends HashMap<String, Object> {
