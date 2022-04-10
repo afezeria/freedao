@@ -21,6 +21,8 @@ public class ExecutorContext extends DaoContext {
         return getDelegate().withConnection(connection -> {
             try {
                 return executor.execute(connection, methodArgs, sql, sqlArgs, resultHandler);
+            } catch (RuntimeException e) {
+                throw e;
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

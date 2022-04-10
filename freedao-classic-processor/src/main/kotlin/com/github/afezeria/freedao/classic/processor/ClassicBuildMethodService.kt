@@ -1,6 +1,7 @@
 package com.github.afezeria.freedao.classic.processor
 
 import com.github.afezeria.freedao.StatementType
+import com.github.afezeria.freedao.TooManyResultException
 import com.github.afezeria.freedao.classic.runtime.AutoFill
 import com.github.afezeria.freedao.classic.runtime.LogHelper
 import com.github.afezeria.freedao.classic.runtime.SqlSignature
@@ -324,7 +325,9 @@ class ClassicBuildMethodService : BuildMethodService {
         if (returnMultipleRow) {
             addStatement("$containerVar.add($itemVar)")
         } else {
-            addStatement("break")
+            beginControlFlow("if ($resultSetVar.next())")
+            addStatement("throw new \$T()", TooManyResultException::class.java)
+            endControlFlow()
         }
         endControlFlow()
 
