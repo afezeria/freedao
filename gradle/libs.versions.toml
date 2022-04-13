@@ -8,6 +8,8 @@ kotlin-compile-test = { module = "com.github.tschuchortdev:kotlin-compile-testin
 autoservice = { module = "com.google.auto.service:auto-service", version = "1.0" }
 javapoet = { module = "com.squareup:javapoet", version = "1.13.0" }
 
+jsqlparser = { module = "com.github.jsqlparser:jsqlparser", version = "4.3" }
+
 slf4j = { module = "org.slf4j:slf4j-api", version = "1.7.32" }
 
 hikaricp = { module = "com.zaxxer:HikariCP", version = "5.0.0" }
