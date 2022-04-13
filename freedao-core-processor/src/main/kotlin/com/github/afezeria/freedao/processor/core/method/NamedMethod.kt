@@ -89,7 +89,7 @@ abstract class NamedMethod private constructor(
                 propertyName += list.pop()
                 val property = propertyMap[propertyName.replaceFirstChar { it.lowercase() }]
                 if (property != null) {
-                    val next = list.peek()
+                    val next = list.peek() ?: throw HandlerException("missing sort keyword asc or desc")
                     if (next == "Asc" || next == "Desc") {
                         orderColumns += property to OrderEnum.valueOf(next)
                         propertyName = ""

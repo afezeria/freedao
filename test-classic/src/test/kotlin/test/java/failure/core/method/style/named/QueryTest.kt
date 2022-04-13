@@ -59,4 +59,11 @@ class QueryTest : BaseTest() {
             assertErrorMessageEquals("There are no fields in common between entity(${Person::class.qualifiedName}) and dto(${DtoNoCommonFieldWithPerson::class.qualifiedName})")
         }
     }
+
+    @Test
+    fun `missing sort keyword`() {
+        compileFailure<MissingSortKeywordBadDao> {
+            assertErrorMessageEquals("missing sort keyword asc or desc")
+        }
+    }
 }
