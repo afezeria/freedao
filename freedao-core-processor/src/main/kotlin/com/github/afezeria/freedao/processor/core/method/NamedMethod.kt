@@ -47,7 +47,7 @@ abstract class NamedMethod private constructor(
      */
     fun parseName() {
         val (_, _, condAndOrder) = methodNameSplitRegex.matchEntire(name)!!.groupValues
-        val list = groupingRegex.findAll(condAndOrder).mapTo(LinkedList()) { it.groupValues[0] }
+        var list = groupingRegex.findAll(condAndOrder).mapTo(LinkedList()) { it.groupValues[0] }
         var propertyName = ""
 
         var hasOrderByClause = false
@@ -80,8 +80,16 @@ abstract class NamedMethod private constructor(
                 }
             }
         }
-        if (propertyName.isNotEmpty()) {
-            throw HandlerException("missing condition property ${crudEntity.className}.${propertyName.replaceFirstChar { it.lowercase() }}")
+        //允许在没有过滤条件的情况下单独存在排序字段
+        // e.g. selectByOrderById
+        if (conditions.isEmpty() && condAndOrder.startsWith("OrderBy") && condAndOrder.length > "OrderBy".length) {
+            list = groupingRegex.findAll(condAndOrder.substring(7)).mapTo(LinkedList()) { it.groupValues[0] }
+            hasOrderByClause = true
+            propertyName = ""
+        } else {
+            if (propertyName.isNotEmpty()) {
+                throw HandlerException("missing condition property ${crudEntity.className}.${propertyName.replaceFirstChar { it.lowercase() }}")
+            }
         }
 
         if (hasOrderByClause) {
@@ -171,16 +179,17 @@ abstract class NamedMethod private constructor(
     }
 
     protected fun buildWhereClause(): String {
-        println()
-        return conditions.joinToString(separator = " ", prefix = "where ") { cond ->
-            cond.render()
-        }
+        return conditions.takeIf { it.isNotEmpty() }
+            ?.joinToString(separator = " ", prefix = "where ") { cond ->
+                cond.render()
+            } ?: ""
     }
 
     protected fun buildOrderClause(): String {
-        return orderColumns.joinToString { (prop, enum) ->
-            "${prop.column.name.sqlQuote()} ${enum.name.lowercase()}"
-        }.takeIf { it.isNotBlank() }?.let { "order by $it" } ?: ""
+        return orderColumns.takeIf { it.isNotEmpty() }
+            ?.joinToString(prefix = " order by ") { (prop, enum) ->
+                "${prop.column.name.sqlQuote()} ${enum.name.lowercase()}"
+            } ?: ""
     }
 
     open class Query(element: ExecutableElement, daoHandler: DaoHandler) : NamedMethod(element, daoHandler) {
