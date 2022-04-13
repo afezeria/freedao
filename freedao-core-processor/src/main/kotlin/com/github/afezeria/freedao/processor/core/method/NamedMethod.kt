@@ -273,6 +273,9 @@ abstract class NamedMethod private constructor(
     class Delete(element: ExecutableElement, daoHandler: DaoHandler) : NamedMethod(element, daoHandler) {
         init {
             returnUpdateCount = true
+            if (orderColumns.isNotEmpty()) {
+                throw HandlerException("delete method cannot contain a sort")
+            }
         }
 
         override fun getTemplate(): String {
@@ -287,6 +290,9 @@ abstract class NamedMethod private constructor(
 
     class Count(element: ExecutableElement, daoHandler: DaoHandler) : NamedMethod(element, daoHandler) {
         init {
+            if (orderColumns.isNotEmpty()) {
+                throw HandlerException("count method cannot contain a sort")
+            }
             resultHelper.returnType.apply {
                 if (!isSameType(Long::class.type) && !isSameType(Int::class.type)) {
                     throw HandlerException("The return type of count method must be Integer or Long")

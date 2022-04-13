@@ -286,9 +286,9 @@ abstract class BaseTest {
         @JvmStatic
         @Parameters(name = "{index}: {0}")
         fun testParameters() = listOf(
-            *pgH2Env,
+//            *pgH2Env,
 //            *h2Env,
-//            *localEnv,
+            *localEnv,
 //            *containerEnv,
         )
 

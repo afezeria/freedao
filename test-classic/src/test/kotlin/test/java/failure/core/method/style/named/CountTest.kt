@@ -15,4 +15,10 @@ class CountTest : BaseTest() {
             assertErrorMessageEquals("The return type of count method must be Integer or Long")
         }
     }
+    @Test
+    fun `count method cannot contain sort`(){
+        compileFailure<CountMethodContainSortBadDao> {
+            assertErrorMessageEquals("count method cannot contain a sort")
+        }
+    }
 }
