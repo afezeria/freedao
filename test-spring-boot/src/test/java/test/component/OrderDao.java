@@ -1,7 +1,6 @@
 package test.component;
 
 import com.github.afezeria.freedao.annotation.Dao;
-import com.github.afezeria.freedao.annotation.XmlTemplate;
 import com.github.afezeria.freedao.classic.runtime.DS;
 
 import java.util.List;
@@ -11,7 +10,7 @@ import java.util.List;
  */
 @Dao(crudEntity = Order.class)
 public interface OrderDao {
-    List<Order> queryByIdNotNull();
+    List<Order> queryByIdGreaterThan(Integer id);
 
     List<Order> list(Order order);
 

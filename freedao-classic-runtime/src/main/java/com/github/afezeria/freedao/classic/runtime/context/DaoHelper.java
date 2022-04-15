@@ -5,10 +5,11 @@ import com.github.afezeria.freedao.classic.runtime.DataSourceContextHolder;
 import com.github.afezeria.freedao.classic.runtime.Page;
 
 import java.lang.annotation.Annotation;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Supplier;
-
-import static com.github.afezeria.freedao.classic.runtime.FreedaoGlobalConfiguration.optimizeCountSql;
 
 /**
  * @author afezeria
@@ -92,33 +93,26 @@ public class DaoHelper {
         }
     }
 
-    public static <E> Page<E> pagination(int pageIndex, int pageSize, Supplier<Collection<E>> closure) {
-        return pagination(pageIndex, pageSize, optimizeCountSql, closure);
+    public static <E> Page<E> page(int pageIndex, int pageSize, Supplier<Collection<E>> closure) {
+        return page(Page.of(pageIndex, pageSize), closure);
     }
 
-    public static <E> Page<E> pagination(int pageIndex, int pageSize, boolean optimizeCountSql, Supplier<Collection<E>> closure) {
-        if (pageIndex < 1) {
-            throw new IllegalArgumentException("pageIndex must greater than 0");
+    @SuppressWarnings("unchecked")
+    public static <E> Page<E> page(Page<?> page, Supplier<Collection<E>> closure) {
+        if (PageQueryContext.local.get() != null) {
+            throw new RuntimeException("paging conditions cannot be set repeatedly");
         }
-        if (pageSize < 1) {
-            throw new IllegalArgumentException("pageSize must greater than 0");
-        }
-        Page<E> page = new Page<>();
-        page.setPageIndex(pageIndex);
-        page.setPageSize(pageSize);
-        page.setOptimizeCountSql(optimizeCountSql);
-        PaginationQueryContext.local.set(page);
+        PageQueryContext.local.set(page);
         try {
-            Collection<E> res = closure.get();
-            if (res != null) {
-                page.setRecords(new ArrayList<>(res));
-            } else {
-                page.setRecords(new ArrayList<>());
-            }
-            return page;
+            closure.get();
+//            if (res != null) {
+//                page.setRecords(new ArrayList(res));
+//            } else {
+//                page.setRecords(new ArrayList<>());
+//            }
+            return (Page<E>) page;
         } finally {
-            PaginationQueryContext.local.remove();
+            PageQueryContext.local.remove();
         }
     }
-
 }

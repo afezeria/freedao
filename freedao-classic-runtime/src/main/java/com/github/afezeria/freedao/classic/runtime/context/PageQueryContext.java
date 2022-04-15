@@ -4,6 +4,8 @@ import com.github.afezeria.freedao.StatementType;
 import com.github.afezeria.freedao.classic.runtime.*;
 import com.github.afezeria.freedao.classic.runtime.dialect.DatabaseDialect;
 import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.expression.ExpressionVisitorAdapter;
+import net.sf.jsqlparser.expression.JdbcParameter;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.select.*;
 import org.slf4j.Logger;
@@ -13,9 +15,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -29,73 +29,70 @@ public class PageQueryContext extends DaoContext {
     private static final Map<SqlSignature<?, ?>, Boolean> disableParseSqlFlag = new ConcurrentHashMap<>();
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T, E> T execute(SqlSignature<T, E> signature, Object[] methodArgs, String sql, List<Object> sqlArgs, SqlExecutor<T, E> executor, ResultHandler<E> resultHandler) {
-        return getDelegate().withConnection(connection -> {
-
-            Page<?> page = local.get();
-            if (page == null) {
-                return getDelegate().execute(signature, methodArgs, sql, sqlArgs, executor, resultHandler);
-            }
-            if (page.getRecords() != null) {
-                throw new IllegalStateException("the closure of DaoHelper.pagination can only contain one query");
-            }
-            if (signature.getType() != StatementType.SELECT) {
-                throw new UnsupportedOperationException(signature.getType() + " statement does not support pagination");
-            }
-            if (!Collection.class.isAssignableFrom(signature.getReturnType())) {
-                throw new UnsupportedOperationException("single row query does not support pagination");
-            }
-
-            Select select = null;
-            try {
-                if (disableParseSqlFlag.get(signature) == null) {
-                    select = (Select) CCJSqlParserUtil.parse(sql);
-                }
-            } catch (JSQLParserException e) {
-                disableParseSqlFlag.put(signature, true);
-                logger.debug("parse sql failure", e);
-            } catch (ClassCastException e) {
-                disableParseSqlFlag.put(signature, true);
-                throw new RuntimeException("cannot convert non select sql into a paged sql");
-            }
-
-            if (!page.isSkipCount() && !page.isOrderByOnly()) {
-                long count = execCountSql(connection, select, signature, sql, sqlArgs);
-
-                page.setTotal(count);
-                int offset = (page.getPageIndex() - 1) * page.getPageSize();
-                logger.debug("count: {}, offset:{}", count, page.getOffset());
-                if (count == 0L || offset >= count) {
-                    return null;
-                }
-            }
-
-            //language=SQL
-            String pageSql = getPageSql(connection, select, page, sql);
-            return getDelegate().execute(signature, methodArgs, pageSql, sqlArgs, executor, resultHandler);
-        });
-    }
-
-    private static String getPageSql(Connection connection, Select select, Page<?> page, String originalSql) {
-        String sql = originalSql;
-        if (select != null && select.getSelectBody() instanceof PlainSelect) {
-            PlainSelect selectBody = (PlainSelect) select.getSelectBody();
-            if (page.getOrderBy() != null) {
-                selectBody.setOrderByElements(null);
-            }
-            if (!page.isOrderByOnly()) {
-                selectBody.setLimit(null);
-                selectBody.setOffset(null);
-            }
-            sql = select.toString();
+        Page<?> page = local.get();
+        if (page == null) {
+            return getDelegate().execute(signature, methodArgs, sql, sqlArgs, executor, resultHandler);
         }
+        if (page.getRecords() != null) {
+            throw new IllegalStateException("the closure of DaoHelper.page can only contain one query");
+        }
+        if (signature.getType() != StatementType.SELECT) {
+            throw new IllegalArgumentException(signature.getType() + " statement does not support paging");
+        }
+        if (!Collection.class.isAssignableFrom(signature.getReturnType())) {
+            throw new IllegalArgumentException("single row query does not support paging");
+        }
+
+        Select select = null;
         try {
-            sql = DatabaseDialect.getDialect(connection.getMetaData().getDatabaseProductName())
-                    .getPageSql(page, originalSql);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+            if (disableParseSqlFlag.get(signature) == null) {
+                select = (Select) CCJSqlParserUtil.parse(sql);
+            }
+        } catch (JSQLParserException e) {
+            disableParseSqlFlag.put(signature, true);
+            logger.debug("parse sql failure", e);
+        } catch (ClassCastException e) {
+            disableParseSqlFlag.put(signature, true);
+            throw new RuntimeException("cannot convert non select sql into a paged sql");
         }
-        return sql;
+
+        Select finalSelect = select;
+        return getDelegate().withConnection(connection -> {
+            try {
+                if (!page.isSkipCount() && !page.isOrderByOnly()) {
+                    long count = execCountSql(connection, finalSelect, signature, sql, sqlArgs);
+
+                    page.setTotal(count);
+                    int offset = (page.getPageIndex() - 1) * page.getPageSize();
+                    logger.debug("count: {}, offset:{}", count, page.getOffset());
+                    if (count == 0L || offset >= count) {
+                        page.setRecords(new ArrayList());
+                        return null;
+                    }
+                }
+
+                SqlAndParamIndexPair pair = optimizeSql(finalSelect,
+                        sql,
+                        !page.isOrderByOnly(),
+                        !page.isOrderByOnly(),
+                        page.getOrderBy() != null,
+                        true);
+                String pageSql = DatabaseDialect.getDialect(connection.getMetaData().getDatabaseProductName())
+                        .getPageSql(page, pair.sql);
+                for (Integer idx : pair.indexOfParameterToSkip) {
+                    sqlArgs.remove(idx - 1);
+                }
+                T result = getDelegate().execute(signature, methodArgs, pageSql, sqlArgs, executor, resultHandler);
+                page.setRecords(new ArrayList(((Collection<?>) result)));
+
+                return result;
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+
+        });
     }
 
     /**
@@ -103,29 +100,10 @@ public class PageQueryContext extends DaoContext {
      *
      * @return
      */
-    private static long execCountSql(Connection connection, Select select, SqlSignature<?, ?> signature, String originalSql, List<Object> sqlArgs) {
+    private static long execCountSql(Connection connection, Select select, SqlSignature<?, ?> signature, String originalSql, List<Object> sqlArgs) throws SQLException {
         String countSql;
-        String sql = originalSql;
-        if (select != null && select.getSelectBody() instanceof PlainSelect) {
-            PlainSelect plainSelect = (PlainSelect) select.getSelectBody();
-            if (plainSelect.isForUpdate() || plainSelect.getOrderByElements() != null || plainSelect.getLimit() != null || plainSelect.getOffset() != null) {
-                boolean forUpdate = plainSelect.isForUpdate();
-                Limit limit = plainSelect.getLimit();
-                Offset offset = plainSelect.getOffset();
-                List<OrderByElement> orderByElements = plainSelect.getOrderByElements();
-                plainSelect.setForUpdate(false);
-                plainSelect.setLimit(null);
-                plainSelect.setOffset(null);
-                plainSelect.setOrderByElements(null);
-                sql = plainSelect.toString();
-                plainSelect.setForUpdate(forUpdate);
-                plainSelect.setLimit(limit);
-                plainSelect.setOffset(offset);
-                plainSelect.setOrderByElements(orderByElements);
-
-            }
-        }
-        countSql = "select count(*) from(\n" + sql + "\n) as _cot";
+        SqlAndParamIndexPair pair = optimizeSql(select, originalSql, true, true, true, true);
+        countSql = "select count(*) from(\n" + pair.sql + "\n) as _cot";
         if (logger.isDebugEnabled()) {
             LogHelper.logSql(logger, countSql);
             LogHelper.logArgs(logger, sqlArgs);
@@ -133,13 +111,65 @@ public class PageQueryContext extends DaoContext {
 
         try (PreparedStatement stmt = connection.prepareStatement(countSql)) {
             for (int i = 0; i < sqlArgs.size(); i++) {
+                if (pair.indexOfParameterToSkip.contains(i + 1)) {
+                    continue;
+                }
                 stmt.setObject(i + 1, sqlArgs.get(i));
             }
             ResultSet resultSet = stmt.executeQuery();
             resultSet.next();
             return resultSet.getLong(1);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
         }
+    }
+
+    private static class SqlAndParamIndexPair {
+        String sql;
+        SortedSet<Integer> indexOfParameterToSkip = new TreeSet<>(Comparator.reverseOrder());
+    }
+
+    public static SqlAndParamIndexPair optimizeSql(Select select,
+                                                   String originalSql,
+                                                   boolean removeLimit,
+                                                   boolean removeOffset,
+                                                   boolean removeOrderBy,
+                                                   boolean removeForUpdate) {
+        SqlAndParamIndexPair pair = new SqlAndParamIndexPair();
+        pair.sql = originalSql;
+        if (select == null || !(select.getSelectBody() instanceof PlainSelect)) {
+            return pair;
+        }
+        PlainSelect plainSelect = (PlainSelect) select.getSelectBody();
+        boolean forUpdate = plainSelect.isForUpdate();
+        Limit limit = plainSelect.getLimit();
+        Offset offset = plainSelect.getOffset();
+        List<OrderByElement> orderByElements = plainSelect.getOrderByElements();
+        ExpressionVisitorAdapter getParamIndexVisitor = new ExpressionVisitorAdapter() {
+            @Override
+            public void visit(JdbcParameter parameter) {
+                pair.indexOfParameterToSkip.add(parameter.getIndex());
+            }
+        };
+        if (removeForUpdate) {
+            plainSelect.setForUpdate(false);
+        }
+        if (removeLimit && limit != null) {
+            plainSelect.setLimit(null);
+            limit.getRowCount().accept(getParamIndexVisitor);
+        }
+        if (removeOffset && offset != null) {
+            plainSelect.setOffset(null);
+            offset.getOffset().accept(getParamIndexVisitor);
+        }
+        if (removeOrderBy && orderByElements != null) {
+            for (OrderByElement element : orderByElements) {
+                element.getExpression().accept(getParamIndexVisitor);
+            }
+        }
+        pair.sql = select.toString();
+        plainSelect.setForUpdate(forUpdate);
+        plainSelect.setLimit(limit);
+        plainSelect.setOffset(offset);
+        plainSelect.setOrderByElements(orderByElements);
+        return pair;
     }
 }

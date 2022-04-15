@@ -20,6 +20,7 @@ configure<com.bnorm.power.PowerAssertGradleExtension> {
 dependencies {
     implementation(projects.freedaoCore)
     implementation(projects.freedaoClassicRuntime)
+    implementation("io.mockk:mockk:1.12.3")
 
     testImplementation(projects.freedaoCoreProcessor)
     testImplementation(projects.freedaoClassicProcessor)

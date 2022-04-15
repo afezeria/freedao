@@ -30,7 +30,7 @@ public class FreedaoConfiguration {
         return DaoContext.create(
                 new SpringTransactionContext(dataSource),
                 new ExecutorContext(),
-                new PaginationQueryContext(),
+                new PageQueryContext(),
                 new ParameterContext(null),
                 new ProxyContext()
         );

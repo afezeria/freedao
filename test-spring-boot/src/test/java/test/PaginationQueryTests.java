@@ -1,8 +1,8 @@
 package test;
 
-import com.github.afezeria.freedao.classic.runtime.context.DaoHelper;
 import com.github.afezeria.freedao.classic.runtime.FreedaoGlobalConfiguration;
 import com.github.afezeria.freedao.classic.runtime.Page;
+import com.github.afezeria.freedao.classic.runtime.context.DaoHelper;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,7 +35,7 @@ public class PaginationQueryTests {
 
     @Test
     public void simple() {
-        Page<Order> page = DaoHelper.pagination(1, 3, () -> dao.list(null));
+        Page<Order> page = DaoHelper.page(1, 3, () -> dao.list(null));
         assert page.getPageIndex() == 1;
         assert page.getPageSize() == 3;
         Assertions.assertIterableEquals(
@@ -46,31 +46,31 @@ public class PaginationQueryTests {
 
     @Test
     public void offsetGreaterThanCount() {
-        Page<Order> page = DaoHelper.pagination(2, 10, () -> dao.queryByIdNotNull());
+        Page<Order> page = DaoHelper.page(2, 10, () -> dao.queryByIdGreaterThan(0));
         assert page.getPageIndex() == 2;
         assert page.getPageSize() == 10;
         assert page.getRecords().size() == 0;
-        assert page.getCount() == DataInitUtil.tableSize;
+        assert page.getTotal() == DataInitUtil.tableSize;
     }
 
     @Test
     public void pageSizeGreaterThanCount() {
-        Page<Order> page = DaoHelper.pagination(1, 20, () -> dao.list(null));
+        Page<Order> page = DaoHelper.page(1, 20, () -> dao.list(null));
         assert page.getPageIndex() == 1;
         assert page.getPageSize() == 20;
         assert page.getRecords().size() == DataInitUtil.tableSize;
-        assert page.getCount() == 10;
+        assert page.getTotal() == 10;
     }
 
     @Test
     public void pageSizeGreaterThanMaxPageSize() {
         FreedaoGlobalConfiguration.maxPageSizeLimit = 5;
         try {
-            Page<Order> page = DaoHelper.pagination(1, 20, () -> dao.list(null));
+            Page<Order> page = DaoHelper.page(1, 20, () -> dao.list(null));
             assert page.getPageIndex() == 1;
             assert page.getPageSize() == 5;
             assert page.getRecords().size() == page.getPageSize();
-            assert page.getCount() == 10;
+            assert page.getTotal() == 10;
         } finally {
             FreedaoGlobalConfiguration.maxPageSizeLimit = 10000;
         }
@@ -78,11 +78,11 @@ public class PaginationQueryTests {
 
     @Test
     public void pages() {
-        Page<Order> page = DaoHelper.pagination(1, 20, () -> dao.list(null));
+        Page<Order> page = DaoHelper.page(1, 20, () -> dao.list(null));
         assert page.getPages() == 1;
-        page = DaoHelper.pagination(1, 5, () -> dao.list(null));
+        page = DaoHelper.page(1, 5, () -> dao.list(null));
         assert page.getPages() == 2;
-        page = DaoHelper.pagination(3, 3, () -> dao.list(null));
+        page = DaoHelper.page(3, 3, () -> dao.list(null));
         assert page.getPages() == 4;
     }
 
