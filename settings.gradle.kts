@@ -6,7 +6,7 @@ include("freedao-classic-processor")
 include("freedao-classic-runtime")
 include("freedao-spring-processor")
 include("freedao-spring-boot-starter")
-include("test-classic")
+include("test")
 include("test-spring-boot")
 
 
