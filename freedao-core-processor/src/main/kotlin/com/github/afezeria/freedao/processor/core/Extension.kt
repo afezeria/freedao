@@ -335,8 +335,8 @@ fun TypeMirror.isResultTypeHandlerAndMatchType(
     contract {
         returns() implies (this@isResultTypeHandlerAndMatchType is DeclaredType)
     }
-    if (this !is DeclaredType) {
-        throw HandlerException("ResultTypeHandler must be Object")
+    if (this !is DeclaredType || this.isAbstract) {
+        throw HandlerException("ResultTypeHandler must be Class")
     }
     if (this.isSameType(ResultTypeHandler::class)) {
         return null
@@ -350,7 +350,6 @@ fun TypeMirror.isResultTypeHandlerAndMatchType(
                     && it.parameters[0].asType().isSameType(Any::class)
                     && it.parameters[1].asType()
                 .isSameType(Class::class.type(typeUtils.getWildcardType(Any::class.type, null)))
-//                    && it.parameters[1].asType().isSameType(Class::class)
                     && it.modifiers.containsAll(listOf(Modifier.PUBLIC, Modifier.STATIC))
         } as ExecutableElement?
         ?: throw HandlerException("Invalid ResultTypeHandler:${this}, missing method:public static Object handleResult(Object.class)")
