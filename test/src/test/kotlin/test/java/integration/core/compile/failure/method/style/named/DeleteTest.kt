@@ -10,7 +10,7 @@ import test.BaseTest
 class DeleteTest : BaseTest() {
     @Test
     fun `delete method cannot contain sort`() {
-        compileFailure<test.java.integration.core.compile.failure.method.style.named.DeleteMethodContainSortBadDao> {
+        compileFailure<DeleteMethodContainSortBadDao> {
             assertErrorMessageEquals("delete method cannot contain a sort")
         }
     }

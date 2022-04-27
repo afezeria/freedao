@@ -4,6 +4,7 @@ import org.junit.Test
 import test.BaseTest
 import test.Person
 import test.PersonType
+import test.java.integration.core.compile.success.method.style.named.prefix.*
 import kotlin.test.assertContentEquals
 
 /**
@@ -14,7 +15,8 @@ class QueryTest : BaseTest() {
     @Test
     fun findByName() {
         initData(Person(1, "a"), Person(2, "b"))
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.named.prefix.FindByNameDao>()
+        val impl =
+            getJavaDaoInstance<FindByNameDao>()
         val list = impl.findByName("a")
         assert(list.size == 1)
     }
@@ -22,7 +24,8 @@ class QueryTest : BaseTest() {
     @Test
     fun findOneById() {
         initData(Person(1, "a"), Person(2, "b"))
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.named.prefix.FindOneByIdDao>()
+        val impl =
+            getJavaDaoInstance<FindOneByIdDao>()
         val entity = impl.findOneById(1L)
         assert(entity.id == 1L)
     }
@@ -30,7 +33,8 @@ class QueryTest : BaseTest() {
     @Test
     fun queryOneById() {
         initData(Person(1, "a"), Person(2, "b"))
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.named.prefix.QueryOneByIdDao>()
+        val impl =
+            getJavaDaoInstance<QueryOneByIdDao>()
         val entity = impl.queryOneById(1L)
         assert(entity.id == 1L)
     }
@@ -38,7 +42,8 @@ class QueryTest : BaseTest() {
     @Test
     fun queryByName() {
         initData(Person(1, "a"), Person(2, "b"))
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.named.prefix.QueryByNameDao>()
+        val impl =
+            getJavaDaoInstance<QueryByNameDao>()
         val list = impl.queryByName("a")
         assert(list.size == 1)
     }
@@ -53,7 +58,8 @@ class QueryTest : BaseTest() {
                 mapOf("id" to 2, "type" to PersonType.STUDENT.name),
             )
         )
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.named.prefix.QueryByWithParameterTypeHandlerDao>()
+        val impl =
+            getJavaDaoInstance<QueryByWithParameterTypeHandlerDao>()
         val list = impl.queryByType(PersonType.TEACHER)
         assert(list.size == 1)
         assert(list[0].type == PersonType.TEACHER)
@@ -62,7 +68,8 @@ class QueryTest : BaseTest() {
     @Test
     fun selectOneById() {
         initData(Person(1, "a"), Person(2, "b"))
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.named.prefix.SelectOneByIdDao>()
+        val impl =
+            getJavaDaoInstance<SelectOneByIdDao>()
         val entity = impl.selectOneById(1L)
         assert(entity.id == 1L)
     }
@@ -70,7 +77,8 @@ class QueryTest : BaseTest() {
     @Test
     fun selectByName() {
         initData(Person(1, "a"), Person(2, "b"))
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.named.prefix.SelectByNameDao>()
+        val impl =
+            getJavaDaoInstance<SelectByNameDao>()
         val list = impl.selectByName("a")
         assert(list.size == 1)
     }
@@ -78,7 +86,8 @@ class QueryTest : BaseTest() {
     @Test
     fun dtoQueryByName() {
         initData(Person(1, "a"), Person(2, "b"), Person(3, "a"))
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.named.prefix.DtoQueryByNameDao>()
+        val impl =
+            getJavaDaoInstance<DtoQueryByNameDao>()
         val list = impl.dtoQueryByName("a")
         assert(list.size == 2)
         assertContentEquals(list.map { it.id }, listOf(1, 3))
@@ -94,7 +103,8 @@ class QueryTest : BaseTest() {
     @Test
     fun dtoExtendEntityResultTypeHandlerQuery() {
         initData(Person(1, "a", age = 10))
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.named.prefix.DtoQueryExtendEntityResultTypeHandlerDao>()
+        val impl =
+            getJavaDaoInstance<DtoQueryExtendEntityResultTypeHandlerDao>()
         val list = impl.dtoQueryByName("a")
         assert(list.size == 1)
         assertContentEquals(list.map { it.stringAge }, listOf("10"))
@@ -103,7 +113,8 @@ class QueryTest : BaseTest() {
     @Test
     fun dtoQueryOneByName() {
         initData(Person(1, "a"), Person(2, "b"))
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.named.prefix.DtoQueryOneByNameDao>()
+        val impl =
+            getJavaDaoInstance<DtoQueryOneByNameDao>()
         val dto = impl.dtoQueryOneByName("a")
         assert(dto.name == "a")
         assert(dto.id == 1L)

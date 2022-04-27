@@ -16,7 +16,8 @@ class DeleteTest : BaseTest() {
     fun failureWhenAllFieldAreNull() {
         initData(Person(1, "a"))
 
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.crud.delete.PersonDeleteDao>()
+        val impl =
+            getJavaDaoInstance<PersonDeleteDao>()
         assertFails {
             impl.delete(Person())
         }
@@ -26,7 +27,8 @@ class DeleteTest : BaseTest() {
     fun deleteByMultipleField() {
         initData(Clazz(1, 1, "a"), Clazz(1, 2, "a"))
 
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.crud.delete.DeleteWithCompositePrimaryKeyDao>()
+        val impl =
+            getJavaDaoInstance<DeleteWithCompositePrimaryKeyDao>()
         val delete = impl.delete(Clazz(1, 1))
         assert(delete == 1)
     }
@@ -35,7 +37,8 @@ class DeleteTest : BaseTest() {
     fun deleteById() {
         initData(Clazz(1, 1, "a"), Clazz(1, 2, "a"))
 
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.crud.delete.DeleteWithCompositePrimaryKeyDao>()
+        val impl =
+            getJavaDaoInstance<DeleteWithCompositePrimaryKeyDao>()
         val delete = impl.delete(Clazz(teacherId = 2))
         assert(delete == 1)
     }

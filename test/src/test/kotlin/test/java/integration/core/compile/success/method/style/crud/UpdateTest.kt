@@ -19,7 +19,8 @@ class UpdateTest : BaseTest() {
             assert(it["when_created"] != null)
         }
 
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.crud.update.PersonUpdateDao>()
+        val impl =
+            getJavaDaoInstance<PersonUpdateDao>()
         val entity = Person(1, "b")
 
         val update = impl.update(entity)
@@ -38,7 +39,8 @@ class UpdateTest : BaseTest() {
             assert(it["when_created"] != null)
         }
 
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.crud.update.PersonUpdateNonNullFieldDao>()
+        val impl =
+            getJavaDaoInstance<PersonUpdateNonNullFieldDao>()
         val entity = Person(1, "b")
 
         val update = impl.updateNonNullFields(entity)

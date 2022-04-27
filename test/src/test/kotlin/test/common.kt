@@ -1,7 +1,7 @@
 package test
 
-import com.github.afezeria.freedao.processor.core.MainProcessor
 import com.github.afezeria.freedao.classic.runtime.LogHelper
+import com.github.afezeria.freedao.processor.core.MainProcessor
 import com.google.testing.compile.Compilation
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.SourceFile
@@ -25,7 +25,7 @@ val logger = LoggerFactory.getLogger(Common::class.java)
 fun compile(vararg classNames: String): KotlinCompilation.Result {
     val processor = MainProcessor()
     val result = KotlinCompilation().apply {
-        this.sources = classNames.map { SourceFile.fromPath(File("./src/main/java/test/$it.java")) }.toList()
+        this.sources = classNames.map { getJavaSource(it) }.toList()
         annotationProcessors = listOf(processor)
         inheritClassPath = true
         messageOutputStream = System.out

@@ -3,6 +3,7 @@ package test.java.integration.core.compile.success.method.style.named
 import org.junit.Test
 import test.BaseTest
 import test.Person
+import test.java.integration.core.compile.success.method.style.named.cond.*
 import kotlin.test.assertContentEquals
 
 /**
@@ -13,7 +14,7 @@ class ConditionTest : BaseTest() {
     @Test
     fun `is`() {
         initData(Person(2, "b"), Person(1, "a"))
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.named.cond.IsDao>()
+        val impl = getJavaDaoInstance<IsDao>()
         val list = impl.queryById(1)
         assert(list.size == 1)
         assert(list[0].name == "a")
@@ -22,7 +23,7 @@ class ConditionTest : BaseTest() {
     @Test
     fun between() {
         initData(Person(2, "b"), Person(5, "a"))
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.named.cond.BetweenDao>()
+        val impl = getJavaDaoInstance<BetweenDao>()
         val list = impl.queryByIdBetween(1, 3)
         assert(list.size == 1)
         assert(list[0].id == 2L)
@@ -31,7 +32,7 @@ class ConditionTest : BaseTest() {
     @Test
     fun `false`() {
         initData(Person(1, "b", active = true), Person(5, "a", active = false))
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.named.cond.FalseDao>()
+        val impl = getJavaDaoInstance<FalseDao>()
         val list = impl.queryByActiveFalse()
         assert(list.size == 1)
         assert(list[0].id == 5L)
@@ -40,7 +41,7 @@ class ConditionTest : BaseTest() {
     @Test
     fun `true`() {
         initData(Person(1, "b", active = true), Person(5, "a", active = false))
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.named.cond.TrueDao>()
+        val impl = getJavaDaoInstance<TrueDao>()
         val list = impl.queryByActiveTrue()
         assert(list.size == 1)
         assert(list[0].id == 1L)
@@ -49,7 +50,8 @@ class ConditionTest : BaseTest() {
     @Test
     fun greaterThan() {
         initData(Person(1, "b", active = true), Person(5, "a", active = false))
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.named.cond.GreaterThanDao>()
+        val impl =
+            getJavaDaoInstance<GreaterThanDao>()
         val list = impl.queryByIdGreaterThan(1)
         assert(list.size == 1)
         assert(list[0].id == 5L)
@@ -58,11 +60,10 @@ class ConditionTest : BaseTest() {
     @Test
     fun greaterThanEqual() {
         initData(
-            Person(1, "b"),
-            Person(5, "a"),
-            Person(8, "a")
+            Person(1, "b"), Person(5, "a"), Person(8, "a")
         )
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.named.cond.GreaterThanEqualDao>()
+        val impl =
+            getJavaDaoInstance<GreaterThanEqualDao>()
         val list = impl.queryByIdGreaterThanEqual(5)
         assert(list.size == 2)
         assertContentEquals(list.map { it.id }, listOf(5, 8))
@@ -71,7 +72,7 @@ class ConditionTest : BaseTest() {
     @Test
     fun lessThan() {
         initData(Person(1, "b", active = true), Person(5, "a", active = false))
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.named.cond.LessThanDao>()
+        val impl = getJavaDaoInstance<LessThanDao>()
         val list = impl.queryByIdLessThan(5)
         assert(list.size == 1)
         assert(list[0].id == 1L)
@@ -80,11 +81,10 @@ class ConditionTest : BaseTest() {
     @Test
     fun lessThanEqual() {
         initData(
-            Person(1, "b"),
-            Person(5, "a"),
-            Person(8, "a")
+            Person(1, "b"), Person(5, "a"), Person(8, "a")
         )
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.named.cond.LessThanEqualDao>()
+        val impl =
+            getJavaDaoInstance<LessThanEqualDao>()
         val list = impl.queryByIdLessThanEqual(5)
         assert(list.size == 2)
         assertContentEquals(list.map { it.id }, listOf(1, 5))
@@ -98,7 +98,7 @@ class ConditionTest : BaseTest() {
             Person(5, "a", active = false),
             Person(6, "a", active = false),
         )
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.named.cond.InDao>()
+        val impl = getJavaDaoInstance<InDao>()
         var list = impl.queryByIdIn(listOf(1, 6))
         assert(list.size == 2)
         assertContentEquals(list.map { it.id }, listOf(1, 6))
@@ -115,7 +115,7 @@ class ConditionTest : BaseTest() {
             Person(5, "a", active = false),
             Person(6, "a", active = false),
         )
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.named.cond.NotInDao>()
+        val impl = getJavaDaoInstance<NotInDao>()
         val list = impl.queryByIdNotIn(listOf(1, 6))
         assert(list.size == 1)
         assertContentEquals(list.map { it.id }, listOf(5))
@@ -127,7 +127,7 @@ class ConditionTest : BaseTest() {
             Person(1, "b"),
             Person(5, null),
         )
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.named.cond.IsNullDao>()
+        val impl = getJavaDaoInstance<IsNullDao>()
         val list = impl.queryByNameIsNull()
         assert(list.size == 1)
         assertContentEquals(list.map { it.id }, listOf(5))
@@ -139,7 +139,7 @@ class ConditionTest : BaseTest() {
             Person(1, "b"),
             Person(5, null),
         )
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.named.cond.NotNullDao>()
+        val impl = getJavaDaoInstance<NotNullDao>()
         val list = impl.queryByNameNotNull()
         assert(list.size == 1)
         assertContentEquals(list.map { it.id }, listOf(1))
@@ -152,7 +152,7 @@ class ConditionTest : BaseTest() {
             Person(5, "a"),
             Person(6, "ab"),
         )
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.named.cond.LikeDao>()
+        val impl = getJavaDaoInstance<LikeDao>()
         val list = impl.queryByNameLike("a%")
         assert(list.size == 2)
         assertContentEquals(list.map { it.id }, listOf(5, 6))
@@ -165,7 +165,7 @@ class ConditionTest : BaseTest() {
             Person(5, "a"),
             Person(6, "ab"),
         )
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.named.cond.NotLikeDao>()
+        val impl = getJavaDaoInstance<NotLikeDao>()
         val list = impl.queryByNameNotLike("a%")
         assert(list.size == 1)
         assertContentEquals(list.map { it.id }, listOf(1))
@@ -178,7 +178,7 @@ class ConditionTest : BaseTest() {
             Person(5, "a"),
             Person(6, "a"),
         )
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.named.cond.NotDao>()
+        val impl = getJavaDaoInstance<NotDao>()
         val list = impl.queryByNameNot("a")
         assert(list.size == 1)
         assertContentEquals(list.map { it.id }, listOf(1))
@@ -190,7 +190,7 @@ class ConditionTest : BaseTest() {
             Person(1, "a"),
             Person(5, "a"),
         )
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.named.cond.AndDao>()
+        val impl = getJavaDaoInstance<AndDao>()
         val list = impl.queryByIdAndName(1, "a")
         assert(list.size == 1)
         assertContentEquals(list.map { it.id }, listOf(1))
@@ -203,7 +203,7 @@ class ConditionTest : BaseTest() {
             Person(5, "a"),
             Person(7, "b"),
         )
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.named.cond.OrDao>()
+        val impl = getJavaDaoInstance<OrDao>()
         val list = impl.queryByIdOrName(1, "a")
         assert(list.size == 2)
         assertContentEquals(list.map { it.id }, listOf(1, 5))

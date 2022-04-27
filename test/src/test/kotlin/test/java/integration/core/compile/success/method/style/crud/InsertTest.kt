@@ -15,7 +15,8 @@ class InsertTest : BaseTest() {
     @Test
     fun `insert all fields`() {
         initData<Person>()
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.crud.insert.PersonInsertDao>()
+        val impl =
+            getJavaDaoInstance<PersonInsertDao>()
         val entity = Person(name = "a")
         val updateCount = impl.insert(entity)
         assert(updateCount == 1)
@@ -28,7 +29,8 @@ class InsertTest : BaseTest() {
     @Test
     fun `insert non-null fields`() {
         initData<Person>()
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.crud.insert.PersonInsertNonNullFieldDao>()
+        val impl =
+            getJavaDaoInstance<PersonInsertNonNullFieldDao>()
         val entity = Person(name = "a")
         val updateCount = impl.insertNonNullFields(entity)
         assert(updateCount == 1)
@@ -41,7 +43,8 @@ class InsertTest : BaseTest() {
     @Test
     fun `insert return long`() {
         initData<Person>()
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.crud.insert.ReturnLongPersonInsertDao>()
+        val impl =
+            getJavaDaoInstance<ReturnLongPersonInsertDao>()
         val entity = Person(name = "a")
         val updateCount = impl.insert(entity)
         assert(updateCount == 1L)

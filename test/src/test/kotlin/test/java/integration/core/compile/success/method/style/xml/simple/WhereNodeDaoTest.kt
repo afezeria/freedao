@@ -16,7 +16,7 @@ class WhereNodeDaoTest : BaseTest() {
             Person(1, "a", active = true),
             Person(2, "b", active = true),
         )
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.xml.simple.WhereNodeDao>()
+        val impl = getJavaDaoInstance<WhereNodeDao>()
         val list1 = impl.query(1)
         assert(list1.size == 1)
         assertContentEquals(list1.map { it.id }, listOf(1))
@@ -28,7 +28,7 @@ class WhereNodeDaoTest : BaseTest() {
             Person(1, "a", active = true),
             Person(2, "b", active = true),
         )
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.xml.simple.WhereNodeDao>()
+        val impl = getJavaDaoInstance<WhereNodeDao>()
         val list1 = impl.query(null)
         assert(list1.size == 2)
         assertContentEquals(list1.map { it.id }, listOf(1, 2))

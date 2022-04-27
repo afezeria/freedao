@@ -16,7 +16,8 @@ class CountTest : BaseTest() {
     fun returnInt() {
         initData(Person(1, "a"))
 
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.crud.count.ReturnIntegerCountDao>()
+        val impl =
+            getJavaDaoInstance<ReturnIntegerCountDao>()
         val count = impl.count(null)
         assert(count == 1)
 
@@ -27,7 +28,8 @@ class CountTest : BaseTest() {
     @Test
     fun returnLong() {
         initData(Person(1, "a"))
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.crud.count.ReturnLongCountDao>()
+        val impl =
+            getJavaDaoInstance<ReturnLongCountDao>()
         val count = impl.count(null)
         assert(count == 1L)
     }
@@ -35,7 +37,8 @@ class CountTest : BaseTest() {
     @Test
     fun countByName() {
         initData(Person(1, "a"), Person(2, "a"))
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.crud.count.ReturnIntegerCountDao>()
+        val impl =
+            getJavaDaoInstance<ReturnIntegerCountDao>()
         val count = impl.count(Person(name = "a"))
         assert(count == 2)
     }

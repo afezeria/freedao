@@ -13,63 +13,63 @@ class DaoTest : BaseTest() {
 
     @Test
     fun `error, annotate annotation class with Dao`() {
-        compileFailure<test.java.integration.core.compile.failure.dao.AnnotateClassWithDaoBadDao> {
+        compileFailure<AnnotateClassWithDaoBadDao> {
             assertErrorMessageEquals("Dao must be top level interface")
         }
     }
 
     @Test
     fun `entity without table annotation`() {
-        compileFailure<test.java.integration.core.compile.failure.dao.EntityWithoutTableAnnotationBadDao> {
+        compileFailure<EntityWithoutTableAnnotationBadDao> {
             assertErrorMessageEquals(invalidCrudEntityMsg)
         }
     }
 
     @Test
     fun entityWithoutProperty() {
-        compileFailure<test.java.integration.core.compile.failure.dao.EntityNoPropertyBadDao> {
+        compileFailure<EntityNoPropertyBadDao> {
             assertErrorMessageEquals(invalidCrudEntityMsg)
         }
     }
 
     @Test
     fun primitiveTypeAsCrudEntity() {
-        compileFailure<test.java.integration.core.compile.failure.dao.PrimitiveTypeAsCrudEntityBadDao> {
+        compileFailure<PrimitiveTypeAsCrudEntityBadDao> {
             assertErrorMessageEquals(invalidCrudEntityMsg)
         }
     }
 
     @Test
     fun voidTypeAsCrudEntity() {
-        compileFailure<test.java.integration.core.compile.failure.dao.VoidTypeAsCrudEntityBadDao> {
+        compileFailure<VoidTypeAsCrudEntityBadDao> {
             assertErrorMessageEquals(invalidCrudEntityMsg)
         }
     }
 
     @Test
     fun crudEntityExtendList() {
-        compileFailure<test.java.integration.core.compile.failure.dao.EntityExtendListBadDao> {
+        compileFailure<EntityExtendListBadDao> {
             assertErrorMessageEquals(invalidCrudEntityMsg)
         }
     }
 
     @Test
     fun crudEntityExtendMap() {
-        compileFailure<test.java.integration.core.compile.failure.dao.EntityExtendMapBadDao> {
+        compileFailure<EntityExtendMapBadDao> {
             assertErrorMessageEquals(invalidCrudEntityMsg)
         }
     }
 
     @Test
     fun crudEntityIsObject() {
-        compileFailure<test.java.integration.core.compile.failure.dao.EntityIsObjectBadDao> {
+        compileFailure<EntityIsObjectBadDao> {
             assertErrorMessageEquals(invalidCrudEntityMsg)
         }
     }
 
     @Test
     fun crudEntityIsString() {
-        compileFailure<test.java.integration.core.compile.failure.dao.EntityIsStringBadDao> {
+        compileFailure<EntityIsStringBadDao> {
             assertErrorMessageEquals(invalidCrudEntityMsg)
         }
     }

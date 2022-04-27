@@ -5,6 +5,10 @@ import com.github.afezeria.freedao.processor.core.template.element.TextElement.C
 import org.junit.Test
 import test.BaseTest
 import test.Person
+import test.java.integration.core.compile.success.template.element.CastObjectToHandlerParameterTypeDao
+import test.java.integration.core.compile.success.template.element.PersonNameEnum
+import test.java.integration.core.compile.success.template.element.SqlArgumentWithTypeHandler1Dao
+import test.java.integration.core.compile.success.template.element.SqlArgumentWithTypeHandler2Dao
 import kotlin.test.assertContentEquals
 
 /**
@@ -42,8 +46,8 @@ class TextElementTest : BaseTest() {
     @Test
     fun parameterTypeHandlerTest() {
         initData(Person(1, "a"), Person(2, "a"), Person(3, "b"))
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.template.element.SqlArgumentWithTypeHandler1Dao>()
-        val list = impl.select(test.java.integration.core.compile.success.template.element.PersonNameEnum.a)
+        val impl = getJavaDaoInstance<SqlArgumentWithTypeHandler1Dao>()
+        val list = impl.select(PersonNameEnum.a)
         assert(list.size == 2)
         assertContentEquals(list.map { it.id }, listOf(1, 2))
     }
@@ -51,8 +55,8 @@ class TextElementTest : BaseTest() {
     @Test
     fun `expression type and the parameter type of handle method are both object`() {
         initData(Person(1, "a"), Person(2, "a"), Person(3, "b"))
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.template.element.SqlArgumentWithTypeHandler2Dao>()
-        val list = impl.select(test.java.integration.core.compile.success.template.element.PersonNameEnum.a)
+        val impl = getJavaDaoInstance<SqlArgumentWithTypeHandler2Dao>()
+        val list = impl.select(PersonNameEnum.a)
         assert(list.size == 2)
         assertContentEquals(list.map { it.id }, listOf(1, 2))
     }
@@ -60,8 +64,9 @@ class TextElementTest : BaseTest() {
     @Test
     fun `cast expression type to the type of handle method`() {
         initData(Person(1, "a"), Person(2, "a"), Person(3, "b"))
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.template.element.CastObjectToHandlerParameterTypeDao>()
-        val list = impl.select(test.java.integration.core.compile.success.template.element.PersonNameEnum.a)
+        val impl =
+            getJavaDaoInstance<CastObjectToHandlerParameterTypeDao>()
+        val list = impl.select(PersonNameEnum.a)
         assert(list.size == 2)
         assertContentEquals(list.map { it.id }, listOf(1, 2))
     }

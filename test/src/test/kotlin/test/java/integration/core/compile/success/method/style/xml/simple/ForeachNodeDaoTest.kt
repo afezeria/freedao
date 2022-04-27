@@ -17,7 +17,8 @@ class ForeachNodeDaoTest : BaseTest() {
             Person(2, "b"),
             Person(3, "b"),
         )
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.xml.simple.ForeachNodeDao>()
+        val impl =
+            getJavaDaoInstance<ForeachNodeDao>()
         val list = impl.queryIdIn(listOf(1, 3))
         assert(list.size == 2)
         assertContentEquals(list.map { it.id }, listOf(1, 3))

@@ -61,7 +61,7 @@ class QueryTest : BaseTest() {
 
     @Test
     fun `missing sort keyword`() {
-        compileFailure<test.java.integration.core.compile.failure.method.style.named.MissingSortKeywordBadDao> {
+        compileFailure<MissingSortKeywordBadDao> {
             assertErrorMessageEquals("missing sort keyword asc or desc")
         }
     }

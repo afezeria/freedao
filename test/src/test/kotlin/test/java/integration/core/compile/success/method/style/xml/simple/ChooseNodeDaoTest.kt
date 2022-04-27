@@ -17,7 +17,8 @@ class ChooseNodeDaoTest : BaseTest() {
             Person(2, "b", active = true),
             Person(3, "b", active = false),
         )
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.xml.simple.ChooseNodeDao>()
+        val impl =
+            getJavaDaoInstance<ChooseNodeDao>()
         val list1 = impl.query(3, null)
         assert(list1.size == 1)
         assertContentEquals(list1.map { it.id }, listOf(3))

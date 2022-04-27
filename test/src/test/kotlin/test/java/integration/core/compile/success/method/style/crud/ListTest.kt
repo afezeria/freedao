@@ -3,6 +3,7 @@ package test.java.integration.core.compile.success.method.style.crud
 import org.junit.Test
 import test.BaseTest
 import test.Person
+import test.java.integration.core.compile.success.method.style.crud.list.ListDao
 import kotlin.test.assertContentEquals
 
 /**
@@ -17,7 +18,7 @@ class ListTest : BaseTest() {
             Person(2, "b")
         )
 
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.crud.list.ListDao>()
+        val impl = getJavaDaoInstance<ListDao>()
         val list = impl.list(null)
         assert(list.size == 2)
         assertContentEquals(list.map { it.id }, listOf(1, 2))
@@ -34,7 +35,7 @@ class ListTest : BaseTest() {
             Person(2, "b")
         )
 
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.crud.list.ListDao>()
+        val impl = getJavaDaoInstance<ListDao>()
 
         val list2 = impl.list(Person(id = 1))
         assert(list2.size == 1)

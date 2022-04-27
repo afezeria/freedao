@@ -16,7 +16,7 @@ class IfNodeDaoTest : BaseTest() {
             Person(1, "a"),
             Person(2, "b"),
         )
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.xml.simple.IfNodeDao>()
+        val impl = getJavaDaoInstance<IfNodeDao>()
         var list = impl.queryByNameIfNameNotNull("a")
         assert(list.size == 1)
         assertContentEquals(list.map { it.id }, listOf(1))

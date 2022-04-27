@@ -10,21 +10,21 @@ import test.BaseTest
 class MethodTest : BaseTest() {
     @Test
     fun invalidMethodDeclare() {
-        compileFailure<test.java.integration.core.compile.failure.method.InvalidMethodDeclareBadDao> {
+        compileFailure<InvalidMethodDeclareBadDao> {
             assertErrorMessageEquals("Invalid method declare")
         }
     }
 
     @Test
     fun invalidParameterName() {
-        compileFailure<test.java.integration.core.compile.failure.method.InvalidParameterNameBadDao> {
+        compileFailure<InvalidParameterNameBadDao> {
             assertErrorMessageEquals("Invalid parameter name:_test")
         }
     }
 
     @Test
     fun methodHasTypeParameter() {
-        compileFailure<test.java.integration.core.compile.failure.method.MethodHasTypeParameterBadDao> {
+        compileFailure<MethodHasTypeParameterBadDao> {
             assertErrorMessageEquals("Method cannot have TypeParameter")
         }
     }

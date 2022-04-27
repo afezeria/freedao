@@ -2,8 +2,6 @@ package test.java.integration.core.compile.failure.method.style.crud
 
 import org.junit.Test
 import test.BaseTest
-import test.java.integration.core.compile.failure.method.style.crud.update.EntityHasNoUpdatePropertyUpdateBadDao
-import test.java.integration.core.compile.failure.method.style.crud.update.EntityWithoutPrimaryKeyUpdateBadDao
 
 /**
  *

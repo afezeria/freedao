@@ -17,7 +17,7 @@ class SetNodeDaoTest : BaseTest() {
             Person(1, "a", active = true),
         )
 
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.xml.simple.SetNodeDao>()
+        val impl = getJavaDaoInstance<SetNodeDao>()
         assertFails {
             impl.update(1, null, null, null)
         }

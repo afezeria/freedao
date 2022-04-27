@@ -17,7 +17,8 @@ class ResultHelperTest : BaseTest() {
             Person(1, "a"),
             Person(2, "a"),
         )
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.resulthelper.QueryReturnSingleColumnDao>()
+        val impl =
+            getJavaDaoInstance<QueryReturnSingleColumnDao>()
         val list = impl.query()
         assert(list.size == 2)
         assertContentEquals(list, listOf(1L, 2L))
@@ -29,7 +30,8 @@ class ResultHelperTest : BaseTest() {
             Person(1, "a"),
             Person(2, "a"),
         )
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.resulthelper.QueryWithOverrideParameterMappingDao>()
+        val impl =
+            getJavaDaoInstance<QueryWithOverrideParameterMappingDao>()
         val list = impl.query()
         assert(list.size == 2)
         assertContentEquals(list.map { it.id }, listOf(1L, 2L))
@@ -41,7 +43,8 @@ class ResultHelperTest : BaseTest() {
             Person(1, "a"),
             Person(2, "a"),
         )
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.resulthelper.QueryReturnHashMapListDao>()
+        val impl =
+            getJavaDaoInstance<QueryReturnHashMapListDao>()
         val all = impl.query()
         assert(all.size == 2)
         assertContentEquals(all.map { it["id"] }, listOf(1L, 2L))
@@ -53,7 +56,8 @@ class ResultHelperTest : BaseTest() {
             Person(1, "a"),
             Person(2, "a"),
         )
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.resulthelper.QueryReturnMapListDao>()
+        val impl =
+            getJavaDaoInstance<QueryReturnMapListDao>()
         val all = impl.query()
         assert(all.size == 2)
         assertContentEquals(all.map { it["id"] }, listOf(1L, 2L))
@@ -65,7 +69,8 @@ class ResultHelperTest : BaseTest() {
             Person(1, "a"),
             Person(2, "a"),
         )
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.resulthelper.QueryReturnListWithoutTypeArgumentDao>()
+        val impl =
+            getJavaDaoInstance<QueryReturnListWithoutTypeArgumentDao>()
         val all = impl.query()
         assert(all.size == 2)
         assert(all[0] is Long)
@@ -79,7 +84,8 @@ class ResultHelperTest : BaseTest() {
             Person(2, "a"),
             Person(3, "b"),
         )
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.resulthelper.QueryReturnSetDao>()
+        val impl =
+            getJavaDaoInstance<QueryReturnSetDao>()
         val all = impl.list(null)
         assert(all is HashSet)
         assert(all.size == 2)
@@ -92,7 +98,8 @@ class ResultHelperTest : BaseTest() {
             Person(1, "a"),
             Person(2, "a"),
         )
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.resulthelper.QueryReturnCollectionDao>()
+        val impl =
+            getJavaDaoInstance<QueryReturnCollectionDao>()
         val all = impl.list(null)
         assert(all is ArrayList)
         assert(all.size == 2)
@@ -105,7 +112,8 @@ class ResultHelperTest : BaseTest() {
             Person(1, "a"),
             Person(2, "a"),
         )
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.resulthelper.QueryReturnLinkedListDao>()
+        val impl =
+            getJavaDaoInstance<QueryReturnLinkedListDao>()
         val all = impl.list(null)
         assert(all is LinkedList)
         assert(all.size == 2)

@@ -16,7 +16,7 @@ class TestNodeDaoTest : BaseTest() {
             Person(1, "a"),
             Person(2, "b"),
         )
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.xml.simple.TestNodeDao>()
+        val impl = getJavaDaoInstance<TestNodeDao>()
         val list = impl.query("person", "a")
         assert(list.size == 1)
         assertContentEquals(list.map { it["id"] }, listOf(1L))

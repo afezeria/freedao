@@ -1,13 +1,11 @@
 package test
 
 import com.github.afezeria.freedao.processor.core.processingEnvironment
-import com.google.testing.compile.Compilation
 import com.google.testing.compile.Compiler
 import com.google.testing.compile.JavaFileObjects
-import org.intellij.lang.annotations.Language
+import javax.annotation.processing.AbstractProcessor
 import javax.annotation.processing.ProcessingEnvironment
 import javax.annotation.processing.RoundEnvironment
-import javax.annotation.processing.AbstractProcessor
 import javax.lang.model.SourceVersion
 import javax.lang.model.element.TypeElement
 import javax.tools.JavaFileObject

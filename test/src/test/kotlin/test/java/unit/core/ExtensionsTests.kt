@@ -18,7 +18,7 @@ import kotlin.test.assertFailsWith
  */
 class ExtensionsTests : UnitBaseTest {
     companion object {
-        private val classNameRegex = "public (?:\\w+) (\\w+)".toRegex()
+        private val classNameRegex = "public \\w+ (\\w+)".toRegex()
         private const val MISS_METHOD_MSG =
             "Invalid ResultTypeHandler:Handler, missing method:public static Object handleResult(Object.class)"
     }
@@ -60,6 +60,7 @@ class ExtensionsTests : UnitBaseTest {
             assert(type.isResultTypeHandlerAndMatchType(CharSequence::class.type) != null)
         }
     }
+
     @Test
     fun defaultClass() {
         test {

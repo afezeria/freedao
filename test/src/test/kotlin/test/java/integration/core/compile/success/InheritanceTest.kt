@@ -9,7 +9,7 @@ import kotlin.test.assertContentEquals
  *
  * @author afezeria
  */
-class ExtendTest : BaseTest() {
+class InheritanceTest : BaseTest() {
     @Test
     fun list() {
         initData(
@@ -17,7 +17,7 @@ class ExtendTest : BaseTest() {
             Person(2, "b")
         )
 
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.SubAllDao>()
+        val impl = getJavaDaoInstance<SubAllDao>()
         val list = impl.list(null)
         assert(list.size == 2)
         assertContentEquals(list.map { it.id }, listOf(1, 2))
@@ -26,7 +26,7 @@ class ExtendTest : BaseTest() {
     @Test
     fun insert() {
         initData<Person>()
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.SubInsertDao>()
+        val impl = getJavaDaoInstance<SubInsertDao>()
         val entity = Person(name = "a")
         val updateCount = impl.insert(entity)
         assert(updateCount == 1)

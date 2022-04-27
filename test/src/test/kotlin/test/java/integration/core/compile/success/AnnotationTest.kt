@@ -20,7 +20,7 @@ class AnnotationTest : BaseTest() {
                 mapOf("id" to 2, "type" to PersonType.STUDENT.name),
             )
         )
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.QueryWithDefaultEnumTypeHandlerDao>()
+        val impl = getJavaDaoInstance<QueryWithDefaultEnumTypeHandlerDao>()
         val list = impl.selectBySearchType(PersonType.TEACHER)
         assert(list.size == 1)
         assert(list[0].type == PersonType.TEACHER)

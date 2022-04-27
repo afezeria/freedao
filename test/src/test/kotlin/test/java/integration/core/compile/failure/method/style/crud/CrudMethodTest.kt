@@ -10,7 +10,7 @@ import test.BaseTest
 class CrudMethodTest : BaseTest() {
     @Test
     fun `not specify crud entity`() {
-        compileFailure<test.java.integration.core.compile.failure.method.style.crud.NotSpecifyCrudEntityBadDao> {
+        compileFailure<NotSpecifyCrudEntityBadDao> {
             assertErrorMessageEquals("Method list requires Dao.crudEntity to be specified")
         }
     }

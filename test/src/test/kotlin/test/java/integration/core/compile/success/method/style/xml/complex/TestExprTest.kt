@@ -14,10 +14,16 @@ class TestExprTest : BaseTest() {
         initData(
             Person(1, "a", active = true),
         )
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.xml.complex.TestExpr1Dao>()
-        val h = mutableListOf(mutableMapOf("abc" to test.java.integration.core.compile.success.method.style.xml.complex.TestExpr1Dao.D().setC(mutableListOf(1, 2, 3))))
+        val impl =
+            getJavaDaoInstance<TestExpr1Dao>()
+        val h = mutableListOf(
+            mutableMapOf(
+                "abc" to TestExpr1Dao.D()
+                    .setC(mutableListOf(1, 2, 3))
+            )
+        )
         val list1 = impl.query(
-            test.java.integration.core.compile.success.method.style.xml.complex.TestExpr1Dao.A().setG(true),
+            TestExpr1Dao.A().setG(true),
             true,
             2L,
             true,
@@ -29,7 +35,7 @@ class TestExprTest : BaseTest() {
         assert(list1.size == 0)
 
         val list2 = impl.query(
-            test.java.integration.core.compile.success.method.style.xml.complex.TestExpr1Dao.A().setG(true),
+            TestExpr1Dao.A().setG(true),
             true,
             2L,
             true,

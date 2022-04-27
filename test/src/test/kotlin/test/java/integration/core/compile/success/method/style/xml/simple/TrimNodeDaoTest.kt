@@ -16,7 +16,7 @@ class TrimNodeDaoTest : BaseTest() {
             Person(1, "a", active = true),
             Person(2, "b", active = true),
         )
-        val impl = getJavaDaoInstance<test.java.integration.core.compile.success.method.style.xml.simple.TrimNodeDao>()
+        val impl = getJavaDaoInstance<TrimNodeDao>()
         val list1 = impl.query(1, 2)
         assert(list1.size == 2)
         assertContentEquals(list1.map { it.id }, listOf(1, 2))
