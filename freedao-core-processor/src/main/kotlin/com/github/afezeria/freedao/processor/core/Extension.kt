@@ -375,8 +375,8 @@ fun TypeMirror.isParameterTypeHandlerAndMatchType(
     contract {
         returns() implies (this@isParameterTypeHandlerAndMatchType is DeclaredType)
     }
-    if (this !is DeclaredType) {
-        throw HandlerException("ParameterTypeHandler must be Object")
+    if (this !is DeclaredType || this.isAbstract) {
+        throw HandlerException("ParameterTypeHandler must be Class")
     }
     if (this.isSameType(ParameterTypeHandler::class)) {
         return null
@@ -388,6 +388,7 @@ fun TypeMirror.isParameterTypeHandlerAndMatchType(
                     && it.simpleName.toString() == "handleParameter"
                     && it.parameters.size == 1
                     && it.modifiers.containsAll(listOf(Modifier.PUBLIC, Modifier.STATIC))
+                    && it.returnType !is NoType
         } as ExecutableElement?
         ?: throw HandlerException("Invalid ParameterTypeHandler:${this}, missing method:public static Object handleParameter")
     if (!type.isSameType(Any::class)) {

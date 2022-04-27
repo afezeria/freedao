@@ -1,4 +1,4 @@
-package test.java.unit.core
+package test.java.unit.core.extension
 
 import com.github.afezeria.freedao.processor.core.HandlerException
 import com.github.afezeria.freedao.processor.core.isResultTypeHandlerAndMatchType
@@ -16,7 +16,7 @@ import kotlin.test.assertFailsWith
  *
  * @author afezeria
  */
-class ExtensionsTests : UnitBaseTest {
+class IsResultTypeHandlerAndMatchTypeTests : UnitBaseTest {
     companion object {
         private val classNameRegex = "public \\w+ (\\w+)".toRegex()
         private const val MISS_METHOD_MSG =
