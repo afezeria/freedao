@@ -1,6 +1,6 @@
 package test.component;
 
-import com.github.afezeria.freedao.annotation.Dao;
+import io.github.afezeria.freedao.annotation.Dao;
 
 import java.util.List;
 

@@ -1,6 +1,6 @@
 package test.java.integration.core.compile.failure.method.style.crud.update;
 
-import com.github.afezeria.freedao.annotation.Dao;
+import io.github.afezeria.freedao.annotation.Dao;
 import org.jetbrains.annotations.NotNull;
 import test.PersonWithoutPrimaryKey;
 

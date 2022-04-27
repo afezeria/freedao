@@ -16,7 +16,7 @@ subprojects {
         google()
     }
 
-    group = "com.github.afezeria.freedao"
+    group = "io.github.afezeria.freedao"
     version = "0.0.1"
 
 }

@@ -206,7 +206,7 @@ class PersonXmlDao {
 
 #### 节点类型
 
-节点类型可以自行定义，只需要实现`com.github.afezeria.freedao.processor.core.template.XmlElement`且在编译期可以通过ServiceLoader加载
+节点类型可以自行定义，只需要实现`io.github.afezeria.freedao.processor.core.template.XmlElement`且在编译期可以通过ServiceLoader加载
 
 以下示例中的结果不考虑换行符
 

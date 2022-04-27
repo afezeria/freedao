@@ -1,0 +1,2 @@
+io.github.afezeria.freedao.classic.runtime.dialect.PostgreSQLDialect
+io.github.afezeria.freedao.classic.runtime.dialect.MysqlDialect

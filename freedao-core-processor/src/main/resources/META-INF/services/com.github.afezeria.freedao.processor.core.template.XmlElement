@@ -1,8 +1,0 @@
-com.github.afezeria.freedao.processor.core.template.element.Choose
-com.github.afezeria.freedao.processor.core.template.element.Foreach
-com.github.afezeria.freedao.processor.core.template.element.If
-com.github.afezeria.freedao.processor.core.template.element.Otherwise
-com.github.afezeria.freedao.processor.core.template.element.Set
-com.github.afezeria.freedao.processor.core.template.element.Trim
-com.github.afezeria.freedao.processor.core.template.element.When
-com.github.afezeria.freedao.processor.core.template.element.Where

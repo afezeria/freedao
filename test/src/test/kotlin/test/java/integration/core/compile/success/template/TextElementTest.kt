@@ -1,7 +1,7 @@
 package test.java.integration.core.compile.success.template
 
-import com.github.afezeria.freedao.processor.core.template.element.TextElement.Companion.namedSqlParameterRegex
-import com.github.afezeria.freedao.processor.core.template.element.TextElement.Companion.namedStringParameterRegex
+import io.github.afezeria.freedao.processor.core.template.element.TextElement.Companion.namedSqlParameterRegex
+import io.github.afezeria.freedao.processor.core.template.element.TextElement.Companion.namedStringParameterRegex
 import org.junit.Test
 import test.BaseTest
 import test.Person

@@ -1,7 +1,6 @@
 package test.java.integration.core.compile.failure;
 
-import com.github.afezeria.freedao.annotation.Dao;
-import test.InvalidParameterTypeHandlerEntity;
+import io.github.afezeria.freedao.annotation.Dao;
 import test.InvalidResultTypeHandlerEntity;
 
 /**

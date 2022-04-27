@@ -1,6 +1,6 @@
 logging:
   level:
-    com.github.afezeria.freedao: debug
+    io.github.afezeria.freedao: debug
     test: debug
     test.component: debug
 

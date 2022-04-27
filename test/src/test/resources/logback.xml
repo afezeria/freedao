@@ -1,6 +1,6 @@
 <configuration>
     <logger name="test" level="DEBUG" />
-    <logger name="com.github.afezeria" level="DEBUG" />
+    <logger name="io.github.afezeria" level="DEBUG" />
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>

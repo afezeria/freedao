@@ -1,15 +1,14 @@
 package test
 
-import com.github.afezeria.freedao.annotation.Column
-import com.github.afezeria.freedao.classic.processor.contextVar
-import com.github.afezeria.freedao.classic.runtime.context.DaoContext
-import com.github.afezeria.freedao.processor.core.MainProcessor
-import com.github.afezeria.freedao.processor.core.toSnakeCase
 import com.google.testing.compile.Compilation
 import com.google.testing.compile.CompilationSubject
 import com.google.testing.compile.Compiler
 import com.google.testing.compile.JavaFileObjects
 import com.zaxxer.hikari.HikariDataSource
+import io.github.afezeria.freedao.classic.processor.contextVar
+import io.github.afezeria.freedao.classic.runtime.context.DaoContext
+import io.github.afezeria.freedao.processor.core.MainProcessor
+import io.github.afezeria.freedao.processor.core.toSnakeCase
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameter
@@ -50,11 +49,11 @@ abstract class BaseTest {
             entities.forEach {
                 val name2value = it::class.java.declaredFields
                     .filter { f ->
-                        f.getAnnotation(Column::class.java)?.let { it.exist && (it.insert || it.update) }
+                        f.getAnnotation(io.github.afezeria.freedao.annotation.Column::class.java)?.let { it.exist && (it.insert || it.update) }
                             ?: true
                     }.mapTo(mutableListOf()) { f ->
                         f.trySetAccessible()
-                        (f.getAnnotation(Column::class.java)?.name?.takeIf { it.isNotEmpty() }
+                        (f.getAnnotation(io.github.afezeria.freedao.annotation.Column::class.java)?.name?.takeIf { it.isNotEmpty() }
                             ?: f.name.toSnakeCase()) to f.get(it)
                     }.apply {
                         if (!fillNull) {

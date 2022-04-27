@@ -1,6 +1,5 @@
 package test.java.integration.classic.compile.success
 
-import com.github.afezeria.freedao.TooManyResultException
 import org.junit.Test
 import test.BaseTest
 import test.Person
@@ -15,7 +14,7 @@ class TooManyResultCheckTest : BaseTest() {
     fun selectOneById() {
         initData(Person(1, "a"), Person(2, "a"))
         val impl = getJavaDaoInstance<TooManyResultCheckDao>()
-        assertFailsWith<TooManyResultException> {
+        assertFailsWith<io.github.afezeria.freedao.TooManyResultException> {
             impl.selectOneByName("a")
         }
     }

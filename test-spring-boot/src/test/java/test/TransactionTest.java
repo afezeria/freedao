@@ -1,6 +1,6 @@
 package test;
 
-import com.github.afezeria.freedao.classic.runtime.context.DaoContext;
+import io.github.afezeria.freedao.classic.runtime.context.DaoContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

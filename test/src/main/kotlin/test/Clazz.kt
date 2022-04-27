@@ -1,7 +1,5 @@
 package test
 
-import com.github.afezeria.freedao.annotation.Table
-
 /**
  *
  * @author afezeria
@@ -29,7 +27,7 @@ create table "clazz"
 )
     """
 )
-@Table(name = "clazz", primaryKeys = ["id", "teacher_id"])
+@io.github.afezeria.freedao.annotation.Table(name = "clazz", primaryKeys = ["id", "teacher_id"])
 open class Clazz(
     open var id: Int? = null,
     open var teacherId: Int? = null,

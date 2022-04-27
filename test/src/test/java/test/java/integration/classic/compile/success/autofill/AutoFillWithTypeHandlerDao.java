@@ -1,7 +1,7 @@
 package test.java.integration.classic.compile.success.autofill;
 
-import com.github.afezeria.freedao.annotation.Dao;
-import com.github.afezeria.freedao.annotation.XmlTemplate;
+import io.github.afezeria.freedao.annotation.Dao;
+import io.github.afezeria.freedao.annotation.XmlTemplate;
 import test.FillValueHandledByTypeHandler;
 
 import java.util.List;

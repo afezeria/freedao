@@ -1,19 +1,17 @@
 package test
 
-import com.github.afezeria.freedao.annotation.Column
-import com.github.afezeria.freedao.annotation.Table
-import com.github.afezeria.freedao.classic.runtime.AutoFill
+import io.github.afezeria.freedao.classic.runtime.AutoFill
 
 /**
  *
  * @author afezeria
  */
-@Table(
+@io.github.afezeria.freedao.annotation.Table(
     name = "person",
     primaryKeys = ["id"]
 )
 class OnePropertyEntity(
-    @Column(insert = false)
+    @io.github.afezeria.freedao.annotation.Column(insert = false)
     @AutoFill
     var id: Long? = null,
 ) {

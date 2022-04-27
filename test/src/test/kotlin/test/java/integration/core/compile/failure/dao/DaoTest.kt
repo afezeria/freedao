@@ -9,7 +9,7 @@ import test.BaseTest
  */
 class DaoTest : BaseTest() {
     private val invalidCrudEntityMsg =
-        "The class that are arguments to Dao.crudEntity must be custom java bean and annotated by com.github.afezeria.freedao.annotation.Table"
+        "The class that are arguments to Dao.crudEntity must be custom java bean and annotated by io.github.afezeria.freedao.annotation.Table"
 
     @Test
     fun `error, annotate annotation class with Dao`() {

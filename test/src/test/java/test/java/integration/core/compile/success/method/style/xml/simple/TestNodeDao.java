@@ -1,7 +1,7 @@
 package test.java.integration.core.compile.success.method.style.xml.simple;
 
-import com.github.afezeria.freedao.annotation.Dao;
-import com.github.afezeria.freedao.annotation.XmlTemplate;
+import io.github.afezeria.freedao.annotation.Dao;
+import io.github.afezeria.freedao.annotation.XmlTemplate;
 
 import java.util.List;
 import java.util.Map;

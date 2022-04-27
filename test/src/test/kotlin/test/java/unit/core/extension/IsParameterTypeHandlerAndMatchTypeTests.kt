@@ -1,9 +1,9 @@
 package test.java.unit.core.extension
 
-import com.github.afezeria.freedao.processor.core.HandlerException
-import com.github.afezeria.freedao.processor.core.isParameterTypeHandlerAndMatchType
-import com.github.afezeria.freedao.processor.core.type
 import com.google.testing.compile.JavaFileObjects
+import io.github.afezeria.freedao.processor.core.HandlerException
+import io.github.afezeria.freedao.processor.core.isParameterTypeHandlerAndMatchType
+import io.github.afezeria.freedao.processor.core.type
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import test.UnitBaseTest
@@ -83,7 +83,7 @@ class IsParameterTypeHandlerAndMatchTypeTests : UnitBaseTest {
     @Test
     fun defaultClass() {
         test {
-            val type = elementUtils.getTypeElement("com.github.afezeria.freedao.ParameterTypeHandler").asType()
+            val type = elementUtils.getTypeElement("io.github.afezeria.freedao.ParameterTypeHandler").asType()
             assert(type.isParameterTypeHandlerAndMatchType(String::class.type) == null)
         }
     }

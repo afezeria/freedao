@@ -1,7 +1,7 @@
 package test.java.integration.classic.runtime
 
-import com.github.afezeria.freedao.classic.runtime.Page
-import com.github.afezeria.freedao.classic.runtime.context.DaoHelper
+import io.github.afezeria.freedao.classic.runtime.Page
+import io.github.afezeria.freedao.classic.runtime.context.DaoHelper
 import org.junit.Before
 import org.junit.Test
 import test.BaseTest

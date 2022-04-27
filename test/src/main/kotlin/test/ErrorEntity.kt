@@ -1,9 +1,5 @@
 package test
 
-import com.github.afezeria.freedao.Long2IntegerResultHandler
-import com.github.afezeria.freedao.annotation.Column
-import com.github.afezeria.freedao.annotation.Table
-
 /**
  *
  * @author afezeria
@@ -24,14 +20,14 @@ class ExtendList : ArrayList<String>() {
 
 }
 
-@Table(name = "error")
+@io.github.afezeria.freedao.annotation.Table(name = "error")
 class InvalidParameterTypeHandlerEntity(
-    @field:Column(parameterTypeHandle = Enum2StringParameterTypeHandler::class)
+    @field:io.github.afezeria.freedao.annotation.Column(parameterTypeHandle = Enum2StringParameterTypeHandler::class)
     val id: String
 )
 
-@Table(name = "error")
+@io.github.afezeria.freedao.annotation.Table(name = "error")
 class InvalidResultTypeHandlerEntity(
-    @field:Column(resultTypeHandle = Long2IntegerResultHandler::class)
+    @field:io.github.afezeria.freedao.annotation.Column(resultTypeHandle = io.github.afezeria.freedao.Long2IntegerResultHandler::class)
     val id: String
 )

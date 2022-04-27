@@ -1,6 +1,6 @@
 package test.java.integration.classic.runtime;
 
-import com.github.afezeria.freedao.annotation.Dao;
+import io.github.afezeria.freedao.annotation.Dao;
 
 /**
  * @author afezeria

@@ -1,6 +1,5 @@
 package test.java.integration.core.compile.failure
 
-import com.github.afezeria.freedao.Long2IntegerResultHandler
 import org.junit.Test
 import test.BaseTest
 import test.Enum2StringParameterTypeHandler
@@ -21,7 +20,7 @@ class AnnotationsTest : BaseTest() {
     @Test
     fun invalidResultTypeHandler() {
         compileFailure<InvalidResultTypeHandlerBadDao> {
-            assertErrorMessageEquals("The result type handler ${Long2IntegerResultHandler::class.qualifiedName} and the type of field ${InvalidParameterTypeHandlerEntity::id.name} do not match")
+            assertErrorMessageEquals("The result type handler ${io.github.afezeria.freedao.Long2IntegerResultHandler::class.qualifiedName} and the type of field ${InvalidParameterTypeHandlerEntity::id.name} do not match")
         }
     }
 }

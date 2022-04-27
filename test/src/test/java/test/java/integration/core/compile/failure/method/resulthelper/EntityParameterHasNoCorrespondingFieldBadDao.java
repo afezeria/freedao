@@ -1,6 +1,6 @@
 package test.java.integration.core.compile.failure.method.resulthelper;
 
-import com.github.afezeria.freedao.annotation.Dao;
+import io.github.afezeria.freedao.annotation.Dao;
 import test.PersonBad1;
 
 import java.util.List;

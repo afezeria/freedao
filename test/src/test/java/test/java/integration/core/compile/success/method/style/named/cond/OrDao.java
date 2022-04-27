@@ -1,6 +1,6 @@
 package test.java.integration.core.compile.success.method.style.named.cond;
 
-import com.github.afezeria.freedao.annotation.Dao;
+import io.github.afezeria.freedao.annotation.Dao;
 import test.Person;
 
 import java.util.List;

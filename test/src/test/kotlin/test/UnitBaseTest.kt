@@ -1,8 +1,8 @@
 package test
 
-import com.github.afezeria.freedao.processor.core.processingEnvironment
 import com.google.testing.compile.Compiler
 import com.google.testing.compile.JavaFileObjects
+import io.github.afezeria.freedao.processor.core.processingEnvironment
 import javax.annotation.processing.AbstractProcessor
 import javax.annotation.processing.ProcessingEnvironment
 import javax.annotation.processing.RoundEnvironment

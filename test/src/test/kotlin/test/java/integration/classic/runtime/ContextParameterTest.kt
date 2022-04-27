@@ -1,6 +1,6 @@
 package test.java.integration.classic.runtime
 
-import com.github.afezeria.freedao.classic.runtime.context.*
+import io.github.afezeria.freedao.classic.runtime.context.*
 import org.junit.Test
 import test.BaseTest
 import test.Person

@@ -1,8 +1,8 @@
 package test.component;
 
-import com.github.afezeria.freedao.annotation.Column;
-import com.github.afezeria.freedao.annotation.Table;
-import com.github.afezeria.freedao.classic.runtime.AutoFill;
+import io.github.afezeria.freedao.annotation.Column;
+import io.github.afezeria.freedao.annotation.Table;
+import io.github.afezeria.freedao.classic.runtime.AutoFill;
 import lombok.Data;
 
 @Table(name = "t_order_item", primaryKeys = {"id"})

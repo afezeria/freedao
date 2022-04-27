@@ -1,9 +1,9 @@
 package test.java.unit.core.extension
 
-import com.github.afezeria.freedao.processor.core.HandlerException
-import com.github.afezeria.freedao.processor.core.isResultTypeHandlerAndMatchType
-import com.github.afezeria.freedao.processor.core.type
 import com.google.testing.compile.JavaFileObjects
+import io.github.afezeria.freedao.processor.core.HandlerException
+import io.github.afezeria.freedao.processor.core.isResultTypeHandlerAndMatchType
+import io.github.afezeria.freedao.processor.core.type
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import test.UnitBaseTest
@@ -64,7 +64,7 @@ class IsResultTypeHandlerAndMatchTypeTests : UnitBaseTest {
     @Test
     fun defaultClass() {
         test {
-            val type = elementUtils.getTypeElement("com.github.afezeria.freedao.ResultTypeHandler").asType()
+            val type = elementUtils.getTypeElement("io.github.afezeria.freedao.ResultTypeHandler").asType()
             assert(type.isResultTypeHandlerAndMatchType(String::class.type) == null)
         }
     }
