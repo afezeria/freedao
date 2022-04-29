@@ -1,3 +1,5 @@
+import java.time.LocalDateTime
+
 plugins {
     id("org.springframework.boot") version "2.6.2" apply false
     id("io.spring.dependency-management") version "1.0.11.RELEASE" apply false
@@ -12,25 +14,54 @@ plugins {
 val ossrhUsername: String by project
 val ossrhPassword: String by project
 
+gradle.taskGraph.beforeTask {
+    if(name == "publishMavenJavaPublicationToMavenRepository"){
+
+        println("$name start ${LocalDateTime.now()}")
+    }
+}
+gradle.taskGraph.afterTask{
+    if(name == "publishMavenJavaPublicationToMavenRepository") {
+        println("$name end ${LocalDateTime.now()}")
+    }
+}
+//gradle.taskGraph.beforeTask { task ->
+//    task.ext.setProperty("startTime", Instant.now())
+//}
+//
+//gradle.taskGraph.afterTask { Task task, TaskState state ->
+//    println task.name + " took " + Duration.between(task.ext.startTime, Instant.now()).toSeconds() + " seconds"
+//}
+
 subprojects {
 
-    apply(plugin = "java")
-    apply(plugin = "maven-publish")
-    apply(plugin = "signing")
+    apply{
+        plugin("java")
+        plugin("maven-publish")
+        plugin("signing")
+    }
+//    apply(plugin = "java")
+//    apply(plugin = "maven-publish")
+//    apply(plugin = "signing")
 
     repositories {
         mavenCentral()
         google()
     }
 
-    group = "io.github.afezeria.freedao"
-    version = "0.1.0"
+    group = "io.github.afezeria"
+    version = "0.1.1"
 
     if (project.name.startsWith("test")) {
         tasks.withType<Jar> {
             enabled = false
         }
     } else {
+        tasks.withType<Jar>() {
+            enabled = true
+            archiveClassifier.set("")
+        }
+
         val sourcesJar by tasks.creating(Jar::class) {
             archiveClassifier.set("sources")
             from(project.the<SourceSetContainer>()["main"].allSource)
@@ -38,17 +69,13 @@ subprojects {
 
         val javadocJar by tasks.creating(Jar::class) {
             archiveClassifier.set("javadoc")
-            from(tasks.withType<Javadoc>())
         }
 
-        project.artifacts {
+        artifacts {
             add("archives", sourcesJar)
             add("archives", javadocJar)
         }
 
-        configure<SigningExtension>() {
-            sign(configurations["archives"])
-        }
 
         configure<PublishingExtension>() {
             repositories {
@@ -69,6 +96,11 @@ subprojects {
                 register<MavenPublication>("mavenJava") {
                     from(components["java"])
                     artifact(sourcesJar)
+                    artifact(javadocJar)
+
+                    groupId = project.group.toString()
+                    artifactId = project.name
+                    version = project.version.toString()
 
                     pom {
                         name.set("${project.group}:${project.name}")
@@ -95,6 +127,9 @@ subprojects {
                     }
                 }
             }
+        }
+        configure<SigningExtension>() {
+            sign(the<PublishingExtension>().publications["mavenJava"])
         }
     }
 }
