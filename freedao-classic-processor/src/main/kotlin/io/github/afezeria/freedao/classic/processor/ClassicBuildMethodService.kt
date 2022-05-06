@@ -2,6 +2,8 @@ package io.github.afezeria.freedao.classic.processor
 
 import com.squareup.javapoet.CodeBlock
 import com.squareup.javapoet.FieldSpec
+import io.github.afezeria.freedao.NoRowReturnedException
+import io.github.afezeria.freedao.TooManyResultException
 import io.github.afezeria.freedao.classic.runtime.AutoFill
 import io.github.afezeria.freedao.classic.runtime.LogHelper
 import io.github.afezeria.freedao.classic.runtime.SqlSignature
@@ -313,7 +315,7 @@ class ClassicBuildMethodService : BuildMethodService {
         } else {
             addStatement(
                 "\$T $itemVar = null",
-                resultHelper.returnType,
+                resultHelper.returnType.boxed(),
             )
         }
 
@@ -324,11 +326,15 @@ class ClassicBuildMethodService : BuildMethodService {
             addStatement("$containerVar.add($itemVar)")
         } else {
             beginControlFlow("if ($resultSetVar.next())")
-            addStatement("throw new \$T()", io.github.afezeria.freedao.TooManyResultException::class.java)
+            addStatement("throw new \$T()", TooManyResultException::class.java)
             endControlFlow()
         }
         endControlFlow()
-
+        if (resultHelper.returnType is PrimitiveType) {
+            beginControlFlow("if ($itemVar == null)")
+            addStatement("throw new \$T()", NoRowReturnedException::class.java)
+            endControlFlow()
+        }
         if (returnMultipleRow) {
             addStatement("return $containerVar")
         } else {
@@ -474,8 +480,7 @@ class ClassicBuildMethodService : BuildMethodService {
                     }
                 } else {
                     //返回单列
-                    if (methodHandler.mappings.isNotEmpty() && methodHandler.mappings[0].typeHandler != null
-                    ) {
+                    if (methodHandler.mappings.isNotEmpty() && methodHandler.mappings[0].typeHandler != null) {
                         val targetType = methodHandler.mappings[0].targetType ?: Any::class.type
                         //有类型转换
                         addStatement(

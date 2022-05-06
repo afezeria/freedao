@@ -1,7 +1,9 @@
 package io.github.afezeria.freedao.processor.core.method
 
+import io.github.afezeria.freedao.Long2IntegerResultHandler
 import io.github.afezeria.freedao.processor.core.*
 import javax.lang.model.element.ExecutableElement
+import javax.lang.model.type.TypeKind
 
 
 abstract class CrudMethod private constructor(element: ExecutableElement, daoHandler: DaoHandler) :
@@ -28,7 +30,7 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
                     <if test='${parameterName}.${it.name} != null'>
                     and ${it.column.name.sqlQuote()} = ${it.sqlParameterStr(parameterName)}
                     </if>
-                """.trimIndent()
+            """.trimIndent()
         }
     }
 
@@ -53,21 +55,27 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
 
     class Count(element: ExecutableElement, daoHandler: DaoHandler) : CrudMethod(element, daoHandler) {
         init {
-            if (!resultHelper.returnType.isSameType(Int::class)
-                && !resultHelper.returnType.isSameType(Long::class)
-            ) {
-                throw HandlerException("The return type of count method must be Integer or Long")
+            resultHelper.returnType.apply {
+                if (!isSameType(Int::class)
+                    && !isSameType(typeUtils.getPrimitiveType(TypeKind.INT))
+                    && !isSameType(Long::class)
+                    && !isSameType(typeUtils.getPrimitiveType(TypeKind.LONG))
+                ) {
+                    throw HandlerException("The return type of count method must be Integer/int or Long/long")
+                }
             }
             mappings +=
-                io.github.afezeria.freedao.processor.core.MappingData(
+                MappingData(
                     source = "_cot",
                     target = "",
-                    typeHandler = io.github.afezeria.freedao.Long2IntegerResultHandler::class.type.takeIf {
-                        resultHelper.returnType.isSameType(
-                            Int::class
-                        )
+                    typeHandler = Long2IntegerResultHandler::class.type.takeIf {
+                        resultHelper.returnType.isSameType(Int::class)
+                                || resultHelper.returnType.isSameType(typeUtils.getPrimitiveType(TypeKind.INT))
                     },
-                    targetType = Int::class.type.takeIf { resultHelper.returnType.isSameType(Int::class) },
+                    targetType = Int::class.type.takeIf {
+                        resultHelper.returnType.isSameType(Int::class)
+                                || resultHelper.returnType.isSameType(typeUtils.getPrimitiveType(TypeKind.INT))
+                    },
                     constructorParameterIndex = -1
                 )
         }

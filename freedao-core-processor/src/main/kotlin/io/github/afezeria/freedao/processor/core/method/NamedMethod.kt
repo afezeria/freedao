@@ -1,9 +1,11 @@
 package io.github.afezeria.freedao.processor.core.method
 
+import io.github.afezeria.freedao.Long2IntegerResultHandler
 import io.github.afezeria.freedao.processor.core.*
 import java.util.*
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.VariableElement
+import javax.lang.model.type.TypeKind
 import javax.lang.model.type.TypeMirror
 import kotlin.reflect.full.primaryConstructor
 
@@ -293,19 +295,26 @@ abstract class NamedMethod private constructor(
                 throw HandlerException("count method cannot contain a sort")
             }
             resultHelper.returnType.apply {
-                if (!isSameType(Long::class.type) && !isSameType(Int::class.type)) {
-                    throw HandlerException("The return type of count method must be Integer or Long")
+                if (!isSameType(Int::class)
+                    && !isSameType(typeUtils.getPrimitiveType(TypeKind.INT))
+                    && !isSameType(Long::class)
+                    && !isSameType(typeUtils.getPrimitiveType(TypeKind.LONG))
+                ) {
+                    throw HandlerException("The return type of count method must be Integer/int or Long/long")
                 }
             }
-            mappings += io.github.afezeria.freedao.processor.core.MappingData(
+
+            mappings += MappingData(
                 source = "_cot",
                 target = "",
-                typeHandler = io.github.afezeria.freedao.Long2IntegerResultHandler::class.type.takeIf {
-                    resultHelper.returnType.isSameType(
-                        Int::class
-                    )
+                typeHandler = Long2IntegerResultHandler::class.type.takeIf {
+                    resultHelper.returnType.isSameType(Int::class)
+                            || resultHelper.returnType.isSameType(typeUtils.getPrimitiveType(TypeKind.INT))
                 },
-                targetType = Int::class.type.takeIf { resultHelper.returnType.isSameType(Int::class) },
+                targetType = Int::class.type.takeIf {
+                    resultHelper.returnType.isSameType(Int::class)
+                            || resultHelper.returnType.isSameType(typeUtils.getPrimitiveType(TypeKind.INT))
+                },
                 constructorParameterIndex = -1
             )
         }

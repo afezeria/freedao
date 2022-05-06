@@ -1,12 +1,12 @@
 package io.github.afezeria.freedao.classic.processor
 
-import io.github.afezeria.freedao.processor.core.DaoHandler
-import io.github.afezeria.freedao.processor.core.HandlerException
-import io.github.afezeria.freedao.processor.core.boxed
-import io.github.afezeria.freedao.processor.core.isSameType
+import io.github.afezeria.freedao.Long2IntegerResultHandler
+import io.github.afezeria.freedao.StatementType
+import io.github.afezeria.freedao.processor.core.*
 import io.github.afezeria.freedao.processor.core.method.MethodHandler
 import io.github.afezeria.freedao.processor.core.spi.BuildService
 import javax.lang.model.type.PrimitiveType
+import javax.lang.model.type.TypeKind
 
 /**
  *
@@ -17,19 +17,33 @@ class ClassicBuildService : BuildService {
     }
 
     override fun beforeBuildMethod(methodHandler: MethodHandler) {
-        methodHandler.apply {
-            when (statementType) {
-                io.github.afezeria.freedao.StatementType.SELECT -> {
-                    if (resultHelper.returnType is PrimitiveType) {
-                        throw HandlerException("select method cannot return primitive type")
+        val returnType = methodHandler.resultHelper.returnType
+        when (methodHandler.statementType) {
+            StatementType.SELECT -> {
+                if (returnType is PrimitiveType
+                ) {
+                    if (!returnType.isSameType(typeUtils.getPrimitiveType(TypeKind.INT))
+                        && !returnType.isSameType(typeUtils.getPrimitiveType(TypeKind.LONG))
+                    ) {
+                        throw HandlerException("select method cannot return primitive type other than int and long")
+                    }
+                    if (returnType.isSameType(typeUtils.getPrimitiveType(TypeKind.INT)) && methodHandler.mappings.isEmpty()) {
+                        methodHandler.mappings.add(
+                            MappingData(
+                                source = "",
+                                target = "",
+                                typeHandler = Long2IntegerResultHandler::class.type,
+                                targetType = Int::class.type,
+                            )
+                        )
                     }
                 }
-                io.github.afezeria.freedao.StatementType.INSERT, io.github.afezeria.freedao.StatementType.UPDATE, io.github.afezeria.freedao.StatementType.DELETE -> {
-                    if (!resultHelper.returnType.boxed().isSameType(Int::class)
-                        && !resultHelper.returnType.boxed().isSameType(Long::class)
-                    ) {
-                        throw HandlerException("The return type of insert/update/delete method must be Integer or Long")
-                    }
+            }
+            StatementType.INSERT, StatementType.UPDATE, StatementType.DELETE -> {
+                if (!returnType.boxed().isSameType(Int::class)
+                    && !returnType.boxed().isSameType(Long::class)
+                ) {
+                    throw HandlerException("The return type of insert/update/delete method must be Integer or Long")
                 }
             }
         }

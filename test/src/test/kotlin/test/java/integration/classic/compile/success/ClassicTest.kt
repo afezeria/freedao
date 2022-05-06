@@ -1,10 +1,13 @@
 package test.java.integration.classic.compile.success
 
+import io.github.afezeria.freedao.NoRowReturnedException
 import org.junit.Test
 import test.BaseTest
 import test.Person
+import test.java.integration.classic.runtime.NoRowReturnedDao
 import java.time.LocalDateTime
 import kotlin.test.assertContentEquals
+import kotlin.test.assertFailsWith
 
 /**
  *
@@ -91,6 +94,14 @@ class ClassicTest : BaseTest() {
             assert(alias == "hello")
             assert(age == 1)
         }
+    }
 
+    @Test
+    fun `return type is primitive and sql does not return row`() {
+        initData<Person>()
+        val impl = getJavaDaoInstance<NoRowReturnedDao>()
+        assertFailsWith<NoRowReturnedException> {
+            impl.query(1)
+        }
     }
 }
