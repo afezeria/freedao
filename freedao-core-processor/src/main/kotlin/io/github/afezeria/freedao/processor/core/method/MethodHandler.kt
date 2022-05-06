@@ -4,6 +4,7 @@ import com.squareup.javapoet.AnnotationSpec
 import com.squareup.javapoet.CodeBlock
 import com.squareup.javapoet.MethodSpec
 import com.squareup.javapoet.ParameterSpec
+import io.github.afezeria.freedao.StatementType
 import io.github.afezeria.freedao.processor.core.*
 import io.github.afezeria.freedao.processor.core.spi.BuildMethodService
 import io.github.afezeria.freedao.processor.core.spi.BuildService
@@ -47,7 +48,7 @@ abstract class MethodHandler protected constructor(
     var returnUpdateCount = false
 
     var resultHelper: ResultHelper = ResultHelper(daoHandler, element)
-    val mappings = io.github.afezeria.freedao.processor.core.ResultMappingsAnn.getMappings(element, resultHelper)
+    val mappings = ResultMappingsAnn.getMappings(element, resultHelper)
 
     val xmlDocument: Document by lazy {
         PositionalXMLReader.readXML(ByteArrayInputStream(getTemplate().toByteArray()))
@@ -57,9 +58,9 @@ abstract class MethodHandler protected constructor(
         RootElement(this).buildCodeBlock()
     }
 
-    val statementType: io.github.afezeria.freedao.StatementType by lazy {
+    val statementType: StatementType by lazy {
         try {
-            io.github.afezeria.freedao.StatementType.valueOf(xmlDocument.firstChild.nodeName.uppercase())
+            StatementType.valueOf(xmlDocument.firstChild.nodeName.uppercase())
         } catch (e: Exception) {
             throw HandlerException("unknown statement type")
         }

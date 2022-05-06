@@ -31,7 +31,6 @@ class AutoFillStruct private constructor(
     val isCollection: Boolean = collectionType != null
     val autoFillProperties: List<BeanProperty> = type.asElement().enclosedElements.filter {
         it.hasSetter() && it.getAnnotation(AutoFill::class.java) != null
-//            ?.takeIf { !it.before && it.mirroredType { generator }.isSameType(ValueGenerator::class) } != null
     }.map {
         BeanProperty(it as VariableElement)
     }
@@ -76,9 +75,6 @@ class AutoFillStruct private constructor(
                             checkGenerator(autoFillAnn.mirroredType { generator })
                         }
                     }
-//                    if (element is VariableElement && element.getAnnotation(AutoFill::class.java) != null && !element.hasSetter()) {
-//                        throw HandlerException("AutoFill property must have setter method")
-//                    }
                 }
             }
         }

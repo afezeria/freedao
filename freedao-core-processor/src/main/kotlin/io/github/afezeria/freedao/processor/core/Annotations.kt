@@ -1,5 +1,8 @@
 package io.github.afezeria.freedao.processor.core
 
+import io.github.afezeria.freedao.DefaultEnumTypeHandler
+import io.github.afezeria.freedao.annotation.Column
+import io.github.afezeria.freedao.annotation.ResultMappings
 import io.github.afezeria.freedao.processor.core.method.ResultHelper
 import javax.lang.model.element.ElementKind
 import javax.lang.model.element.ExecutableElement
@@ -20,7 +23,7 @@ class ColumnAnn(element: VariableElement) {
     val parameterTypeHandle: DeclaredType?
 
     init {
-        val column = element.getAnnotation(io.github.afezeria.freedao.annotation.Column::class.java)
+        val column = element.getAnnotation(Column::class.java)
         val fieldType = element.asType()
         column.let {
             name = it?.name?.takeIf { it.isNotBlank() } ?: element.simpleName.toString().toSnakeCase()
@@ -31,27 +34,33 @@ class ColumnAnn(element: VariableElement) {
                 it?.mirroredType { resultTypeHandle }
                     ?.isResultTypeHandlerAndMatchType(element.asType()) {
                         "The result type handler $this and the type of field ${element.simpleName} do not match"
-                    } ?: io.github.afezeria.freedao.DefaultEnumTypeHandler::class.type.takeIf { fieldType.isAssignable(Enum::class.type) }
+                    } ?: DefaultEnumTypeHandler::class.type.takeIf {
+                    fieldType.isAssignable(
+                        Enum::class.type
+                    )
+                }
             parameterTypeHandle = it?.mirroredType { parameterTypeHandle }
                 ?.isParameterTypeHandlerAndMatchType(element.asType()) {
                     "The parameter type handler $this and the type of field ${element.simpleName} do not match"
-                }?.first ?: io.github.afezeria.freedao.DefaultEnumTypeHandler::class.type.takeIf { fieldType.isAssignable(Enum::class.type) }
+                }?.first
+                ?: DefaultEnumTypeHandler::class.type.takeIf { fieldType.isAssignable(Enum::class.type) }
         }
     }
 }
 
 object ResultMappingsAnn {
-    fun getMappings(methodElement: ExecutableElement, resultHelper: ResultHelper): MutableList<io.github.afezeria.freedao.processor.core.MappingData> {
-        val resultMappings = methodElement.getAnnotation(io.github.afezeria.freedao.annotation.ResultMappings::class.java)?.apply {
-            if (onlyCustomMapping && value.isEmpty()) {
-                throw io.github.afezeria.freedao.processor.core.HandlerException("Invalid result mapping, value cannot be empty when onlyCustomMapping is true")
+    fun getMappings(methodElement: ExecutableElement, resultHelper: ResultHelper): MutableList<MappingData> {
+        val resultMappings =
+            methodElement.getAnnotation(ResultMappings::class.java)?.apply {
+                if (onlyCustomMapping && value.isEmpty()) {
+                    throw HandlerException("Invalid result mapping, value cannot be empty when onlyCustomMapping is true")
+                }
             }
-        }
         val itemType = resultHelper.itemType
-        var mappings: MutableList<io.github.afezeria.freedao.processor.core.MappingData> = mutableListOf()
+        var mappings: MutableList<MappingData> = mutableListOf()
         when {
             itemType.isCustomJavaBean() -> {
-                val model = io.github.afezeria.freedao.processor.core.BeanObjectModel(itemType)
+                val model = BeanObjectModel(itemType)
                 //映射结果为java bean
                 //处理构造器参数映射
                 val constructor = (
@@ -60,7 +69,7 @@ object ResultMappingsAnn {
                                 Modifier.PUBLIC
                             )
                         }.minByOrNull { (it as ExecutableElement).parameters.size }
-                            ?: throw io.github.afezeria.freedao.processor.core.HandlerException("Return type $itemType must have a public constructor")
+                            ?: throw HandlerException("Return type $itemType must have a public constructor")
                         ) as ExecutableElement
                 constructor.parameters.forEachIndexed { index, param ->
 
@@ -68,15 +77,15 @@ object ResultMappingsAnn {
                         model.properties.find {
                             it.name == param.simpleName.toString() && it.type.boxed().isSameType(param.asType().boxed())
                         }
-                            ?: throw io.github.afezeria.freedao.processor.core.HandlerException("Constructor parameter name must be the same as field name:${itemType}.${param.simpleName}")
-                    mappings += io.github.afezeria.freedao.processor.core.MappingData(prop.element, index)
+                            ?: throw HandlerException("Constructor parameter name must be the same as field name:${itemType}.${param.simpleName}")
+                    mappings += MappingData(prop.element, index)
                 }
 
                 //处理属性映射
                 model.properties
                     .filter { it.hasSetter && mappings.none { m -> m.target == it.name } }
                     .forEach {
-                        mappings += io.github.afezeria.freedao.processor.core.MappingData(
+                        mappings += MappingData(
                             source = it.column.name,
                             target = it.name,
                             typeHandler = it.column.resultTypeHandle,
@@ -91,7 +100,7 @@ object ResultMappingsAnn {
                         //检查mapping注解的值是否合法
                         val prop =
                             model.properties.find { p -> p.name == it.target }
-                                ?: throw io.github.afezeria.freedao.processor.core.HandlerException("${itemType.typeName} is missing the ${it.target} field")
+                                ?: throw HandlerException("${itemType.typeName} is missing the ${it.target} field")
                         val handlerType = it.mirroredType { typeHandler }
                             .isResultTypeHandlerAndMatchType(prop.type) {
                                 "$this cannot handle ${prop.name}:${prop.type} field"
@@ -102,7 +111,7 @@ object ResultMappingsAnn {
                             .takeIf { it != -1 }
                             ?.let { idx ->
                                 val autoMapping = mappings.removeAt(idx)
-                                io.github.afezeria.freedao.processor.core.MappingData(
+                                MappingData(
                                     source = it.source,
                                     target = it.target,
                                     typeHandler = handlerType,
@@ -132,7 +141,7 @@ object ResultMappingsAnn {
                                 "$this does not match $t type"
                             }
 
-                        mappings += io.github.afezeria.freedao.processor.core.MappingData(
+                        mappings += MappingData(
                             source = it.source,
                             target = it.target,
                             typeHandler = handlerType
@@ -166,9 +175,9 @@ data class MappingData(
         operator fun invoke(
             element: VariableElement,
             constructorParameterIndex: Int = -1,
-        ): io.github.afezeria.freedao.processor.core.MappingData {
-            val columnAnn = io.github.afezeria.freedao.processor.core.ColumnAnn(element)
-            return io.github.afezeria.freedao.processor.core.MappingData(
+        ): MappingData {
+            val columnAnn = ColumnAnn(element)
+            return MappingData(
                 source = columnAnn.name,
                 target = element.simpleName.toString(),
                 typeHandler = columnAnn.resultTypeHandle,

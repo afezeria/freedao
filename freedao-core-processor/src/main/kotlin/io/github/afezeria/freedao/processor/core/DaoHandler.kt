@@ -3,6 +3,7 @@ package io.github.afezeria.freedao.processor.core
 import com.squareup.javapoet.AnnotationSpec
 import com.squareup.javapoet.JavaFile
 import com.squareup.javapoet.TypeSpec
+import io.github.afezeria.freedao.annotation.Dao
 import io.github.afezeria.freedao.processor.core.method.MethodHandler
 import io.github.afezeria.freedao.processor.core.spi.BuildDaoService
 import java.util.*
@@ -27,7 +28,7 @@ class DaoHandler(val element: TypeElement) {
         addModifiers(Modifier.PUBLIC)
         addAnnotations(
             element.annotationMirrors
-                .filter { !it.annotationType.isSameType(io.github.afezeria.freedao.annotation.Dao::class) }
+                .filter { !it.annotationType.isSameType(Dao::class) }
                 .map {
                     AnnotationSpec.get(it)
                 }
@@ -42,7 +43,7 @@ class DaoHandler(val element: TypeElement) {
             throw HandlerException("Dao must be top level interface")
         }
         crudEntity =
-            element.getAnnotation(io.github.afezeria.freedao.annotation.Dao::class.java)
+            element.getAnnotation(Dao::class.java)
                 .mirroredType { crudEntity }
                 .takeIf { !it.isSameType(Any::class) }
                 ?.let { EntityObjectModel(it) }
