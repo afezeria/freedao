@@ -1,5 +1,6 @@
 package io.github.afezeria.freedao.processor.core
 
+import io.github.afezeria.freedao.annotation.Dao
 import java.io.PrintWriter
 import java.io.StringWriter
 import javax.annotation.processing.AbstractProcessor
@@ -30,24 +31,31 @@ class MainProcessor : AbstractProcessor() {
     }
 
     override fun getSupportedAnnotationTypes(): MutableSet<String> {
-        return mutableSetOf(io.github.afezeria.freedao.annotation.Dao::class.qualifiedName!!)
+        return mutableSetOf(Dao::class.qualifiedName!!)
     }
+
+    private val elementCache = mutableSetOf<Element>()
 
     override fun process(
         annotations: MutableSet<out TypeElement>?,
         roundEnv: RoundEnvironment,
     ): Boolean {
         if (isLombokInvoked) {
-            roundEnv.getElementsAnnotatedWith(io.github.afezeria.freedao.annotation.Dao::class.java).takeIf { it.isNotEmpty() }
-                ?.let {
-                    val time = measureTimeMillis {
-                        it.forEach {
-                            processElement(it)
-                        }
+            val elements = roundEnv.getElementsAnnotatedWith(Dao::class.java)
+            if (elements.isNotEmpty() || elementCache.isNotEmpty()) {
+                val time = measureTimeMillis {
+                    elements.forEach {
+                        processElement(it)
                     }
-//                    processingEnvironment.messager.printMessage(Diagnostic.Kind.NOTE, "freedao processing time:${time}ms")
-                    println("========= freedao:${time}ms")
+                    elementCache.removeAll {
+                        processElement(it)
+                        true
+                    }
                 }
+                println("========= freedao execution time:${time}ms")
+            }
+        } else {
+            elementCache.addAll(roundEnv.getElementsAnnotatedWith(Dao::class.java))
         }
         return false
     }
@@ -57,6 +65,7 @@ class MainProcessor : AbstractProcessor() {
         processingEnvironment = processingEnv
         GlobalState.init()
     }
+
 
     private fun processElement(element: Element) {
         try {
