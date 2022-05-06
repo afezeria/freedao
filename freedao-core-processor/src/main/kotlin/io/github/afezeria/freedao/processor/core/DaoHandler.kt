@@ -29,6 +29,7 @@ class DaoHandler(val element: TypeElement) {
         addAnnotations(
             element.annotationMirrors
                 .filter { !it.annotationType.isSameType(Dao::class) }
+                .filter { !it.annotationType.isSameType(Metadata::class) }
                 .map {
                     AnnotationSpec.get(it)
                 }
