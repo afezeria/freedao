@@ -4,6 +4,8 @@ import com.google.testing.compile.Compilation
 import com.google.testing.compile.CompilationSubject
 import com.google.testing.compile.Compiler
 import com.google.testing.compile.JavaFileObjects
+import com.tschuchort.compiletesting.KotlinCompilation
+import com.tschuchort.compiletesting.SourceFile
 import com.zaxxer.hikari.HikariDataSource
 import io.github.afezeria.freedao.classic.processor.contextVar
 import io.github.afezeria.freedao.classic.runtime.context.DaoContext
@@ -15,6 +17,7 @@ import org.junit.runners.Parameterized.Parameter
 import org.junit.runners.Parameterized.Parameters
 import org.testcontainers.containers.MySQLContainer
 import org.testcontainers.containers.PostgreSQLContainer
+import java.io.File
 import java.nio.file.Path
 import javax.sql.DataSource
 import javax.tools.JavaFileObject
@@ -49,7 +52,8 @@ abstract class BaseTest {
             entities.forEach {
                 val name2value = it::class.java.declaredFields
                     .filter { f ->
-                        f.getAnnotation(io.github.afezeria.freedao.annotation.Column::class.java)?.let { it.exist && (it.insert || it.update) }
+                        f.getAnnotation(io.github.afezeria.freedao.annotation.Column::class.java)
+                            ?.let { it.exist && (it.insert || it.update) }
                             ?: true
                     }.mapTo(mutableListOf()) { f ->
                         f.trySetAccessible()
@@ -95,7 +99,68 @@ abstract class BaseTest {
     }
 
     inline fun <reified T : Any> getJavaDaoInstance(): T {
-        return getImplInstance(T::class, Path("./src/test/java/" + T::class.qualifiedName?.replace('.', '/') + ".java"))
+        return getJavaDaoInstance(T::class)
+    }
+
+    fun <T : Any> getJavaDaoInstance(clazz: KClass<T>): T {
+        val compilation = compileJava(Path("./src/test/java/" + clazz.qualifiedName?.replace('.', '/') + ".java"))
+        CompilationSubject.assertThat(compilation).succeeded()
+
+        compilation.generatedSourceFiles().forEach {
+            if (it.kind == JavaFileObject.Kind.SOURCE) {
+
+                println("${it.name} ====================")
+                println(it.openReader(true).readText())
+            }
+        }
+
+        val className = clazz.simpleName + "Impl"
+        val readBytes = compilation.generatedFiles()
+            .find {
+                it.name.contains(className) && it.kind == CLASS
+            }!!.openInputStream()
+            .readBytes()
+        @Suppress("UNCHECKED_CAST")
+        return loadClass(readBytes) as T
+    }
+
+    inline fun <reified T : Any> getKotlinDaoInstance(): T {
+        return getKotlinDaoInstance(T::class)
+    }
+
+    fun <T : Any> getKotlinDaoInstance(clazz: KClass<T>): T {
+
+        val compilation = KotlinCompilation().apply {
+            this.sources = listOf(
+                SourceFile.fromPath(File("./src/test/kotlin/" + clazz.qualifiedName?.replace('.', '/') + ".kt")),
+            )
+            annotationProcessors = listOf(MainProcessor())
+            inheritClassPath = true
+        }
+        val result = compilation.compile()
+        assert(result.exitCode == KotlinCompilation.ExitCode.OK)
+        result.generatedFiles.forEach {
+            if (it.extension == "java" && it.nameWithoutExtension == clazz.simpleName + "Impl") {
+                println(it.name + "====================")
+                println(it.readText())
+            }
+        }
+
+        val bytes = result.generatedFiles.find {
+            it.extension == "class" && it.nameWithoutExtension == clazz.simpleName + "Impl"
+        }!!.readBytes()
+        @Suppress("UNCHECKED_CAST")
+        return loadClass(bytes) as T
+    }
+
+    fun loadClass(bytes: ByteArray): Any {
+        val implClass = ByteClassLoader().loadClass(bytes)
+        val instance = implClass.constructors.first().newInstance()
+        val declaredField = implClass.getDeclaredField(contextVar).apply {
+            isAccessible = true
+        }
+        declaredField.set(instance, env.contextWrapper)
+        return instance
     }
 
     inline fun <reified T : Any> compileFailure(block: Compilation.() -> Unit) {
