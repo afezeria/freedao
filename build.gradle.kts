@@ -1,48 +1,27 @@
-import java.time.LocalDateTime
-
 plugins {
     id("org.springframework.boot") version "2.6.2" apply false
     id("io.spring.dependency-management") version "1.0.11.RELEASE" apply false
-    kotlin("plugin.spring") version "1.6.10" apply false
+    kotlin("plugin.spring") version "1.6.20" apply false
     kotlin("jvm") version "1.6.20" apply false
     kotlin("kapt") version "1.6.20" apply false
     kotlin("plugin.lombok") version "1.6.20" apply false
+    kotlin("plugin.allopen") version "1.6.20" apply false
     id("io.freefair.lombok") version "6.4.2" apply false
     id("com.bnorm.power.kotlin-power-assert") version "0.11.0" apply false
+    id("io.github.afezeria.serial-task") version "1.0"
+
 }
 
 val ossrhUsername: String by project
 val ossrhPassword: String by project
 
-gradle.taskGraph.beforeTask {
-    if(name == "publishMavenJavaPublicationToMavenRepository"){
-
-        println("$name start ${LocalDateTime.now()}")
-    }
-}
-gradle.taskGraph.afterTask{
-    if(name == "publishMavenJavaPublicationToMavenRepository") {
-        println("$name end ${LocalDateTime.now()}")
-    }
-}
-//gradle.taskGraph.beforeTask { task ->
-//    task.ext.setProperty("startTime", Instant.now())
-//}
-//
-//gradle.taskGraph.afterTask { Task task, TaskState state ->
-//    println task.name + " took " + Duration.between(task.ext.startTime, Instant.now()).toSeconds() + " seconds"
-//}
-
 subprojects {
 
-    apply{
+    apply {
         plugin("java")
         plugin("maven-publish")
         plugin("signing")
     }
-//    apply(plugin = "java")
-//    apply(plugin = "maven-publish")
-//    apply(plugin = "signing")
 
     repositories {
         mavenCentral()
@@ -50,7 +29,8 @@ subprojects {
     }
 
     group = "io.github.afezeria"
-    version = "0.1.1"
+    version = "0.2.0"
+//    version = "${version}SNAPSHOT"
 
     if (project.name.startsWith("test")) {
         tasks.withType<Jar> {
@@ -75,7 +55,6 @@ subprojects {
             add("archives", sourcesJar)
             add("archives", javadocJar)
         }
-
 
         configure<PublishingExtension>() {
             repositories {
@@ -132,4 +111,8 @@ subprojects {
             sign(the<PublishingExtension>().publications["mavenJava"])
         }
     }
+}
+
+serialTask {
+    set("publishMavenJavaPublicationToMavenRepository")
 }
