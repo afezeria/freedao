@@ -1,7 +1,7 @@
 package io.github.afezeria.freedao.spring.runtime;
 
 import io.github.afezeria.freedao.classic.runtime.DS;
-import io.github.afezeria.freedao.classic.runtime.context.DaoHelper;
+import io.github.afezeria.freedao.classic.runtime.SqlHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -33,7 +33,7 @@ public class FreedaoDataSourceInterceptor {
         if (annotation == null) {
             return joinPoint.proceed();
         }
-        return DaoHelper.ds(annotation, () -> {
+        return SqlHelper.ds(annotation, () -> {
             try {
                 return joinPoint.proceed();
             } catch (Throwable e) {

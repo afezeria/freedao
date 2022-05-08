@@ -1,6 +1,6 @@
 package test;
 
-import io.github.afezeria.freedao.classic.runtime.context.DaoHelper;
+import io.github.afezeria.freedao.classic.runtime.SqlHelper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,10 +40,10 @@ public class MultipleDataSourceTests {
 
     @Test
     public void switchDataSourceByCode() {
-        assert DaoHelper.ds(Db.MASTER_1, () -> {
+        assert SqlHelper.ds(Db.MASTER_1, () -> {
             return dao.selectOneById(1);
         }) != null;
-        assert DaoHelper.ds(Db.MASTER_2, () -> {
+        assert SqlHelper.ds(Db.MASTER_2, () -> {
             return template.queryForList("select * from " + Db.Table.TEMP_TEST_TABLE).size();
         }) == 3;
     }

@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class PageQueryContext extends DaoContext {
 
     private static final Logger logger = LoggerFactory.getLogger(PageQueryContext.class);
-    protected static ThreadLocal<Page<?>> local = new ThreadLocal<>();
+    public static ThreadLocal<Page<?>> local = new ThreadLocal<>();
 
     private static final Map<SqlSignature<?, ?>, Boolean> disableParseSqlFlag = new ConcurrentHashMap<>();
 

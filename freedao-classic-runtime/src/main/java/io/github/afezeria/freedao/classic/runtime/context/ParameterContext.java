@@ -20,7 +20,7 @@ public class ParameterContext extends DaoContext {
     }
 
     private final Map<String, Object> initMap = new HashMap<>();
-    protected static ThreadLocal<ParameterMap> local;
+    public static ThreadLocal<ParameterMap> local;
 
     @Override
     public Object[] buildSql(SqlSignature<?, ?> signature, Object[] args, Function<Object[], Object[]> buildSqlClosure) {
@@ -33,7 +33,7 @@ public class ParameterContext extends DaoContext {
         return getDelegate().buildSql(signature, arr, buildSqlClosure);
     }
 
-    static class ParameterMap extends HashMap<String, Object> {
+    public static class ParameterMap extends HashMap<String, Object> {
 
         private final Map<String, Object> init;
 

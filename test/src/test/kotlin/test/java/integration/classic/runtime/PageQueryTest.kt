@@ -1,7 +1,7 @@
 package test.java.integration.classic.runtime
 
 import io.github.afezeria.freedao.classic.runtime.Page
-import io.github.afezeria.freedao.classic.runtime.context.DaoHelper
+import io.github.afezeria.freedao.classic.runtime.SqlHelper
 import org.junit.Before
 import org.junit.Test
 import test.BaseTest
@@ -35,7 +35,7 @@ class PageQueryTest : BaseTest() {
 
     @Test
     fun simple() {
-        val page = DaoHelper.page(2, 3) {
+        val page = SqlHelper.page(2, 3) {
             impl.selectByOrderByIdAsc()
         }
         assert(page.total == 8L)
@@ -44,7 +44,7 @@ class PageQueryTest : BaseTest() {
 
     @Test
     fun skipCount() {
-        val page = DaoHelper.page(
+        val page = SqlHelper.page(
             Page.of(2, 3)
                 .setSkipCount(true)
         ) {
@@ -56,7 +56,7 @@ class PageQueryTest : BaseTest() {
 
     @Test
     fun overwriteOriginalSort() {
-        val page = DaoHelper.page(
+        val page = SqlHelper.page(
             Page.of(2, 3)
                 .setOrderBy("name desc")
         ) {
@@ -68,7 +68,7 @@ class PageQueryTest : BaseTest() {
 
     @Test
     fun overwriteOriginalLimitAndOffset() {
-        val page = DaoHelper.page(
+        val page = SqlHelper.page(
             Page.of(2, 3)
                 .setOrderBy("name desc")
         ) {
@@ -80,7 +80,7 @@ class PageQueryTest : BaseTest() {
 
     @Test
     fun orderByOnly() {
-        val page = DaoHelper.page(
+        val page = SqlHelper.page(
             Page.of("name asc")
         ) {
             impl.selectByXml(0, null, 1, 1)
@@ -107,7 +107,7 @@ class PageQueryTest : BaseTest() {
     @Test
     fun `failure when page closure has multiple query`() {
         assertFailsWith<IllegalStateException>("the closure of DaoHelper.page can only contain one query") {
-            DaoHelper.page(
+            SqlHelper.page(
                 Page.of("name asc")
             ) {
                 impl.list(null)
@@ -119,7 +119,7 @@ class PageQueryTest : BaseTest() {
     @Test
     fun `failure when page closure contains a non-query method`() {
         assertFailsWith<IllegalArgumentException>("INSERT statement does not support paging") {
-            DaoHelper.page(
+            SqlHelper.page(
                 Page.of(1, 1)
             ) {
                 impl.insert(Person())
@@ -131,7 +131,7 @@ class PageQueryTest : BaseTest() {
     @Test
     fun `failure when page closure contains a single row query`() {
         assertFailsWith<IllegalArgumentException>("single row query does not support paging") {
-            DaoHelper.page(
+            SqlHelper.page(
                 Page.of(1, 1)
             ) {
                 impl.selectOneById(1)

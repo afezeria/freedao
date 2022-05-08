@@ -1,8 +1,7 @@
-package io.github.afezeria.freedao.classic.runtime.context;
+package io.github.afezeria.freedao.classic.runtime;
 
-import io.github.afezeria.freedao.classic.runtime.DS;
-import io.github.afezeria.freedao.classic.runtime.DataSourceContextHolder;
-import io.github.afezeria.freedao.classic.runtime.Page;
+import io.github.afezeria.freedao.classic.runtime.context.PageQueryContext;
+import io.github.afezeria.freedao.classic.runtime.context.ParameterContext;
 
 import java.lang.annotation.Annotation;
 import java.util.Collection;
@@ -13,7 +12,7 @@ import java.util.function.Supplier;
 /**
  * @author afezeria
  */
-public class DaoHelper {
+public class SqlHelper {
 
     /**
      * 设置临时上下文参数
@@ -44,14 +43,14 @@ public class DaoHelper {
     }
 
     /**
-     * {@link DaoHelper#ds(DS, Supplier)}
+     * {@link SqlHelper#ds(DS, Supplier)}
      */
     public static <T> T ds(String name, Supplier<T> supplier) {
         return ds(name, true, supplier);
     }
 
     /**
-     * {@link DaoHelper#ds(DS, Supplier)}
+     * {@link SqlHelper#ds(DS, Supplier)}
      */
     public static <T> T ds(String name, boolean isPrefix, Supplier<T> supplier) {
         return ds(new DS() {

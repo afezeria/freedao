@@ -1,5 +1,6 @@
 package test.java.integration.classic.runtime
 
+import io.github.afezeria.freedao.classic.runtime.SqlHelper
 import io.github.afezeria.freedao.classic.runtime.context.*
 import org.junit.Test
 import test.BaseTest
@@ -45,7 +46,7 @@ class ContextParameterTest : BaseTest() {
     fun tempContextParameter() {
         initData(Person(name = "a"), Person(name = "b"))
         val impl = getJavaDaoInstance<TempContextParameterDao>()
-        val entity = DaoHelper.withContextParameter("id", 1L) {
+        val entity = SqlHelper.withContextParameter("id", 1L) {
             impl.select()
         }
         assert(entity.name == "a")
@@ -57,7 +58,7 @@ class ContextParameterTest : BaseTest() {
     fun multipleTempContextParameter() {
         initData(Person(name = "a"), Person(name = "b"))
         val impl = getJavaDaoInstance<TempContextParameterDao>()
-        val entity = DaoHelper.withContextParameters(mapOf("id" to 1L)) {
+        val entity = SqlHelper.withContextParameters(mapOf("id" to 1L)) {
             impl.select()
         }
         assert(entity.name == "a")

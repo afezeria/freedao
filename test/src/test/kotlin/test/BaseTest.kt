@@ -153,8 +153,11 @@ abstract class BaseTest {
         return loadClass(bytes) as T
     }
 
+    var tempClassLoader: ByteClassLoader? = null
+
     fun loadClass(bytes: ByteArray): Any {
-        val implClass = ByteClassLoader().loadClass(bytes)
+        tempClassLoader = ByteClassLoader()
+        val implClass = tempClassLoader!!.loadClass(bytes)
         val instance = implClass.constructors.first().newInstance()
         val declaredField = implClass.getDeclaredField(contextVar).apply {
             isAccessible = true
