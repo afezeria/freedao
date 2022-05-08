@@ -24,13 +24,13 @@ class ExtendList : ArrayList<String>() {
 
 }
 
-@Table(name = "error")
+@Table
 class InvalidParameterTypeHandlerEntity(
     @field:Column(parameterTypeHandle = Enum2StringParameterTypeHandler::class)
     val id: String
 )
 
-@Table(name = "error")
+@Table
 class InvalidResultTypeHandlerEntity(
     @field:Column(resultTypeHandle = Long2IntegerResultHandler::class)
     val id: String
