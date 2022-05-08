@@ -3,6 +3,11 @@ plugins {
 }
 
 dependencies {
+
+    // https://mvnrepository.com/artifact/org.jetbrains/annotations
+//    implementation(libs)
+    implementation(libs.annotations)
+
 }
 java {
     toolchain {

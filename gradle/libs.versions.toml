@@ -5,6 +5,8 @@ kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test-junit" }
 kotlinx-metadata = { module = "org.jetbrains.kotlinx:kotlinx-metadata-jvm", version = "0.3.0" }
 kotlin-compile-test = { module = "com.github.tschuchortdev:kotlin-compile-testing-ksp", version = "1.4.8" }
 
+annotations = { module = "org.jetbrains:annotations", version = "13.0" }
+
 autoservice = { module = "com.google.auto.service:auto-service", version = "1.0" }
 javapoet = { module = "com.squareup:javapoet", version = "1.13.0" }
 
