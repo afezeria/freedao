@@ -1,5 +1,7 @@
 package test
 
+import io.github.afezeria.freedao.annotation.Column
+import io.github.afezeria.freedao.annotation.Table
 import io.github.afezeria.freedao.classic.runtime.AutoFill
 import java.time.LocalDateTime
 
@@ -38,27 +40,27 @@ create table "person"
 )
     """
 )
-@io.github.afezeria.freedao.annotation.Table(name = "person", primaryKeys = ["id"])
+@Table(name = "person", primaryKeys = ["id"])
 open class Person(
-    @field:io.github.afezeria.freedao.annotation.Column(insert = false) @field:AutoFill open var id: Long? = null,
+    @field:Column(insert = false) @field:AutoFill open var id: Long? = null,
     open var name: String? = null,
     open var active: Boolean? = null,
     open var whenCreated: LocalDateTime? = null,
     open var age: Int? = null,
     open var nickName: String? = null,
-    @io.github.afezeria.freedao.annotation.Column(
+    @Column(
         name = "age",
         insert = false,
         update = false,
         resultTypeHandle = StringResultTypeHandler::class
     )
     open var stringAge: String? = null,
-    @io.github.afezeria.freedao.annotation.Column(
+    @Column(
         parameterTypeHandle = Enum2StringParameterTypeHandler::class,
         resultTypeHandle = PersonTypeResultTypeHandler::class,
     )
     open var type: PersonType? = null,
-    @io.github.afezeria.freedao.annotation.Column(
+    @Column(
         name = "type",
         insert = false,
         update = false,
@@ -72,23 +74,23 @@ enum class PersonType {
 }
 
 
-@io.github.afezeria.freedao.annotation.Table(name = "person", primaryKeys = ["id"])
+@Table(name = "person", primaryKeys = ["id"])
 class PersonWithConstructor(
     var id: Long?,
-    @io.github.afezeria.freedao.annotation.Column(resultTypeHandle = StringResultTypeHandler::class) var name: String?,
+    @Column(resultTypeHandle = StringResultTypeHandler::class) var name: String?,
     var active: Any? = null,
 ) {
     var whenCreated: LocalDateTime? = null
 
-    @io.github.afezeria.freedao.annotation.Column(name = "nick_name", resultTypeHandle = StringResultTypeHandler::class)
+    @Column(name = "nick_name", resultTypeHandle = StringResultTypeHandler::class)
     var alias: String? = null
 
-    @io.github.afezeria.freedao.annotation.Column(name = "nick_name", resultTypeHandle = StringResultTypeHandler::class)
+    @Column(name = "nick_name", resultTypeHandle = StringResultTypeHandler::class)
     val alias2: String? = null
     var age: Any? = null
 }
 
-@io.github.afezeria.freedao.annotation.Table(name = "person", primaryKeys = ["id"])
+@Table(name = "person", primaryKeys = ["id"])
 class PersonOverrideEqual : Person() {
 
     override fun equals(other: Any?): Boolean {
@@ -105,20 +107,20 @@ class PersonOverrideEqual : Person() {
     }
 }
 
-@io.github.afezeria.freedao.annotation.Table(name = "person", primaryKeys = ["id"])
+@Table(name = "person", primaryKeys = ["id"])
 class PersonWithoutPublicConstructor private constructor() : Person()
 
-@io.github.afezeria.freedao.annotation.Table(name = "person", primaryKeys = ["id"])
+@Table(name = "person", primaryKeys = ["id"])
 class PersonBad1(test: Number) : Person()
 
-@io.github.afezeria.freedao.annotation.Table(name = "person", primaryKeys = ["id"])
+@Table(name = "person", primaryKeys = ["id"])
 class PersonWithRequiredId(id: Long) : Person() {
     init {
         this.id = id
     }
 }
 
-@io.github.afezeria.freedao.annotation.Table(
+@Table(
     name = "person_log",
 )
 class PersonWithoutPrimaryKey(
@@ -126,16 +128,16 @@ class PersonWithoutPrimaryKey(
     var action: String? = null,
 )
 
-@io.github.afezeria.freedao.annotation.Table(name = "person", primaryKeys = ["id"])
+@Table(name = "person", primaryKeys = ["id"])
 open class PersonAnyId(
-    @io.github.afezeria.freedao.annotation.Column(insert = false) @AutoFill var id: Any? = null,
+    @Column(insert = false) @AutoFill var id: Any? = null,
     var name: String? = null,
 )
 
-@io.github.afezeria.freedao.annotation.Table(name = "person", primaryKeys = ["id"])
+@Table(name = "person", primaryKeys = ["id"])
 open class PersonWithoutInsertableProperty(
-    @io.github.afezeria.freedao.annotation.Column(insert = false) var id: Any? = null,
-    @io.github.afezeria.freedao.annotation.Column(insert = false) var name: String? = null,
+    @Column(insert = false) var id: Any? = null,
+    @Column(insert = false) var name: String? = null,
 )
 
 data class PersonIdAndNameDto(
@@ -178,7 +180,7 @@ create table "auto_fill_int_id"
 )
     """
 )
-@io.github.afezeria.freedao.annotation.Table(name = "auto_fill_int_id", primaryKeys = ["id"])
+@Table(name = "auto_fill_int_id", primaryKeys = ["id"])
 open class AutoFillEntity(
     open var id: Long? = null,
     open var name: String? = null,
@@ -186,42 +188,42 @@ open class AutoFillEntity(
     open var whenUpdated: LocalDateTime? = null,
 ) : Entity
 
-@io.github.afezeria.freedao.annotation.Table(name = "auto_fill_int_id", primaryKeys = ["id"])
+@Table(name = "auto_fill_int_id", primaryKeys = ["id"])
 open class FillObjectTypeFieldByDbGeneratedKeyEntity(
-    @io.github.afezeria.freedao.annotation.Column(insert = false) @AutoFill
+    @Column(insert = false) @AutoFill
     var id: Any? = null,
     var name: String? = null,
 ) : Entity
 
-@io.github.afezeria.freedao.annotation.Table(name = "auto_fill_int_id", primaryKeys = ["id"])
+@Table(name = "auto_fill_int_id", primaryKeys = ["id"])
 open class FillValueHandledByTypeHandler(
-    @io.github.afezeria.freedao.annotation.Column(insert = false, resultTypeHandle = StringResultTypeHandler::class)
+    @Column(insert = false, resultTypeHandle = StringResultTypeHandler::class)
     @AutoFill
     var id: String? = null,
     var name: String? = null,
 ) : Entity
 
 
-@io.github.afezeria.freedao.annotation.Table(name = "auto_fill_int_id", primaryKeys = ["id"])
+@Table(name = "auto_fill_int_id", primaryKeys = ["id"])
 class DbGeneratedKeyEntity(
-    @field:io.github.afezeria.freedao.annotation.Column(insert = false)
+    @field:Column(insert = false)
     @field:AutoFill
     override var id: Long? = null,
 ) : AutoFillEntity()
 
-@io.github.afezeria.freedao.annotation.Table(name = "auto_fill_int_id", primaryKeys = ["id"])
+@Table(name = "auto_fill_int_id", primaryKeys = ["id"])
 class MultiDbGeneratedKeysEntity(
-    @field:io.github.afezeria.freedao.annotation.Column(insert = false)
+    @field:Column(insert = false)
     @field:AutoFill
     override var id: Long? = null,
     @field:AutoFill
-    @field:io.github.afezeria.freedao.annotation.Column(insert = false)
+    @field:Column(insert = false)
     override var whenCreated: LocalDateTime? = null,
 ) : AutoFillEntity()
 
-@io.github.afezeria.freedao.annotation.Table(name = "auto_fill_int_id", primaryKeys = ["id"])
+@Table(name = "auto_fill_int_id", primaryKeys = ["id"])
 class CustomGeneratorEntity(
-    @field:io.github.afezeria.freedao.annotation.Column(insert = false)
+    @field:Column(insert = false)
     @field:AutoFill(
         before = true,
         generator = NegativeLongIdGenerator::class
@@ -229,15 +231,15 @@ class CustomGeneratorEntity(
     override var id: Long? = null,
 ) : AutoFillEntity()
 
-@io.github.afezeria.freedao.annotation.Table(name = "auto_fill_int_id", primaryKeys = ["id"])
+@Table(name = "auto_fill_int_id", primaryKeys = ["id"])
 class MultipleFieldCustomGeneratorEntity(
-    @field:io.github.afezeria.freedao.annotation.Column(insert = false)
+    @field:Column(insert = false)
     @field:AutoFill(
         before = true,
         generator = NegativeLongIdGenerator::class
     )
     override var id: Long? = null,
-    @field:io.github.afezeria.freedao.annotation.Column(insert = false)
+    @field:Column(insert = false)
     @field:AutoFill(
         before = true,
         update = true,
@@ -246,7 +248,7 @@ class MultipleFieldCustomGeneratorEntity(
     override var whenUpdated: LocalDateTime? = null,
 ) : AutoFillEntity()
 
-@io.github.afezeria.freedao.annotation.Table(name = "auto_fill_int_id", primaryKeys = ["id"])
+@Table(name = "auto_fill_int_id", primaryKeys = ["id"])
 class FillByCustomGeneratorWhenUpdateEntity(
     override var id: Long? = null,
     override var name: String? = null,

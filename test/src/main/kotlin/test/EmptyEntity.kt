@@ -1,10 +1,12 @@
 package test
 
+import io.github.afezeria.freedao.annotation.Table
+
 /**
  *
  * @author afezeria
  */
-@io.github.afezeria.freedao.annotation.Table(
+@Table(
     name = "abc"
 )
 class EmptyEntity {
