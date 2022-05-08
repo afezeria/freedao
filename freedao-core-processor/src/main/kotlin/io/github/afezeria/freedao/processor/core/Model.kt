@@ -1,6 +1,7 @@
 package io.github.afezeria.freedao.processor.core
 
 import com.squareup.javapoet.TypeName
+import io.github.afezeria.freedao.annotation.Table
 import javax.lang.model.element.ElementKind
 import javax.lang.model.element.TypeElement
 import javax.lang.model.element.VariableElement
@@ -43,13 +44,13 @@ class EntityObjectModel private constructor(type: DeclaredType) : BeanObjectMode
     var primaryKey: List<BeanProperty>
 
     init {
-        element.getAnnotation(io.github.afezeria.freedao.annotation.Table::class.java)!!.let {
+        element.getAnnotation(Table::class.java)!!.let {
             table = it.name.ifBlank {
-                type.simpleName.toSnakeCase()
+                it.value.ifBlank {
+                    type.simpleName.toSnakeCase()
+                }
             }
-            if (it.schema.isNotBlank()) {
-                schema = it.schema
-            }
+            schema = it.schema
             primaryKey = properties.filter { prop ->
                 prop.column.name in it.primaryKeys
             }
@@ -68,9 +69,9 @@ class EntityObjectModel private constructor(type: DeclaredType) : BeanObjectMode
     companion object {
         operator fun invoke(type: TypeMirror): EntityObjectModel {
             if (!type.isCustomJavaBean()
-                || (type.asElement() as TypeElement).getAnnotation(io.github.afezeria.freedao.annotation.Table::class.java) == null
+                || (type.asElement() as TypeElement).getAnnotation(Table::class.java) == null
             ) {
-                throw HandlerException("The class that are arguments to Dao.crudEntity must be custom java bean and annotated by ${io.github.afezeria.freedao.annotation.Table::class.qualifiedName}")
+                throw HandlerException("The class that are arguments to Dao.crudEntity must be custom java bean and annotated by ${Table::class.qualifiedName}")
             }
             return EntityObjectModel(type)
         }
