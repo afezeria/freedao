@@ -334,7 +334,7 @@ abstract class NamedMethod private constructor(
         private val methodNameSplitRegex = "^(.*?By)(.*)$".toRegex()
         private val length2ConditionKeys = listOf(
             3 to listOf("LessThanEqual", "GreaterThanEqual"),
-            2 to listOf("IsNull", "LessThan", "GreaterThan", "NotNull", "NotIn", "NotLike"),
+            2 to listOf("IsNull", "LessThan", "GreaterThan", "NotNull", "NotIn", "NotLike", "StartsWith", "EndsWith"),
             1 to listOf("Between", "Like", "Not", "In", "True", "False"),
         )
         private val length2ConnectKeys = listOf(2 to listOf("OrderBy"), 1 to listOf("And", "Or"))
@@ -454,7 +454,12 @@ abstract class NamedMethod private constructor(
                 renderFn = { "$column between ${createSqlParameter(0)} and ${createSqlParameter(1)}" },
             )
 
-            class Like : Condition(renderFn = { "$column like ${createSqlParameter(0)}" })
+            class Like : Condition(renderFn = { "$column like <java>\"%\"+\${${params[0].simpleName}}+\"%\"</java>" })
+
+            class StartsWith : Condition(renderFn = { "$column like <java>\${${params[0].simpleName}}+\"%\"</java>" })
+
+            class EndsWith : Condition(renderFn = { "$column like <java>\"%\"+\${${params[0].simpleName}}</java>" })
+
             class Not : Condition(renderFn = { "$column &lt;&gt; ${createSqlParameter(0)}" })
             class In : Condition(
                 requiredParameterTypesFn = { listOf(Collection::class.type(property!!.type)) },

@@ -153,9 +153,35 @@ class ConditionTest : BaseTest() {
             Person(6, "ab"),
         )
         val impl = getJavaDaoInstance<LikeDao>()
-        val list = impl.queryByNameLike("a%")
+        val list = impl.queryByNameLike("a")
         assert(list.size == 2)
         assertContentEquals(list.map { it.id }, listOf(5, 6))
+    }
+
+    @Test
+    fun startsWith() {
+        initDataWithNullValue(
+            Person(1, "ba"),
+            Person(5, "ac"),
+            Person(6, "ab"),
+        )
+        val impl = getJavaDaoInstance<StartsWithDao>()
+        val list = impl.queryByNameStartsWith("a")
+        assert(list.size == 2)
+        assertContentEquals(list.map { it.id }, listOf(5, 6))
+    }
+
+    @Test
+    fun endsWith() {
+        initDataWithNullValue(
+            Person(1, "ba"),
+            Person(5, "ac"),
+            Person(6, "ab"),
+        )
+        val impl = getJavaDaoInstance<EndsWithDao>()
+        val list = impl.queryByNameEndsWith("a")
+        assert(list.size == 1)
+        assertContentEquals(list.map { it.id }, listOf(1))
     }
 
     @Test
