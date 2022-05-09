@@ -6,3 +6,4 @@ io.github.afezeria.freedao.processor.core.template.element.Set
 io.github.afezeria.freedao.processor.core.template.element.Trim
 io.github.afezeria.freedao.processor.core.template.element.When
 io.github.afezeria.freedao.processor.core.template.element.Where
+io.github.afezeria.freedao.processor.core.template.element.Java

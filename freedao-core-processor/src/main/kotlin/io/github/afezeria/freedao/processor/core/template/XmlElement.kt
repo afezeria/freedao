@@ -150,6 +150,14 @@ abstract class XmlElement {
             ServiceLoader.load(XmlElement::class.java, MainProcessor::class.java.classLoader)
                 .associate { it.javaClass.simpleName to it.javaClass.kotlin.primaryConstructor!! }
         }
+        val Node.lineNumber: Int
+            get() {
+                return getUserData(LINE_NUMBER_KEY_NAME) as Int
+            }
+        val Node.columnNumber: Int
+            get() {
+                return getUserData(COLUMN_NUMBER_KEY_NAME) as Int
+            }
     }
 }
 

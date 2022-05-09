@@ -35,9 +35,11 @@ class Foreach : XmlElement() {
             } else {
                 context.createInternalFlag(Int::class.type, 0)
             }
-            val loopVar = context.createTemplateVariable(item,
+            val loopVar = context.createTemplateVariable(
+                item,
                 (iterableType as DeclaredType).typeArguments[0],
-                null)
+                null
+            )
 
             addStatement("$builderName.append(\$S)", open)
             val iteratorVar = context.createInternalFlag(

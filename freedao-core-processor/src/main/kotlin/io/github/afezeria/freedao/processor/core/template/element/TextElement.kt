@@ -1,5 +1,6 @@
 package io.github.afezeria.freedao.processor.core.template.element
 
+import io.github.afezeria.freedao.ParameterTypeHandler
 import io.github.afezeria.freedao.processor.core.HandlerException
 import io.github.afezeria.freedao.processor.core.elementUtils
 import io.github.afezeria.freedao.processor.core.isParameterTypeHandlerAndMatchType
@@ -56,7 +57,7 @@ class TextElement : XmlElement() {
                                         ?: throw HandlerException("class not found:$this")).asType()
                                         .isParameterTypeHandlerAndMatchType(exprType)
                                 }
-                        if (pair == null || pair.first.isSameType(io.github.afezeria.freedao.ParameterTypeHandler::class)) {
+                        if (pair == null || pair.first.isSameType(ParameterTypeHandler::class)) {
                             addStatement("${TemplateHandler.sqlArgsVarName}.add(${tmpVar})")
                         } else {
                             val (handlerType, handleMethodParameterType) = pair
