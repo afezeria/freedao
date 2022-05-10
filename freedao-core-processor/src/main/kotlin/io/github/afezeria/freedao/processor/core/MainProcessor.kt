@@ -1,6 +1,7 @@
 package io.github.afezeria.freedao.processor.core
 
 import io.github.afezeria.freedao.annotation.Dao
+import io.github.afezeria.freedao.annotation.Table
 import java.io.PrintWriter
 import java.io.StringWriter
 import javax.annotation.processing.AbstractProcessor
@@ -31,7 +32,7 @@ class MainProcessor : AbstractProcessor() {
     }
 
     override fun getSupportedAnnotationTypes(): MutableSet<String> {
-        return mutableSetOf(Dao::class.qualifiedName!!)
+        return mutableSetOf(Dao::class.qualifiedName!!,Table::class.qualifiedName!!)
     }
 
     private val elementCache = mutableSetOf<Element>()

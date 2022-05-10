@@ -51,6 +51,7 @@ public abstract class DaoContext {
         return create(
                 new TransactionContext(dataSource),
                 new ExecutorContext(),
+                new JoinQueryContext(),
                 new PageQueryContext(),
                 new ParameterContext(null),
                 new ProxyContext()
