@@ -7,7 +7,7 @@ import io.github.afezeria.freedao.processor.core.template.PositionalXMLReader.LI
 import io.github.afezeria.freedao.processor.core.template.element.TextElement
 import org.w3c.dom.Node
 import java.util.*
-import kotlin.properties.ReadOnlyProperty
+import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KFunction
 import kotlin.reflect.KProperty
 import kotlin.reflect.full.primaryConstructor
@@ -134,13 +134,20 @@ abstract class XmlElement {
         operator fun provideDelegate(
             thisRef: XmlElement,
             prop: KProperty<*>,
-        ): ReadOnlyProperty<XmlElement, String> {
+        ): ReadWriteProperty<XmlElement, String> {
             thisRef.validatorMap[prop.name] = { v ->
                 v ?: default
                 ?: throwWithPosition("missing required attribute:${prop.name}")
             }
-            return ReadOnlyProperty { ref, property ->
-                requireNotNull(ref.attributeMap[property.name])
+            return object : ReadWriteProperty<XmlElement, String> {
+                override fun getValue(thisRef: XmlElement, property: KProperty<*>): String {
+                    return attributeMap[property.name]!!
+                }
+
+                override fun setValue(thisRef: XmlElement, property: KProperty<*>, value: String) {
+                    attributeMap[property.name] = value
+                }
+
             }
         }
     }

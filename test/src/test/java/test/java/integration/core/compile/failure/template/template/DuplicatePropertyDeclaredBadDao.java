@@ -13,8 +13,7 @@ public interface DuplicatePropertyDeclaredBadDao {
     @XmlTemplate("""
             <select>
             select * from person where 
-            id in (<foreach collection='ids' item='i'>#{i}</foreach>)
-            and name in (<foreach collection='names' item='i'>#{i}</foreach>)
+            id in (<foreach collection='ids' item='i'><foreach collection='names' item='i'>#{i}</foreach></foreach>)
             </select>
             """)
     List abc(List<Long> ids, List<String> names);

@@ -4,9 +4,9 @@ import io.github.afezeria.freedao.processor.core.template.XmlElement
 import io.github.afezeria.freedao.processor.core.type
 import javax.lang.model.type.DeclaredType
 
-class Foreach : XmlElement() {
+open class Foreach : XmlElement() {
     private val collection by Attribute()
-    private val item by Attribute()
+    protected var item by Attribute()
     private val index by Attribute("")
     private val open by Attribute("")
     private val close by Attribute("")
@@ -27,9 +27,11 @@ class Foreach : XmlElement() {
      *     }
      */
     override fun render() {
-        context.currentScope { builderName ->
-            val (iterableVar, iterableType) = context.createInternalVariableByContextValue(collection,
-                Iterable::class.type)
+        context.newScope { builderName ->
+            val (iterableVar, iterableType) = context.createInternalVariableByContextValue(
+                collection,
+                Iterable::class.type
+            )
             val indexVar = if (index.isNotEmpty()) {
                 context.createTemplateVariable(index, Int::class.type, 0)
             } else {
