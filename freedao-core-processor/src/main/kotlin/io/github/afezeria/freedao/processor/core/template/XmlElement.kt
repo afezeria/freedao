@@ -24,6 +24,10 @@ abstract class XmlElement {
     val children: MutableList<XmlElement> = mutableListOf()
     lateinit var parent: XmlElement
     lateinit var xmlNode: Node
+    val lineNumber: Int
+        get() = xmlNode.getUserData(LINE_NUMBER_KEY_NAME) as Int
+    val columnNumber: Int
+        get() = xmlNode.getUserData(COLUMN_NUMBER_KEY_NAME) as Int
 
     protected fun init(node: Node) {
         xmlNode = node
@@ -32,16 +36,12 @@ abstract class XmlElement {
             //忽略idea警告，这里的attributes可能为null
             //不能用hasAttributes()判断，当attributes不为null但大小为0时，hashAttributes()会返回false
             attributes?.apply {
+                for (i in 0 until length) {
+                    attributeMap[item(i).nodeName] = item(i).nodeValue
+                }
                 //检查XmlElement子类中用Attribute声明的代理属性是否为空并赋值
                 for ((name, validator) in validatorMap) {
-                    attributeMap[name] = validator(getNamedItem(name)?.nodeValue)
-                }
-                //将xml节点中存在的但子类中未声明的属性添加到attributeMap中
-                //暂时没用
-                //这是给动态属性预留的，也许某个子类会需要读取用户声明的所有属性
-                (0 until length).forEach {
-                    item(it)?.takeIf { validatorMap.containsKey(it.nodeName).not() }
-                        ?.let { attributeMap[it.nodeName] = it.nodeValue }
+                    attributeMap[name] = validator(attributeMap[name])
                 }
             }
 
@@ -49,16 +49,6 @@ abstract class XmlElement {
                 (0 until length).forEach { idx ->
                     item(idx).let { child ->
                         createElement(child).let {
-                            //当前使用sax解析xml，sax不会区分cdata和text元素
-                            // 相邻的cdata和text会被解析成一个text节点，所以这里现在不需要合并text节点的操作
-//                            if (it is TextElement && children.isNotEmpty() && children.last() is TextElement) {
-//                                //合并多个相邻的text节点
-//                                (children.last() as TextElement).append(it)
-//                            } else {
-//                                it.parent = this@XmlElement
-//                                it.init(child)
-//                                children += it
-//                            }
                             it.parent = this@XmlElement
                             it.init(child)
                             children += it
@@ -71,11 +61,6 @@ abstract class XmlElement {
 
     open fun render() {
         context.currentScope {
-            xmlNode.attributes.run {
-                (0 until length).joinToString {
-                    "${item(it).nodeName}=${item(it).nodeValue}"
-                }
-            }
             add("//${xmlNode.nodeName} ${
                 xmlNode.attributes.run {
                     (0 until length).joinToString {
@@ -92,18 +77,6 @@ abstract class XmlElement {
     }
 
     private fun createElement(node: Node): XmlElement {
-        //用DOM解析时会区分comment节点和cdata节点，所以else需要返回null
-        //用SAX解析时xml中的cdata元素拿到的是text节点，comment节点会被忽略
-//        return when (node.nodeType) {
-//            //common text node
-//            3.toShort() -> TextElement(false, node.textContent)
-//            //cdata node
-//            4.toShort() -> TextElement(true, node.textContent)
-//            //element node
-//            1.toShort() -> elementBuilderMap[node.nodeName.replaceFirstChar { it.uppercaseChar() }]?.call()
-//                ?: throw HandlerException("Invalid node:${node.nodeName}")
-//            else -> null
-//        }
         return when (node.nodeType) {
             //common text node
             3.toShort() -> TextElement()
@@ -117,9 +90,7 @@ abstract class XmlElement {
 
     fun throwWithPosition(msg: String): Nothing {
         throw HandlerException(
-            "[line:${xmlNode.getUserData(LINE_NUMBER_KEY_NAME)}, column:${
-                xmlNode.getUserData(COLUMN_NUMBER_KEY_NAME)
-            }, element:${xmlNode.nodeName}] $msg"
+            "[line:${lineNumber}, column:${columnNumber}, element:${xmlNode.nodeName}] $msg"
         )
     }
 
@@ -157,14 +128,6 @@ abstract class XmlElement {
             ServiceLoader.load(XmlElement::class.java, MainProcessor::class.java.classLoader)
                 .associate { it.javaClass.simpleName to it.javaClass.kotlin.primaryConstructor!! }
         }
-        val Node.lineNumber: Int
-            get() {
-                return getUserData(LINE_NUMBER_KEY_NAME) as Int
-            }
-        val Node.columnNumber: Int
-            get() {
-                return getUserData(COLUMN_NUMBER_KEY_NAME) as Int
-            }
     }
 }
 

@@ -19,7 +19,7 @@ class Java : XmlElement() {
                 tmpVar
             }
             val variable = context.createTemplateVariable(
-                "java_${xmlNode.lineNumber}_${xmlNode.columnNumber}",
+                "java_${lineNumber}_${columnNumber}",
                 Any::class.type,
                 null
             )
