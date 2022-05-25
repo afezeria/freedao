@@ -3,8 +3,12 @@ package io.github.afezeria.freedao.classic.runtime.context;
 import io.github.afezeria.freedao.ResultTypeHandler;
 import io.github.afezeria.freedao.StatementType;
 import io.github.afezeria.freedao.annotation.Column;
+import io.github.afezeria.freedao.annotation.Join;
+import io.github.afezeria.freedao.annotation.ReferenceValue;
 import io.github.afezeria.freedao.annotation.Table;
-import io.github.afezeria.freedao.classic.runtime.*;
+import io.github.afezeria.freedao.classic.runtime.ResultHandler;
+import io.github.afezeria.freedao.classic.runtime.SqlExecutor;
+import io.github.afezeria.freedao.classic.runtime.SqlSignature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -131,7 +135,7 @@ public class JoinQueryContext extends DaoContext {
                 }
 
             } else {
-                referencesKey = join.referencesKey();
+                referencesKey = join.referenceKey();
                 schema = join.schema();
                 table = join.table();
             }

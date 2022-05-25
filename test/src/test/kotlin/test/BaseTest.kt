@@ -7,6 +7,7 @@ import com.google.testing.compile.JavaFileObjects
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.SourceFile
 import com.zaxxer.hikari.HikariDataSource
+import io.github.afezeria.freedao.annotation.Column
 import io.github.afezeria.freedao.classic.processor.contextVar
 import io.github.afezeria.freedao.classic.runtime.context.DaoContext
 import io.github.afezeria.freedao.processor.core.MainProcessor
@@ -52,12 +53,12 @@ abstract class BaseTest {
             entities.forEach {
                 val name2value = it::class.java.declaredFields
                     .filter { f ->
-                        f.getAnnotation(io.github.afezeria.freedao.annotation.Column::class.java)
+                        f.getAnnotation(Column::class.java)
                             ?.let { it.exist && (it.insert || it.update) }
                             ?: true
                     }.mapTo(mutableListOf()) { f ->
                         f.trySetAccessible()
-                        (f.getAnnotation(io.github.afezeria.freedao.annotation.Column::class.java)?.name?.takeIf { it.isNotEmpty() }
+                        (f.getAnnotation(Column::class.java)?.name?.takeIf { it.isNotEmpty() }
                             ?: f.name.toSnakeCase()) to f.get(it)
                     }.apply {
                         if (!fillNull) {
@@ -98,12 +99,17 @@ abstract class BaseTest {
         }
     }
 
-    inline fun <reified T : Any> getJavaDaoInstance(): T {
-        return getJavaDaoInstance(T::class)
+    inline fun <reified T : Any> getJavaDaoInstance(vararg types: KClass<*>): T {
+        return getJavaDaoInstance(T::class, types.toList())
     }
 
-    fun <T : Any> getJavaDaoInstance(clazz: KClass<T>): T {
-        val compilation = compileJava(Path("./src/test/java/" + clazz.qualifiedName?.replace('.', '/') + ".java"))
+    fun <T : Any> getJavaDaoInstance(clazz: KClass<T>, types: List<KClass<*>>): T {
+        fun class2Path(clazz: KClass<*>) = Path("./src/test/java/" + clazz.qualifiedName?.replace('.', '/') + ".java")
+
+        val compilation = compileJava(
+            class2Path(clazz),
+            *types.map { class2Path(it) }.toTypedArray()
+        )
         CompilationSubject.assertThat(compilation).succeeded()
 
         compilation.generatedSourceFiles().forEach {
@@ -182,13 +188,17 @@ abstract class BaseTest {
     }
 
 
-    fun compileJava(path: Path): Compilation {
-        val javaFileObject = JavaFileObjects.forResource(path.normalize().toAbsolutePath().toUri().toURL())
+    fun compileJava(vararg path: Path): Compilation {
+        val javaFileObjects = path.map { JavaFileObjects.forResource(it.normalize().toAbsolutePath().toUri().toURL()) }
 
+//        val lombokProcessor = lombokProcessorClass.getConstructor().newInstance() as AbstractProcessor
         val compilation: Compilation = Compiler.javac()
-            .withProcessors(MainProcessor())
+            .withProcessors(
+                MainProcessor(),
+//                lombokProcessor
+            )
             .withOptions("-parameters", *env.aptArgs)
-            .compile(javaFileObject)
+            .compile(javaFileObjects)
         compilation.diagnostics().forEach { println(it.toString()) }
         return compilation
     }

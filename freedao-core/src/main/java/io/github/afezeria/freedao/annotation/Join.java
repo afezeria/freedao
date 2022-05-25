@@ -1,13 +1,14 @@
-package io.github.afezeria.freedao.classic.runtime;
+package io.github.afezeria.freedao.annotation;
 
 import java.lang.annotation.*;
 
 /**
  * @author afezeria
  */
-@Target(ElementType.TYPE)
+@Target({ElementType.TYPE, ElementType.CONSTRUCTOR})
 @Retention(RetentionPolicy.RUNTIME)
 @Repeatable(Join.List.class)
+
 public @interface Join {
     /**
      * 唯一标识，同一实体类上多个Join之间id不能相同
@@ -43,15 +44,15 @@ public @interface Join {
      * <p>
      * - entityClass中关联字段的类型必须和当前表中foreignKey指定的字段数量和类型一致
      */
-    String[] referencesKey() default {};
+    String[] referenceKey() default {};
 
     /**
-     * 当前表中用于关联的字段
+     * 当前表中用于关联的字段的列名
      */
     String[] foreignKey();
 
     /**
-     * 关联的实体类型，
+     * 关联的实体类型
      */
     Class<?> entityClass() default Object.class;
 

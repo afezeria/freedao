@@ -1,4 +1,4 @@
-package io.github.afezeria.freedao.classic.runtime;
+package io.github.afezeria.freedao.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

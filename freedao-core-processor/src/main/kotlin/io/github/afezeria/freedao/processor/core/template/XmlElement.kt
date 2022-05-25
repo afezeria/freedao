@@ -7,7 +7,7 @@ import io.github.afezeria.freedao.processor.core.template.PositionalXMLReader.LI
 import io.github.afezeria.freedao.processor.core.template.element.TextElement
 import org.w3c.dom.Node
 import java.util.*
-import kotlin.properties.ReadOnlyProperty
+import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KFunction
 import kotlin.reflect.KProperty
 import kotlin.reflect.full.primaryConstructor
