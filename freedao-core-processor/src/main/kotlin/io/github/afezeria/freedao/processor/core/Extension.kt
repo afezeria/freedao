@@ -301,7 +301,9 @@ fun <R> runCatchingHandlerExceptionOrThrow(element: Element, block: () -> R): R?
         return block()
     } catch (e: Throwable) {
         if (e is HandlerException) {
-            processingEnvironment.messager.printMessage(Diagnostic.Kind.ERROR, e.message, element)
+//            processingEnvironment.messager.printMessage(Diagnostic.Kind.ERROR, e.message, element)
+
+            processingEnvironment.messager.printMessage(Diagnostic.Kind.ERROR, e.message, e.element ?: element)
             if (global.debug) {
                 val stringWriter = StringWriter()
                 val printWriter = PrintWriter(stringWriter)

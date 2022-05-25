@@ -75,7 +75,9 @@ object ResultMappingsAnn {
 
                     val prop =
                         model.properties.find {
-                            it.name == param.simpleName.toString() && it.type.boxed().isSameType(param.asType().boxed())
+                            it.column.exist
+                                    && it.name == param.simpleName.toString()
+                                    && it.type.boxed().isSameType(param.asType().boxed())
                         }
                             ?: throw HandlerException("Constructor parameter name must be the same as field name:${itemType}.${param.simpleName}")
                     mappings += MappingData(prop.element, index)
@@ -83,7 +85,7 @@ object ResultMappingsAnn {
 
                 //处理属性映射
                 model.properties
-                    .filter { it.hasSetter && mappings.none { m -> m.target == it.name } }
+                    .filter { it.hasSetter && it.column.exist && mappings.none { m -> m.target == it.name } }
                     .forEach {
                         mappings += MappingData(
                             source = it.column.name,

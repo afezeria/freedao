@@ -1,18 +1,31 @@
 package io.github.afezeria.freedao.classic.runtime;
 
+import io.github.afezeria.freedao.classic.runtime.context.JoinQueryContext;
 import io.github.afezeria.freedao.classic.runtime.context.PageQueryContext;
 import io.github.afezeria.freedao.classic.runtime.context.ParameterContext;
 
 import java.lang.annotation.Annotation;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Supplier;
 
 /**
  * @author afezeria
  */
 public class SqlHelper {
+
+    public static <T> T join(Supplier<T> block) {
+        return join(Collections.emptyList(), block);
+    }
+
+    public static <T> T join(List<String> joinIds, Supplier<T> block) {
+        JoinQueryContext.localJoinIds.set(joinIds);
+        try {
+            T t = block.get();
+            return t;
+        } finally {
+            JoinQueryContext.localJoinIds.remove();
+        }
+    }
 
     /**
      * 设置临时上下文参数
@@ -103,11 +116,6 @@ public class SqlHelper {
         PageQueryContext.local.set(page);
         try {
             closure.get();
-//            if (res != null) {
-//                page.setRecords(new ArrayList(res));
-//            } else {
-//                page.setRecords(new ArrayList<>());
-//            }
             return (Page<E>) page;
         } finally {
             PageQueryContext.local.remove();
