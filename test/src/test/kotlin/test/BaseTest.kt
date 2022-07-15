@@ -10,7 +10,7 @@ import com.zaxxer.hikari.HikariDataSource
 import io.github.afezeria.freedao.annotation.Column
 import io.github.afezeria.freedao.classic.processor.contextVar
 import io.github.afezeria.freedao.classic.runtime.context.DaoContext
-import io.github.afezeria.freedao.processor.core.MainProcessor
+import io.github.afezeria.freedao.processor.core.processor.apt.MainProcessor
 import io.github.afezeria.freedao.processor.core.toSnakeCase
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized

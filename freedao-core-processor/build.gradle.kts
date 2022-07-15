@@ -20,6 +20,7 @@ kotlin {
 }
 tasks.compileKotlin.configure {
     kotlinOptions.freeCompilerArgs += "-opt-in=kotlin.RequiresOptIn"
+    kotlinOptions.freeCompilerArgs += "-Xcontext-receivers"
 }
 
 //tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {

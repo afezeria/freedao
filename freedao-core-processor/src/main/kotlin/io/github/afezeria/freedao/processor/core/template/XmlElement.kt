@@ -1,7 +1,7 @@
 package io.github.afezeria.freedao.processor.core.template
 
 import io.github.afezeria.freedao.processor.core.HandlerException
-import io.github.afezeria.freedao.processor.core.MainProcessor
+import io.github.afezeria.freedao.processor.core.processor.apt.MainProcessor
 import io.github.afezeria.freedao.processor.core.template.PositionalXMLReader.COLUMN_NUMBER_KEY_NAME
 import io.github.afezeria.freedao.processor.core.template.PositionalXMLReader.LINE_NUMBER_KEY_NAME
 import io.github.afezeria.freedao.processor.core.template.element.TextElement

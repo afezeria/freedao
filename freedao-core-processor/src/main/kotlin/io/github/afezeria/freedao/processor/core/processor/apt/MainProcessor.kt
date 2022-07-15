@@ -1,7 +1,12 @@
-package io.github.afezeria.freedao.processor.core
+package io.github.afezeria.freedao.processor.core.processor.apt
 
 import io.github.afezeria.freedao.annotation.Dao
 import io.github.afezeria.freedao.annotation.Table
+import io.github.afezeria.freedao.processor.core.DaoHandler
+import io.github.afezeria.freedao.processor.core.GlobalState
+import io.github.afezeria.freedao.processor.core.processingEnvironment
+import io.github.afezeria.freedao.processor.core.processor.typeService
+import io.github.afezeria.freedao.processor.core.runCatchingHandlerExceptionOrThrow
 import java.io.PrintWriter
 import java.io.StringWriter
 import javax.annotation.processing.AbstractProcessor
@@ -32,7 +37,7 @@ class MainProcessor : AbstractProcessor() {
     }
 
     override fun getSupportedAnnotationTypes(): MutableSet<String> {
-        return mutableSetOf(Dao::class.qualifiedName!!,Table::class.qualifiedName!!)
+        return mutableSetOf(Dao::class.qualifiedName!!, Table::class.qualifiedName!!)
     }
 
     private val elementCache = mutableSetOf<Element>()
@@ -71,7 +76,7 @@ class MainProcessor : AbstractProcessor() {
     private fun processElement(element: Element) {
         try {
             runCatchingHandlerExceptionOrThrow(element) {
-                DaoHandler(element as TypeElement).render()
+                DaoHandler(element as TypeElement, typeService.get(element.toString())).render()
             }
         } catch (e: Exception) {
             val stringWriter = StringWriter()

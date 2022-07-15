@@ -4,7 +4,7 @@ import com.google.testing.compile.Compilation
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.SourceFile
 import io.github.afezeria.freedao.classic.runtime.LogHelper
-import io.github.afezeria.freedao.processor.core.MainProcessor
+import io.github.afezeria.freedao.processor.core.processor.apt.MainProcessor
 import org.intellij.lang.annotations.Language
 import org.slf4j.LoggerFactory
 import java.io.File
