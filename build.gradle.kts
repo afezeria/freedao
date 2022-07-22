@@ -29,7 +29,7 @@ subprojects {
     }
 
     group = "io.github.afezeria"
-    version = "0.2.0"
+    version = "0.2.1"
 //    version = "${version}SNAPSHOT"
 
     if (project.name.startsWith("test")) {
