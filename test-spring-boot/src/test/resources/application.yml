@@ -17,13 +17,13 @@ freedao:
       master_1:
         username: test
         password: 123456
-        jdbc-url: jdbc:postgresql://localhost:5432/test?searchpath=public
+        jdbc-url: jdbc:postgresql://localhost:5432/test?currentSchema=public
         driver-class-name: org.postgresql.Driver
         pool-name: master_1
       master_2:
         username: test
         password: 123456
-        jdbc-url: jdbc:postgresql://localhost:5432/test?searchpath=test
+        jdbc-url: jdbc:postgresql://localhost:5432/test?currentSchema=test
         driver-class-name: org.postgresql.Driver
         pool-name: master_2
 

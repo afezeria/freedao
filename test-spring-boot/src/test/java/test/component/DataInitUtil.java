@@ -68,6 +68,15 @@ public class DataInitUtil {
                         .mapToObj(i -> new Object[]{i > tableSize ? i - tableSize : i, "b" + i})
                         .collect(Collectors.toList())
         );
+        template.execute("""
+                drop table if exists t_user;
+                create table t_user
+                (
+                    id bigserial primary key ,
+                    name text
+                );
+                insert into t_user (name) values ('master1');
+                """);
     }
 
     @DS(Db.MASTER_2)
@@ -79,6 +88,16 @@ public class DataInitUtil {
                     name         text primary key
                 );
                 insert into temp_test_table (name) values ('a'),('b'),('c');
+                """);
+
+        template.execute("""
+                drop table if exists t_user;
+                create table t_user
+                (
+                    id bigserial primary key ,
+                    name text
+                );
+                insert into t_user (name) values ('master2');
                 """);
     }
 }
