@@ -100,6 +100,7 @@ class ClassicBuildMethodService : BuildMethodService {
                         io.github.afezeria.freedao.StatementType.INSERT, io.github.afezeria.freedao.StatementType.UPDATE, io.github.afezeria.freedao.StatementType.DELETE -> {
                             add("null\n")
                         }
+
                         else -> {
                             add(buildSelectResultHandler(this))
                         }
@@ -121,6 +122,9 @@ class ClassicBuildMethodService : BuildMethodService {
                 var type = parameter.type
                 if (type is PrimitiveType) {
                     type = typeUtils.boxedClass(type).asType()
+                }
+                if (type is DeclaredType && type.typeArguments.isNotEmpty()) {
+                    add("@SuppressWarnings(\"unchecked\")\n")
                 }
                 addStatement("\$T ${parameter.name.toVarName()} = (\$T) _params[\$L]", type, type, index)
             }
@@ -215,6 +219,7 @@ class ClassicBuildMethodService : BuildMethodService {
                 io.github.afezeria.freedao.StatementType.INSERT, io.github.afezeria.freedao.StatementType.UPDATE, io.github.afezeria.freedao.StatementType.DELETE -> {
                     handeUpdateMethodResultMapping(methodHandler, resultHelper)
                 }
+
                 else -> {
                     handeSelectMethodResultMapping(resultHelper)
                 }
@@ -380,6 +385,7 @@ class ClassicBuildMethodService : BuildMethodService {
                                             resultHelper.mapValueType
                                         )
                                     }
+
                                     else -> {
                                         addStatement(
                                             "$itemVar.put(\$S, $resultSetVar.getObject(\$S))",
