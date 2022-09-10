@@ -9,6 +9,7 @@ import com.tschuchort.compiletesting.SourceFile
 import com.zaxxer.hikari.HikariDataSource
 import io.github.afezeria.freedao.annotation.Column
 import io.github.afezeria.freedao.classic.processor.contextVar
+import io.github.afezeria.freedao.classic.runtime.AbstractDao
 import io.github.afezeria.freedao.classic.runtime.context.DaoContext
 import io.github.afezeria.freedao.processor.core.MainProcessor
 import io.github.afezeria.freedao.processor.core.toSnakeCase
@@ -164,11 +165,8 @@ abstract class BaseTest {
     fun loadClass(bytes: ByteArray): Any {
         tempClassLoader = ByteClassLoader()
         val implClass = tempClassLoader!!.loadClass(bytes)
-        val instance = implClass.constructors.first().newInstance()
-        val declaredField = implClass.getDeclaredField(contextVar).apply {
-            isAccessible = true
-        }
-        declaredField.set(instance, env.contextWrapper)
+        val instance = implClass.constructors.first().newInstance() as AbstractDao
+        instance.setContext(env.contextWrapper)
         return instance
     }
 
