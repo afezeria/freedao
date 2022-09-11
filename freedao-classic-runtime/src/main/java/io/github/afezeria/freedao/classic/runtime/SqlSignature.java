@@ -2,6 +2,8 @@ package io.github.afezeria.freedao.classic.runtime;
 
 import io.github.afezeria.freedao.StatementType;
 import lombok.Getter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.function.Function;
 
@@ -24,7 +26,7 @@ public class SqlSignature<T, E> {
     private final Function<Object[], Object[]> sqlBuilderClosure;
     private final SqlExecutor<T, E> sqlExecutor;
     private final ResultHandler<E> resultHandler;
-
+    private final Logger logger;
 
     public SqlSignature(StatementType type,
                         boolean isCustomSql,
@@ -48,5 +50,6 @@ public class SqlSignature<T, E> {
         this.parameterTypeList = parameterTypeList;
         this.sqlExecutor = sqlExecutor;
         this.resultHandler = resultHandler;
+        this.logger = LoggerFactory.getLogger(daoClass.getName() + "." + method);
     }
 }
