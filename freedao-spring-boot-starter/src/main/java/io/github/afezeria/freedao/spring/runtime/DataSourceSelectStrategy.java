@@ -6,6 +6,7 @@ import io.github.afezeria.freedao.classic.runtime.DataSourceContextHolder;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * @author afezeria
@@ -37,8 +38,6 @@ public abstract class DataSourceSelectStrategy {
     };
 
     public static DataSourceSelectStrategy RANDOM = new DataSourceSelectStrategy() {
-        private final Random random = new Random();
-
         @Override
         public String apply(Map<String, String[]> prefixMap) {
             String[] names = getSelectableDatasourceName(prefixMap);
@@ -48,7 +47,8 @@ public abstract class DataSourceSelectStrategy {
             if (names.length == 1) {
                 return names[0];
             }
-            return names[random.nextInt(names.length - 1)];
+            new Random();
+            return names[ThreadLocalRandom.current().nextInt(names.length - 1)];
         }
     };
 
