@@ -18,8 +18,8 @@
 新建一个gradle项目，引入如下依赖：
 
 ```groovy
-implementation("io.github.afezeria:freedao-classic-runtime:0.2.1")
-annotationProcessor("io.github.afezeria:freedao-classic-processor:0.2.1")
+implementation("io.github.afezeria:freedao-classic-runtime:0.2.2")
+annotationProcessor("io.github.afezeria:freedao-classic-processor:0.2.2")
 ```
 
 初始化数据库：
@@ -180,7 +180,7 @@ dao方法必须是抽象方法且不能声明范型参数，可选的方法有�
 
 ### CRUD方法
 
-所有方法的实体类参数除特殊说明不能null。
+所有方法的实体类参数除特殊说明不能为null。
 
 示例：
 
