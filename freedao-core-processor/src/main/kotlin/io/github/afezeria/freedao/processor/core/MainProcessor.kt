@@ -32,7 +32,7 @@ class MainProcessor : AbstractProcessor() {
     }
 
     override fun getSupportedAnnotationTypes(): MutableSet<String> {
-        return mutableSetOf(Dao::class.qualifiedName!!,Table::class.qualifiedName!!)
+        return mutableSetOf(Dao::class.qualifiedName!!, Table::class.qualifiedName!!)
     }
 
     private val elementCache = mutableSetOf<Element>()
@@ -44,6 +44,7 @@ class MainProcessor : AbstractProcessor() {
         if (isLombokInvoked) {
             val elements = roundEnv.getElementsAnnotatedWith(Dao::class.java)
             if (elements.isNotEmpty() || elementCache.isNotEmpty()) {
+                val interfaceCot = elements.size + elementCache.size
                 val time = measureTimeMillis {
                     elements.forEach {
                         processElement(it)
@@ -53,7 +54,8 @@ class MainProcessor : AbstractProcessor() {
                         true
                     }
                 }
-                println("========= freedao execution time:${time}ms")
+                println("========= number of DAO interface: $interfaceCot")
+                println("========= freedao total time: ${time}, average time: ${time / interfaceCot}ms")
             }
         } else {
             elementCache.addAll(roundEnv.getElementsAnnotatedWith(Dao::class.java))

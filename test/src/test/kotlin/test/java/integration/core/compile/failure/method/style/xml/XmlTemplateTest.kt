@@ -10,7 +10,7 @@ import test.BaseTest
 class XmlTemplateTest : BaseTest() {
     @Test
     fun `empty template string`() {
-        compileFailure<test.java.integration.core.compile.success.method.style.xml.EmptyTemplateDao> {
+        compileFailure<EmptyTemplateDao> {
             assertErrorMessageEquals("Xml template cannot be blank")
         }
     }
