@@ -28,7 +28,7 @@ public class FreedaoDataSourceInterceptor {
         Method method = signature.getMethod();
         DS annotation = method.getAnnotation(DS.class);
         if (annotation == null) {
-            annotation = method.getClass().getAnnotation(DS.class);
+            annotation = method.getDeclaringClass().getAnnotation(DS.class);
         }
         if (annotation == null) {
             return joinPoint.proceed();

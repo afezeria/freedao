@@ -6,10 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
-import test.component.DataInitUtil;
-import test.component.Db;
-import test.component.MultipleDataSourceTestService;
-import test.component.OrderDao;
+import test.component.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -27,6 +24,11 @@ public class MultipleDataSourceTests {
     @Autowired
     JdbcTemplate template;
 
+    @Autowired
+    Master1OrderDao master1OrderDao;
+    @Autowired
+    Master2OrderDao master2OrderDao;
+
     @BeforeEach
     public void beforeEach() {
         dataInitUtil.init();
@@ -34,7 +36,9 @@ public class MultipleDataSourceTests {
 
     @Test
     public void switchDataSourceByAnnotation() {
+        //master1
         assertEquals(service.findOrderNameById(1), "a1");
+        //master2
         assertEquals(service.getTempTableSize(), 3);
     }
 
@@ -48,5 +52,12 @@ public class MultipleDataSourceTests {
         }) == 3;
     }
 
+    @Test
+    public void switchDsByAnnotationOnClass() {
+        User master1User = master1OrderDao.selectOneById(1L);
+        User master2User = master2OrderDao.selectOneById(1L);
+        assertEquals(master1User.getName(), "master1");
+        assertEquals(master2User.getName(), "master2");
+    }
 
 }

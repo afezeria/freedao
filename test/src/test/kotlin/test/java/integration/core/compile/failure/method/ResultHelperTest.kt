@@ -90,7 +90,7 @@ class ResultHelperTest : BaseTest() {
     @Test
     fun `invalid wrong type handler`() {
         compileFailure<WrongTypeHandlerBadDao> {
-            assertErrorMessageEquals("Invalid ResultTypeHandler:java.lang.String, missing method:public static Object handleResult(Object.class)")
+            assertErrorMessageEquals("Invalid ResultTypeHandler:java.lang.String, missing method:public static Object handleResult(Object,Class)")
         }
     }
 

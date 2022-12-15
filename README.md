@@ -13,7 +13,81 @@
 
 ## 快速开始
 
-项目当前还未正式发布，请在 `tests:spring-boot-integrate` 模块中试用
+### 环境准备
+
+新建一个gradle项目，引入如下依赖：
+
+```groovy
+implementation("io.github.afezeria:freedao-classic-runtime:0.2.2")
+annotationProcessor("io.github.afezeria:freedao-classic-processor:0.2.2")
+```
+
+初始化数据库：
+
+```postgresql
+create table clazz
+(
+  id   int primary key,
+  name text
+);
+insert into clazz (id, name)
+values (1, 'c1'),
+       (2, 'c2');
+create table student
+(
+  id       int primary key,
+  name     text,
+  clazz_id int
+);
+insert into student (id, name, clazz_id)
+values (1, 's1', 1),
+       (2, 's2', 1),
+       (3, 's3', 2);
+
+```
+
+首先，[创建实体类](#实体类声明)，描述表结构：
+
+```java
+import io.github.afezeria.freedao.annotation.Table;
+
+@Table
+public class Person {
+  private Long id;
+  private String name;
+
+  //getter and setter...
+}
+
+```
+
+定义DAO接口：
+
+```java
+
+@Dao(crudEntity = Person.class)
+public interface PersonDao {
+  Person selectOneById(Long id);
+}
+
+```
+
+获取DAO接口实例并执行查询：
+
+```java
+import io.github.afezeria.freedao.classic.runtime.DaoUtil;
+import io.github.afezeria.freedao.classic.runtime.context.DaoContext;
+
+public class Main {
+  public static void main(String[] args) {
+    //...
+    DaoContext daoContext = DaoContext.create(dataSource);
+    PersonDao personDao = DaoUtil.getInstance(PersonDao.class, daoContext);
+    Person person = personDao.selectOneById(1L);
+  }
+}
+
+```
 
 ## 实体类声明
 
@@ -23,7 +97,7 @@
 
 @Table(name = "person", primaryKeys = {"id"})
 public class Person {
-    @Column(insert = false)
+  @Column(insert = false)
     @AutoFill
     private Long id;
     private String name;
@@ -106,7 +180,7 @@ dao方法必须是抽象方法且不能声明范型参数，可选的方法有�
 
 ### CRUD方法
 
-所有方法的实体类参数除特殊说明不能null。
+所有方法的实体类参数除特殊说明不能为null。
 
 示例：
 

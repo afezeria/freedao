@@ -1,13 +1,14 @@
 plugins {
+    val ktVersion = "1.7.20"
     id("org.springframework.boot") version "2.6.2" apply false
     id("io.spring.dependency-management") version "1.0.11.RELEASE" apply false
-    kotlin("plugin.spring") version "1.7.0" apply false
-    kotlin("jvm") version "1.7.0" apply false
-    kotlin("kapt") version "1.7.0" apply false
-    kotlin("plugin.lombok") version "1.7.0" apply false
-    kotlin("plugin.allopen") version "1.7.0" apply false
+    kotlin("plugin.spring") version ktVersion apply false
+    kotlin("jvm") version ktVersion apply false
+    kotlin("kapt") version ktVersion apply false
+    kotlin("plugin.lombok") version ktVersion apply false
+    kotlin("plugin.allopen") version ktVersion apply false
     id("io.freefair.lombok") version "6.4.2" apply false
-    id("com.bnorm.power.kotlin-power-assert") version "0.11.0" apply false
+    id("com.bnorm.power.kotlin-power-assert") version "0.12.0" apply false
     id("io.github.afezeria.serial-task") version "1.0"
 
 }
@@ -29,7 +30,7 @@ subprojects {
     }
 
     group = "io.github.afezeria"
-    version = "0.2.0"
+    version = "0.2.2"
 //    version = "${version}SNAPSHOT"
 
     if (project.name.startsWith("test")) {
@@ -37,7 +38,7 @@ subprojects {
             enabled = false
         }
     } else {
-        tasks.withType<Jar>() {
+        tasks.withType<Jar> {
             enabled = true
             archiveClassifier.set("")
         }
@@ -56,7 +57,7 @@ subprojects {
             add("archives", javadocJar)
         }
 
-        configure<PublishingExtension>() {
+        configure<PublishingExtension> {
             repositories {
                 maven {
                     if (project.version.toString().endsWith("-SNAPSHOT")) {

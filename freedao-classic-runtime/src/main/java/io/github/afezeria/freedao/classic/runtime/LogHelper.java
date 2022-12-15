@@ -20,7 +20,7 @@ public class LogHelper {
                 builder.append(' ');
             }
         }
-        logger.debug("==>  Preparing: {}", builder);
+        logger.debug("==> Preparing: {}", builder);
     }
 
     public static void logArgs(Logger logger, List<Object> args) {
@@ -38,6 +38,7 @@ public class LogHelper {
         }
         logger.debug("==> Parameters: {}", builder);
     }
+
 //    public static void logResult(Statement statement){
 //
 //        if (t == null) {

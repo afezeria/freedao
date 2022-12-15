@@ -354,7 +354,7 @@ fun TypeMirror.isResultTypeHandlerAndMatchType(
                 .isSameType(Class::class.type(typeUtils.getWildcardType(Any::class.type, null)))
                     && it.modifiers.containsAll(listOf(Modifier.PUBLIC, Modifier.STATIC))
         } as ExecutableElement?
-        ?: throw HandlerException("Invalid ResultTypeHandler:${this}, missing method:public static Object handleResult(Object.class)")
+        ?: throw HandlerException("Invalid ResultTypeHandler:${this}, missing method:public static Object handleResult(Object,Class)")
     if (!handlerElement.returnType.isAssignable(type)) {
         throw HandlerException(typeNotMatchMsg())
     }

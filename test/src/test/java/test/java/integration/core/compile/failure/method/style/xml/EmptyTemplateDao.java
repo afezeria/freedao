@@ -1,4 +1,4 @@
-package test.java.integration.core.compile.success.method.style.xml;
+package test.java.integration.core.compile.failure.method.style.xml;
 
 import io.github.afezeria.freedao.annotation.Dao;
 import io.github.afezeria.freedao.annotation.XmlTemplate;

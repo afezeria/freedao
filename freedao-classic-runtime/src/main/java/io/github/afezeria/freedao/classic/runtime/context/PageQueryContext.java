@@ -26,7 +26,33 @@ public class PageQueryContext extends DaoContext {
     private static final Logger logger = LoggerFactory.getLogger(PageQueryContext.class);
     public static ThreadLocal<Page<?>> local = new ThreadLocal<>();
 
-    private static final Map<SqlSignature<?, ?>, Boolean> disableParseSqlFlag = new ConcurrentHashMap<>();
+    private static final Map<SqlSignature<?, ?>, LoggerAndFlag> skipParseSqlFlagMap = new ConcurrentHashMap<>();
+
+    /**
+     * 执行count查询
+     *
+     * @return
+     */
+    private static long execCountSql(Connection connection, Logger logger, SqlAndParamIndexPair pair, List<Object> sqlArgs) throws SQLException {
+        String countSql;
+        countSql = "select count(*) from(\n" + pair.sql + "\n) as _cot";
+        if (logger.isDebugEnabled()) {
+            LogHelper.logSql(logger, countSql);
+            LogHelper.logArgs(logger, sqlArgs);
+        }
+
+        try (PreparedStatement stmt = connection.prepareStatement(countSql)) {
+            for (int i = 0; i < sqlArgs.size(); i++) {
+                if (pair.indexOfParameterToSkip.contains(i + 1)) {
+                    continue;
+                }
+                stmt.setObject(i + 1, sqlArgs.get(i));
+            }
+            ResultSet resultSet = stmt.executeQuery();
+            resultSet.next();
+            return resultSet.getLong(1);
+        }
+    }
 
     @Override
     @SuppressWarnings("unchecked")
@@ -46,23 +72,33 @@ public class PageQueryContext extends DaoContext {
         }
 
         Select select = null;
+        LoggerAndFlag loggerAndFlag = skipParseSqlFlagMap.get(signature);
         try {
-            if (disableParseSqlFlag.get(signature) == null) {
+            if (loggerAndFlag == null) {
+                select = (Select) CCJSqlParserUtil.parse(sql);
+                loggerAndFlag = new LoggerAndFlag(
+                        LoggerFactory.getLogger(signature.getLogger().getName() + "_count"),
+                        false
+                );
+            } else if (!loggerAndFlag.skipParseSql) {
                 select = (Select) CCJSqlParserUtil.parse(sql);
             }
         } catch (JSQLParserException e) {
-            disableParseSqlFlag.put(signature, true);
+            loggerAndFlag = new LoggerAndFlag(null, true);
+            skipParseSqlFlagMap.put(signature, loggerAndFlag);
             logger.debug("parse sql failure", e);
         } catch (ClassCastException e) {
-            disableParseSqlFlag.put(signature, true);
+            skipParseSqlFlagMap.put(signature, new LoggerAndFlag(null, true));
             throw new RuntimeException("cannot convert non select sql into a paged sql");
         }
 
         Select finalSelect = select;
+        Logger sqlLogger = loggerAndFlag.logger;
         return getDelegate().withConnection(connection -> {
             try {
                 if (!page.isSkipCount() && !page.isOrderByOnly()) {
-                    long count = execCountSql(connection, finalSelect, signature, sql, sqlArgs);
+                    SqlAndParamIndexPair pair = optimizeSql(finalSelect, sql, true, true, true, true);
+                    long count = execCountSql(connection, sqlLogger, pair, sqlArgs);
 
                     page.setTotal(count);
                     int offset = (page.getPageIndex() - 1) * page.getPageSize();
@@ -85,7 +121,7 @@ public class PageQueryContext extends DaoContext {
                     sqlArgs.remove(idx - 1);
                 }
                 T result = getDelegate().execute(signature, methodArgs, pageSql, sqlArgs, executor, resultHandler);
-                page.setRecords(new ArrayList(((Collection<?>) result)));
+                page.setRecords(new ArrayList((Collection<?>) result));
 
                 return result;
             } catch (SQLException e) {
@@ -93,33 +129,6 @@ public class PageQueryContext extends DaoContext {
             }
 
         });
-    }
-
-    /**
-     * 执行count查询
-     *
-     * @return
-     */
-    private static long execCountSql(Connection connection, Select select, SqlSignature<?, ?> signature, String originalSql, List<Object> sqlArgs) throws SQLException {
-        String countSql;
-        SqlAndParamIndexPair pair = optimizeSql(select, originalSql, true, true, true, true);
-        countSql = "select count(*) from(\n" + pair.sql + "\n) as _cot";
-        if (logger.isDebugEnabled()) {
-            LogHelper.logSql(logger, countSql);
-            LogHelper.logArgs(logger, sqlArgs);
-        }
-
-        try (PreparedStatement stmt = connection.prepareStatement(countSql)) {
-            for (int i = 0; i < sqlArgs.size(); i++) {
-                if (pair.indexOfParameterToSkip.contains(i + 1)) {
-                    continue;
-                }
-                stmt.setObject(i + 1, sqlArgs.get(i));
-            }
-            ResultSet resultSet = stmt.executeQuery();
-            resultSet.next();
-            return resultSet.getLong(1);
-        }
     }
 
     private static class SqlAndParamIndexPair {
@@ -171,5 +180,15 @@ public class PageQueryContext extends DaoContext {
         plainSelect.setOffset(offset);
         plainSelect.setOrderByElements(orderByElements);
         return pair;
+    }
+
+    static class LoggerAndFlag {
+        Logger logger;
+        boolean skipParseSql;
+
+        public LoggerAndFlag(Logger logger, boolean skipParseSql) {
+            this.logger = logger;
+            this.skipParseSql = skipParseSql;
+        }
     }
 }

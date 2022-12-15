@@ -8,7 +8,6 @@ import java.lang.annotation.*;
 @Target({ElementType.TYPE, ElementType.CONSTRUCTOR})
 @Retention(RetentionPolicy.RUNTIME)
 @Repeatable(Join.List.class)
-
 public @interface Join {
     /**
      * 唯一标识，同一实体类上多个Join之间id不能相同

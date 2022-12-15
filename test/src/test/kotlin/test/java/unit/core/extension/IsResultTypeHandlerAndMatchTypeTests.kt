@@ -20,7 +20,7 @@ class IsResultTypeHandlerAndMatchTypeTests : UnitBaseTest {
     companion object {
         private val classNameRegex = "public \\w+ (\\w+)".toRegex()
         private const val MISS_METHOD_MSG =
-            "Invalid ResultTypeHandler:Handler, missing method:public static Object handleResult(Object.class)"
+            "Invalid ResultTypeHandler:Handler, missing method:public static Object handleResult(Object,Class)"
     }
 
     private fun resultTypeHandlerTest(

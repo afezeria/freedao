@@ -5,7 +5,6 @@ import com.squareup.javapoet.FieldSpec
 import io.github.afezeria.freedao.NoRowReturnedException
 import io.github.afezeria.freedao.TooManyResultException
 import io.github.afezeria.freedao.classic.runtime.AutoFill
-import io.github.afezeria.freedao.classic.runtime.LogHelper
 import io.github.afezeria.freedao.classic.runtime.SqlSignature
 import io.github.afezeria.freedao.processor.core.*
 import io.github.afezeria.freedao.processor.core.method.MethodHandler
@@ -100,6 +99,7 @@ class ClassicBuildMethodService : BuildMethodService {
                         io.github.afezeria.freedao.StatementType.INSERT, io.github.afezeria.freedao.StatementType.UPDATE, io.github.afezeria.freedao.StatementType.DELETE -> {
                             add("null\n")
                         }
+
                         else -> {
                             add(buildSelectResultHandler(this))
                         }
@@ -121,6 +121,9 @@ class ClassicBuildMethodService : BuildMethodService {
                 var type = parameter.type
                 if (type is PrimitiveType) {
                     type = typeUtils.boxedClass(type).asType()
+                }
+                if (type is DeclaredType && type.typeArguments.isNotEmpty()) {
+                    add("@SuppressWarnings(\"unchecked\")\n")
                 }
                 addStatement("\$T ${parameter.name.toVarName()} = (\$T) _params[\$L]", type, type, index)
             }
@@ -186,11 +189,6 @@ class ClassicBuildMethodService : BuildMethodService {
                 List::class.type(Any::class.type)
             )
             indent()
-            beginControlFlow("if ($logVar.isDebugEnabled())")
-            addStatement("\$T.logSql($logVar, $sqlVar)", LogHelper::class.type)
-            addStatement("\$T.logArgs($logVar, $argsVar)", LogHelper::class.type)
-            endControlFlow()
-
 
             if (EnableAutoFill(methodHandler)) {
                 beginControlFlow(
@@ -215,6 +213,7 @@ class ClassicBuildMethodService : BuildMethodService {
                 io.github.afezeria.freedao.StatementType.INSERT, io.github.afezeria.freedao.StatementType.UPDATE, io.github.afezeria.freedao.StatementType.DELETE -> {
                     handeUpdateMethodResultMapping(methodHandler, resultHelper)
                 }
+
                 else -> {
                     handeSelectMethodResultMapping(resultHelper)
                 }
@@ -380,6 +379,7 @@ class ClassicBuildMethodService : BuildMethodService {
                                             resultHelper.mapValueType
                                         )
                                     }
+
                                     else -> {
                                         addStatement(
                                             "$itemVar.put(\$S, $resultSetVar.getObject(\$S))",
