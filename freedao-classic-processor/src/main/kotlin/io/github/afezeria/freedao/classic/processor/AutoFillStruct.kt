@@ -42,7 +42,7 @@ class AutoFillStruct private constructor(
          * @return Triple<Int, DeclaredType?, DeclaredType>? first:在参数中的位置，second：容器类型，third：对象类型
          */
         private fun findAutoFillParameter(method: MethodHandler): AutoFillStruct? {
-            return method.parameters.indexOfFirst {
+            return method.parameters.firstOrNull {
                 it.type.run {
                     this is DeclaredType && (
                             isCustomJavaBean() || (
@@ -51,14 +51,14 @@ class AutoFillStruct private constructor(
                                     )
                             )
                 }
-            }.takeIf { it != -1 }?.let { idx ->
-                val type = method.parameters[idx].type as DeclaredType
+            }?.let {
+                val type = it.type as DeclaredType
                 if (type.isCustomJavaBean()) {
                     //单对象更新或插入
-                    AutoFillStruct(idx, null, type)
+                    AutoFillStruct(it.index, null, type)
                 } else {
                     //批量更新或插入
-                    AutoFillStruct(idx, type, type.findTypeArgument(Collection::class.type, "E"))
+                    AutoFillStruct(it.index, type, type.findTypeArgument(Collection::class.type, "E"))
                 }
             }
         }
