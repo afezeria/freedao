@@ -98,8 +98,7 @@ class AutoFillStruct private constructor(
                         .isSameType(Class::class.type(typeUtils.getWildcardType(null, null)))
                             && it.returnType.isSameType(Any::class.type)
                             && it.modifiers.containsAll(listOf(Modifier.PUBLIC, Modifier.STATIC))
-                } as ExecutableElement?
-                ?: throw HandlerException("Invalid generator:${type}, missing method:public static Object gen(Object, String, Class<?>)")
+                } ?: throw HandlerException("Invalid generator:${type}, missing method:public static Object gen(Object, String, Class<?>)")
 
         }
 

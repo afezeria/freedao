@@ -183,11 +183,7 @@ class ClassicBuildMethodService : BuildMethodService {
     private fun addExecutorFieldTemp(methodHandler: MethodHandler): CodeBlock {
         val resultHelper = methodHandler.resultHelper
         return CodeBlock.builder().apply {
-            add(
-                "($connVar, $methodArgsVar, $sqlVar, $argsVar, $resultHandlerVar) -> {\n",
-                String::class.type,
-                List::class.type(Any::class.type)
-            )
+            add("($connVar, $methodArgsVar, $sqlVar, $argsVar, $resultHandlerVar) -> {\n")
             indent()
 
             if (EnableAutoFill(methodHandler)) {
@@ -491,7 +487,7 @@ class ClassicBuildMethodService : BuildMethodService {
                         )
                     } else if (resultHelper.itemType.isSameType(Any::class)) {
                         //未指定单列类型或类型为Object
-                        addStatement("$itemVar = $resultSetVar.getObject(1)", resultHelper.itemType)
+                        addStatement("$itemVar = $resultSetVar.getObject(1)")
                     } else {
                         //无类型转换器
                         addStatement("$itemVar = $resultSetVar.getObject(1, \$T.class)", resultHelper.itemType)
