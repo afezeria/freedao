@@ -1,95 +1,43 @@
 package io.github.afezeria.freedao.processor.core
 
-import com.squareup.javapoet.*
+import com.squareup.javapoet.JavaFile
+import com.squareup.javapoet.TypeSpec
 import io.github.afezeria.freedao.annotation.Dao
 import io.github.afezeria.freedao.processor.core.method.MethodDefinition
-import io.github.afezeria.freedao.processor.core.processor.LazyType
+import io.github.afezeria.freedao.processor.core.processor.*
 import io.github.afezeria.freedao.processor.core.processor.apt.MainProcessor
-import io.github.afezeria.freedao.processor.core.processor.isSameType
-import io.github.afezeria.freedao.processor.core.processor.typeService
 import io.github.afezeria.freedao.processor.core.spi.BuildDaoService
 import java.util.*
-import javax.lang.model.element.ElementKind
-import javax.lang.model.element.Modifier
-import javax.lang.model.element.TypeElement
 
 /**
  *
  */
 class DaoHandler(
-    val element: TypeElement,
-    val type: LazyType
-) : LazyType by type {
+    val type: LazyType,
+) {
 
     init {
-        if (!type.isTopLevelType()) {
-            throw HandlerException("Dao must be top level interface")
+        if (!type.isTopLevelType) {
+            throw HandlerException("DAO must be top level interface")
         }
     }
 
-    var crudEntityType: LazyType? = type.getAnnotation(Dao::class)
-        .mirrorType { crudEntity }
+    var crudEntityType: LazyType? = type.getAnnotation(Dao::class)!!
+        .wrapperType { crudEntity }
         .takeIf { !it.isSameType(typeService.get(Any::class)) }
 
-    var crudEntity: EntityObjectModel? = null
+//    var crudEntity: EntityObjectModel? = null
 
-    //    var packageName = "${(element.enclosingElement as PackageElement).qualifiedName}"
-    var implClassName = "${element.simpleName}Impl"
-    var implQualifiedName = "$packageName.$implClassName"
+    var implClassName = "${type.simpleName}Impl"
 
     var isJavaCode: Boolean = true
 
-    var classBuilder: TypeSpec.Builder = TypeSpec.classBuilder(implClassName).apply {
-        addSuperinterface(element.asType())
-        addModifiers(Modifier.PUBLIC)
-        addAnnotations(
-            this@DaoHandler.annotations
-                .filter {
-                    !it.type.isSameType(Dao::class) && !it.type.isSameType(Metadata::class)
-                }
-                .map {
-                    AnnotationSpec.builder(
-                        ClassName.get(
-                            it.type.packageName,
-                            it.type.simpleName,
-                            *it.type.simpleNames
-                        )
-                    ).apply {
-                        it.valueName2Literal().forEach { (name, literal) ->
-                            addMember(name, CodeBlock.of(literal))
-                        }
-                    }.build()
-                }
-        )
-        addAnnotations(
-            element.annotationMirrors
-                .filter { !it.annotationType.isSameType(Dao::class) }
-                .filter { !it.annotationType.isSameType(Metadata::class) }
-                .map {
-                    AnnotationSpec.get(it)
-                }
-        )
-    }
-
-    init {
-        if (element.enclosingElement.kind != ElementKind.PACKAGE
-            || element.kind != ElementKind.INTERFACE
-            || element.kind == ElementKind.ANNOTATION_TYPE
-        ) {
-            throw HandlerException("Dao must be top level interface")
-        }
-        crudEntity =
-            element.getAnnotation(Dao::class.java)
-                .mirroredType { crudEntity }
-                .takeIf { !it.isSameType(Any::class) }
-                ?.let { EntityObjectModel(it) }
-    }
+    var classBuilder: TypeSpec.Builder = typeService.createTypeSpecBuilder(type)
 
     fun render() {
-        val exceptions = allMethods
-            .filter { m ->
-                m.modifiers.any { it == Modifier.DEFAULT || it == Modifier.STATIC }
-            }.mapNotNull {
+        val exceptions = type.allMethods
+            .filter { Modifier.DEFAULT in it.modifiers || Modifier.STATIC in it.modifiers }
+            .mapNotNull {
                 typeService.catchHandlerException(type) {
                     MethodDefinition.build(this, it).render()
                 }
@@ -116,7 +64,7 @@ class DaoHandler(
         buildDaoServices.forEach { service ->
             service.build(this, classBuilder)
         }
-        JavaFile.builder(packageName, classBuilder.build())
+        JavaFile.builder(type.packageName, classBuilder.build())
             .indent("    ")
             .build()
             .writeTo(processingEnvironment.filer)

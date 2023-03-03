@@ -1,8 +1,8 @@
 package io.github.afezeria.freedao.processor.core.template.element
 
+import io.github.afezeria.freedao.processor.core.processor.typeLA
 import io.github.afezeria.freedao.processor.core.template.TemplateHandler
 import io.github.afezeria.freedao.processor.core.template.XmlElement
-import io.github.afezeria.freedao.processor.core.type
 
 
 /**
@@ -20,7 +20,7 @@ class Java : XmlElement() {
             }
             val variable = context.createTemplateVariable(
                 "java_${lineNumber}_${columnNumber}",
-                Any::class.type,
+                Any::class.typeLA,
                 null
             )
             addStatement("$variable = $statement")

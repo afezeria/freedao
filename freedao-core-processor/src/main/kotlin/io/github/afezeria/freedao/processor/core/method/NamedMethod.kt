@@ -2,19 +2,18 @@ package io.github.afezeria.freedao.processor.core.method
 
 import io.github.afezeria.freedao.Long2IntegerResultHandler
 import io.github.afezeria.freedao.processor.core.*
+import io.github.afezeria.freedao.processor.core.processor.*
 import java.util.*
-import javax.lang.model.element.ExecutableElement
-import javax.lang.model.element.VariableElement
-import javax.lang.model.type.TypeKind
-import javax.lang.model.type.TypeMirror
 import kotlin.reflect.full.primaryConstructor
 
 abstract class NamedMethod private constructor(
-    element: ExecutableElement, daoHandler: DaoHandler,
-) : MethodHandler(element, daoHandler) {
+    daoHandler: DaoHandler, method: LazyMethod,
+) : AbstractMethodDefinition(daoHandler, method) {
 
 
-    var crudEntity: EntityObjectModel
+    val crudEntity: EntityType
+
+    //    var crudEntity: EntityObjectModel
     var dbProperties: List<BeanProperty>
     var propertyMap: Map<String, BeanProperty>
 
@@ -35,10 +34,12 @@ abstract class NamedMethod private constructor(
     var parameterLastMatchIndex = 0
 
     init {
-        crudEntity = daoHandler.crudEntity
-            ?: throw HandlerException("Method $name requires Dao.crudEntity to be specified")
-        dbProperties = crudEntity.properties.filter { it.column.exist }
-        propertyMap = crudEntity.properties.filter { it.column.exist }.associateBy { it.name }
+        crudEntity = EntityType(
+            daoHandler.crudEntityType
+                ?: throw HandlerException("Method $qualifiedName requires Dao.crudEntity to be specified")
+        )
+        dbProperties = crudEntity.allFields.filter { it.exist }
+        propertyMap = crudEntity.allFields.filter { it.exist }.associateBy { it.simpleName }
         parseName()
         checkParameters()
     }
@@ -47,7 +48,7 @@ abstract class NamedMethod private constructor(
      * 解析方法名，分离出查询条件和排序使用的属性
      */
     fun parseName() {
-        val (_, _, condAndOrder) = methodNameSplitRegex.matchEntire(name)!!.groupValues
+        val (_, _, condAndOrder) = methodNameSplitRegex.matchEntire(method.simpleName)!!.groupValues
         var list = groupingRegex.findAll(condAndOrder).mapTo(LinkedList()) { it.groupValues[0] }
         var propertyName = ""
 
@@ -66,11 +67,13 @@ abstract class NamedMethod private constructor(
                         hasOrderByClause = true
                         break
                     }
+
                     "And", "Or" -> {
                         conditions += Condition(conditionKey ?: "Is").also { it.property = property }
                         propertyName = ""
                         conditions += Condition(connectKey)
                     }
+
                     "" -> {
                         if (list.isEmpty()) {
                             conditions += Condition(conditionKey ?: "Is").also { it.property = property }
@@ -89,7 +92,7 @@ abstract class NamedMethod private constructor(
             propertyName = ""
         } else {
             if (propertyName.isNotEmpty()) {
-                throw HandlerException("missing condition property ${crudEntity.className}.${propertyName.replaceFirstChar { it.lowercase() }}")
+                throw HandlerException("missing condition property ${crudEntity.qualifiedName}.${propertyName.replaceFirstChar { it.lowercase() }}")
             }
         }
 
@@ -108,7 +111,7 @@ abstract class NamedMethod private constructor(
             }
         }
         if (propertyName.isNotEmpty()) {
-            throw HandlerException("missing order property ${crudEntity.className}.${propertyName.replaceFirstChar { it.lowercase() }}")
+            throw HandlerException("missing order property ${crudEntity.qualifiedName}.${propertyName.replaceFirstChar { it.lowercase() }}")
         }
     }
 
@@ -137,7 +140,7 @@ abstract class NamedMethod private constructor(
      */
     private fun checkParameters() {
         var parameterIdx = 0
-        val parameters = element.parameters.mapTo(LinkedList()) { it }
+        val parameters = method.parameters.mapTo(LinkedList()) { it }
         val requireParameterConditions = conditions.filter { cond ->
             //过滤And/Or(当关键字为and/or时pair的first为null)和不需要参数的条件
             cond.property != null && cond.requiredParameterTypes.isNotEmpty()
@@ -150,7 +153,7 @@ abstract class NamedMethod private constructor(
             val type = cond.requiredParameterTypes.first()
             while (parameters.isNotEmpty()) {
                 val param = parameters.first
-                if (param.asType().isAssignable(type)) {
+                if (param.type.isAssignable(type)) {
                     break
                 } else {
                     parameters.pop()
@@ -162,12 +165,12 @@ abstract class NamedMethod private constructor(
         requireParameterConditions.forEach { cond ->
             cond.requiredParameterTypes.forEach {
                 if (parameters.isEmpty()) {
-                    throw HandlerException("Missing ${it.typeName} parameter")
+                    throw HandlerException("Missing ${it.qualifiedName} parameter")
                 }
                 val parameter = parameters.pop()
                 parameterLastMatchIndex = parameterIdx
                 parameterIdx++
-                if (!parameter.asType().isAssignable(it)) {
+                if (!parameter.type.isAssignable(it)) {
                     throw HandlerException("Parameter mismatch, the ${parameterIdx}th parameter type should be $it")
                 }
                 cond.params += parameter
@@ -176,7 +179,7 @@ abstract class NamedMethod private constructor(
     }
 
     protected open fun buildSelectList(): String {
-        return crudEntity.properties.filter { it.column.exist }.joinToString { it.toSelectItem() }
+        return crudEntity.allFields.filter { it.exist }.joinToString { it.columnName }
     }
 
     protected fun buildWhereClause(): String {
@@ -189,22 +192,26 @@ abstract class NamedMethod private constructor(
     protected fun buildOrderClause(): String {
         return orderColumns.takeIf { it.isNotEmpty() }
             ?.joinToString(prefix = " order by ") { (prop, enum) ->
-                "${prop.column.name.sqlQuote()} ${enum.name.lowercase()}"
+                "${prop.columnName.sqlQuote()} ${enum.name.lowercase()}"
             } ?: ""
     }
 
-    open class Query(element: ExecutableElement, daoHandler: DaoHandler) : NamedMethod(element, daoHandler) {
+    open class Query(daoHandler: DaoHandler, method: LazyMethod) : NamedMethod(daoHandler, method) {
         init {
             init()
         }
 
         open fun init() {
-            if (!resultHelper.returnType.erasure().isAssignable(Collection::class)) {
+            if (returnTypeContainerType == null) {
                 throw HandlerException("The return type of method must be a collection")
             }
-            if (!crudEntity.type.isSameType(resultHelper.itemType)) {
-                throw HandlerException("The element type of the return type must be a ${crudEntity.type.typeName}")
+            if (!crudEntity.isSameType(returnTypeItemType)) {
+                throw HandlerException("The element type of the return type must be a ${crudEntity.qualifiedName}")
             }
+            //todo 上面两个判断可以用下面这个替换
+//            if (returnTypeContainerType == null || !returnTypeItemType.isSameType(crudEntity)) {
+//                throw HandlerException("The return type must be assignable to Collection<${crudEntity}>")
+//            }
         }
 
         override fun getTemplate(): String {
@@ -217,21 +224,21 @@ abstract class NamedMethod private constructor(
         }
     }
 
-    open class QueryOne(element: ExecutableElement, daoHandler: DaoHandler) : Query(element, daoHandler) {
+    open class QueryOne(daoHandler: DaoHandler, method: LazyMethod) : Query(daoHandler, method) {
         override fun init() {
-            if (!crudEntity.type.isSameType(resultHelper.returnType)) {
-                throw HandlerException("The return type of method must be ${crudEntity.type}")
+            if (returnTypeContainerType != null || !crudEntity.isSameType(returnTypeItemType)) {
+                throw HandlerException("The return type of method must be ${crudEntity.qualifiedName}")
             }
         }
     }
 
 
-    open class DtoQuery(element: ExecutableElement, daoHandler: DaoHandler) : Query(element, daoHandler) {
+    open class DtoQuery(daoHandler: DaoHandler, method: LazyMethod) : Query(daoHandler, method) {
         override fun init() {
-            if (!resultHelper.returnType.erasure().isAssignable(Collection::class)) {
+            if (returnTypeContainerType == null) {
                 throw HandlerException("The return type of method must be a collection")
             }
-            if (!resultHelper.itemType.isCustomJavaBean()) {
+            if (returnTypeItemType !is BeanType) {
                 throw HandlerException("The element type of the return type must be a java bean")
             }
             checkMapping()
@@ -240,19 +247,19 @@ abstract class NamedMethod private constructor(
         open fun checkMapping() {
             //从映射中移除crudEntity中不存在的字段
             mappings.removeIf { m ->
-                dbProperties.find { m.source == it.column.name || (m.target == it.name && it.column.exist) }
-                    ?.takeIf { it.type.isAssignable(m.targetType!!) }
+                dbProperties.find { m.source == it.columnName || (m.target == it.simpleName && it.exist) }
+                    ?.takeIf { it.type.isAssignable(m.targetTypeLA!!) }
                     ?.let {
-                        m.source = it.column.name
+                        m.source = it.columnName
                         //dto的映射中没有指定结果集处理器且使用entity的中对应字段的处理器
-                        if (m.typeHandler == null) {
-                            m.typeHandler = it.column.resultTypeHandle
+                        if (m.typeHandlerLA == null) {
+                            m.typeHandlerLA = it.resultTypeHandle
                         }
                         false
                     } ?: true
             }
             if (mappings.isEmpty()) {
-                throw HandlerException("There are no fields in common between entity(${crudEntity.type}) and dto(${resultHelper.itemType})")
+                throw HandlerException("There are no fields in common between entity(${crudEntity.qualifiedName}) and dto(${returnTypeItemType})")
             }
         }
 
@@ -261,17 +268,17 @@ abstract class NamedMethod private constructor(
         }
     }
 
-    class DtoQueryOne(element: ExecutableElement, daoHandler: DaoHandler) : DtoQuery(element, daoHandler) {
+    class DtoQueryOne(daoHandler: DaoHandler, method: LazyMethod) : DtoQuery(daoHandler, method) {
         override fun init() {
-            if (!resultHelper.itemType.isCustomJavaBean()) {
-                throw HandlerException("The return type of the return type must be a java bean")
+            if (returnTypeItemType !is BeanType) {
+                throw HandlerException("The element type of the return type must be a java bean")
             }
             checkMapping()
         }
     }
 
 
-    class Delete(element: ExecutableElement, daoHandler: DaoHandler) : NamedMethod(element, daoHandler) {
+    class Delete(daoHandler: DaoHandler, method: LazyMethod) : NamedMethod(daoHandler, method) {
         init {
             returnUpdateCount = true
             if (orderColumns.isNotEmpty()) {
@@ -289,31 +296,23 @@ abstract class NamedMethod private constructor(
         }
     }
 
-    class Count(element: ExecutableElement, daoHandler: DaoHandler) : NamedMethod(element, daoHandler) {
+    class Count(daoHandler: DaoHandler, method: LazyMethod) : NamedMethod(daoHandler, method) {
         init {
             if (orderColumns.isNotEmpty()) {
                 throw HandlerException("count method cannot contain a sort")
             }
-            resultHelper.returnType.apply {
-                if (!isSameType(Int::class)
-                    && !isSameType(typeUtils.getPrimitiveType(TypeKind.INT))
-                    && !isSameType(Long::class)
-                    && !isSameType(typeUtils.getPrimitiveType(TypeKind.LONG))
-                ) {
-                    throw HandlerException("The return type of count method must be Integer/int or Long/long")
-                }
+            if (!returnTypeItemType.isSameType(Int::class) && !returnTypeItemType.isSameType(Long::class)) {
+                throw HandlerException("The return type of count method must be Integer/int or Long/long")
             }
 
             mappings += MappingData(
                 source = "_cot",
                 target = "",
-                typeHandler = Long2IntegerResultHandler::class.type.takeIf {
-                    resultHelper.returnType.isSameType(Int::class)
-                            || resultHelper.returnType.isSameType(typeUtils.getPrimitiveType(TypeKind.INT))
+                typeHandlerLA = Long2IntegerResultHandler::class.typeLA.takeIf {
+                    returnTypeItemType.isSameType(Int::class)
                 },
-                targetType = Int::class.type.takeIf {
-                    resultHelper.returnType.isSameType(Int::class)
-                            || resultHelper.returnType.isSameType(typeUtils.getPrimitiveType(TypeKind.INT))
+                targetTypeLA = Int::class.typeLA.takeIf {
+                    returnTypeItemType.isSameType(Int::class)
                 },
                 constructorParameterIndex = -1
             )
@@ -385,16 +384,16 @@ abstract class NamedMethod private constructor(
             return s
         }
 
-        operator fun invoke(element: ExecutableElement, daoHandler: DaoHandler): NamedMethod? {
-            val name = element.simpleName.toString()
+        operator fun invoke(daoHandler: DaoHandler, method: LazyMethod): NamedMethod? {
+            val name = method.simpleName
             return name.run {
                 when {
-                    matches(queryPrefix) -> Query(element, daoHandler)
-                    matches(queryOnePrefix) -> QueryOne(element, daoHandler)
-                    matches(dtoQueryPrefix) -> DtoQuery(element, daoHandler)
-                    matches(dtoQueryOnePrefix) -> DtoQueryOne(element, daoHandler)
-                    matches(countPrefix) -> Count(element, daoHandler)
-                    matches(deletePrefix) -> Delete(element, daoHandler)
+                    matches(queryPrefix) -> Query(daoHandler, method)
+                    matches(queryOnePrefix) -> QueryOne(daoHandler, method)
+                    matches(dtoQueryPrefix) -> DtoQuery(daoHandler, method)
+                    matches(dtoQueryOnePrefix) -> DtoQueryOne(daoHandler, method)
+                    matches(countPrefix) -> Count(daoHandler, method)
+                    matches(deletePrefix) -> Delete(daoHandler, method)
                     else -> null
                 }
             }
@@ -409,15 +408,15 @@ abstract class NamedMethod private constructor(
          * @constructor
          */
         sealed class Condition(
-            private val requiredParameterTypesFn: Condition.() -> List<TypeMirror> = { listOf(property!!.type) },
+            private val requiredParameterTypesFn: Condition.() -> List<LazyType> = { listOf(property!!.type) },
             private val renderFn: Condition.() -> String,
         ) {
 
 
             var property: BeanProperty? = null
-            val params = mutableListOf<VariableElement>()
+            val params = mutableListOf<LazyVariable>()
             val column: String
-                get() = property!!.column.name.sqlQuote()
+                get() = property!!.columnName.sqlQuote()
 
             val requiredParameterTypes by lazy { requiredParameterTypesFn(this) }
 
@@ -431,7 +430,7 @@ abstract class NamedMethod private constructor(
             fun createSqlParameter(methodParameterIndex: Int) =
                 "#{${params[methodParameterIndex].simpleName}${typeHandlerStr()}}"
 
-            fun typeHandlerStr() = property?.column?.parameterTypeHandle?.let { ",typeHandler=${it}" } ?: ""
+            fun typeHandlerStr() = property?.parameterTypeHandle?.let { ",typeHandler=${it.qualifiedName}" } ?: ""
 
             class LessThanEqual : Condition(renderFn = { "$column &lt;= ${createSqlParameter(0)}" })
             class GreaterThanEqual : Condition(renderFn = { "$column &gt;= ${createSqlParameter(0)}" })
@@ -442,7 +441,7 @@ abstract class NamedMethod private constructor(
             class LessThan : Condition(renderFn = { "$column &lt; ${createSqlParameter(0)}" })
             class GreaterThan : Condition(renderFn = { "$column &gt; ${createSqlParameter(0)}" })
             class NotIn : Condition(
-                requiredParameterTypesFn = { listOf(Collection::class.type(property!!.type)) },
+                requiredParameterTypesFn = { listOf(Collection::class.typeLA(property!!.type)) },
                 renderFn = {
                     "$column not in (<foreach collection='${params[0].simpleName}' item='item' separator=','>#{item${typeHandlerStr()}}</foreach>)"
                 }
@@ -462,7 +461,7 @@ abstract class NamedMethod private constructor(
 
             class Not : Condition(renderFn = { "$column &lt;&gt; ${createSqlParameter(0)}" })
             class In : Condition(
-                requiredParameterTypesFn = { listOf(Collection::class.type(property!!.type)) },
+                requiredParameterTypesFn = { listOf(Collection::class.typeLA(property!!.type)) },
                 renderFn = {
                     "$column in (<foreach collection='${params[0].simpleName}' item='item' separator=','>#{item${typeHandlerStr()}}</foreach>)"
                 }

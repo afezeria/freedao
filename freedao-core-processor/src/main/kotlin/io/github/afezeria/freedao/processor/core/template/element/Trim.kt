@@ -1,7 +1,7 @@
 package io.github.afezeria.freedao.processor.core.template.element
 
+import io.github.afezeria.freedao.TrimHelper
 import io.github.afezeria.freedao.processor.core.template.XmlElement
-import io.github.afezeria.freedao.processor.core.type
 
 open class Trim : XmlElement() {
 
@@ -34,7 +34,7 @@ open class Trim : XmlElement() {
                 .sortedBy { it.length }
             addStatement("\$L = \$T.appendAndTrim(\$L,\$S,new String[]{${prefixArr.joinToString { "\$S" }}},new String[]{${suffixArr.joinToString { "\$S" }}})",
                 builderName,
-                io.github.afezeria.freedao.TrimHelper::class.type,
+                TrimHelper::class.java,
                 builderName,
                 prefix,
                 *prefixArr.toTypedArray(),

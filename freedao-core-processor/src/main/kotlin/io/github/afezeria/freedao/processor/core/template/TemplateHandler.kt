@@ -1,18 +1,17 @@
 package io.github.afezeria.freedao.processor.core.template
 
 import com.squareup.javapoet.CodeBlock
-import io.github.afezeria.freedao.processor.core.*
+import io.github.afezeria.freedao.processor.core.HandlerException
+import io.github.afezeria.freedao.processor.core.PlaceholderGen
+import io.github.afezeria.freedao.processor.core.processor.*
 import java.util.*
-import javax.lang.model.type.DeclaredType
-import javax.lang.model.type.PrimitiveType
-import javax.lang.model.type.TypeMirror
 
 /**
  *
  */
 
 
-class TemplateHandler(map: Map<String, TypeMirror>) {
+class TemplateHandler(map: Map<String, LazyType>) {
     private val codeBlock: CodeBlock.Builder = CodeBlock.builder()
     val placeholderGen = PlaceholderGen()
 
@@ -28,7 +27,7 @@ class TemplateHandler(map: Map<String, TypeMirror>) {
     /**
      * key为变量名，value为类型
      */
-    private val parameterStack: Deque<MutableMap<String, TypeMirror>> = LinkedList()
+    private val parameterStack: Deque<MutableMap<String, LazyType>> = LinkedList()
 
 
     init {
@@ -62,7 +61,7 @@ class TemplateHandler(map: Map<String, TypeMirror>) {
      * @param name String
      * @return Pair<String,TypeMirror>
      */
-    private fun getContextVar(name: String): Pair<String, TypeMirror>? {
+    private fun getContextVar(name: String): Pair<String, LazyType>? {
         for (map in parameterStack) {
             map[name.toVarName()]?.apply {
                 return name.toVarName() to this
@@ -88,78 +87,82 @@ class TemplateHandler(map: Map<String, TypeMirror>) {
      * @return Pair<String, TypeMirror> first为path转换后的java代码文本，second为first的结果的类型，
      * [expectType]不为空时second等于[expectType]
      */
-    fun createInvokeChain(path: String, expectType: TypeMirror? = null): Pair<String, TypeMirror> {
+    fun createInvokeChain(path: String, expectType: LazyType? = null): Pair<String, LazyType> {
         val arr = path.split(".").toMutableList()
         val first = arr.removeFirst()
         var (text, type) = getContextVar(first) ?: throw RuntimeException("property '$first' not found")
         if (type is PrimitiveType) {
-            type = typeUtils.boxedClass(type).asType()
-            text = "($type) $text"
+            type = type.boxed()
+            text = "(${type.qualifiedName}) $text"
         }
         var originalText = first
 
         for (s in arr) {
-            val declaredType = type as DeclaredType
             when {
-                s.isKey() -> {
+                s.isMapKey() -> {
                     when {
                         type.isSameType(Any::class) -> {
-                            text = "((java.util.Map)$text).get($s)"
-                            type = Any::class.type
+                            text = "((java.util.Map) $text).get($s)"
+                            type = Any::class.typeLA
                         }
+
                         type.isAssignable(Map::class) -> {
                             text = "$text.get($s)"
-                            type = declaredType.findTypeArgument(Map::class.type, "V") //?: Any::class.type
+                            type = type.findTypeArgument(Map::class.typeLA, "V")
                         }
+
                         else -> {
                             throw HandlerException("$originalText is not a map")
                         }
                     }
                 }
-                s.isIndex() -> {
+
+                s.isListIndex() -> {
                     when {
                         type.isSameType(Any::class) -> {
                             text = "((java.util.List)$text).get($s)"
-                            type = Any::class.type
+                            type = Any::class.typeLA
                         }
+
                         type.isAssignable(List::class) -> {
                             text = "$text.get($s)"
-                            type = declaredType.typeArguments.takeIf { it.isNotEmpty() }?.get(0) ?: Any::class.type
+                            type = type.typeParameters.takeIf { it.isNotEmpty() }?.get(0) ?: Any::class.typeLA
                         }
+
                         else -> {
                             throw HandlerException("$originalText is not a list")
                         }
                     }
                 }
+
                 else -> {
                     if (type.isSameType(Any::class)) {
+                        //如果不知道字段类型就反射处理
                         text = "${io.github.afezeria.freedao.ReflectHelper::class.qualifiedName}.call($text,\"$s\")"
-                        type = Any::class.type
+                        type = Any::class.typeLA
                     } else if (type.isAssignable(Collection::class) || type.isAssignable(Map::class) && s == "size") {
-                        type = Int::class.type
+                        //唯一允许的方法调用是map/list的size方法
+                        type = Int::class.typeLA
                         text = "(${type}) $text.size()"
                     } else {
-                        try {
-
-                            type = declaredType.getBeanPropertyType(s) {
-                                "error expr:$originalText.$s, missing property:${declaredType}.$s"
-                            }
-                        } catch (e: Exception) {
-                            throw e
-                        }
+                        //找到字段类型
+                        type = type.allFields.find { it.simpleName == s }
+                            ?.type
+                            ?: throw HandlerException("error expr:$originalText.$s, missing property:${type}.$s")
                         text = "$text.get${s.replaceFirstChar { it.uppercaseChar() }}()"
                     }
                 }
             }
             if (type is PrimitiveType) {
-                type = typeUtils.boxedClass(type).asType()
+                type = type.boxed()
                 text = "($type) $text"
             }
             originalText += ".$s"
         }
+
         return if (expectType != null) {
             when {
-                type.isSameType(Any::class) -> "((${expectType.typeName}) $text)" to expectType
+                type.isSameType(Any::class) -> "((${expectType.qualifiedName}) $text)" to expectType
                 type.isAssignable(expectType) -> text to type
                 else -> throw HandlerException("$originalText is of type $type cannot assignable to $expectType")
             }
@@ -174,11 +177,11 @@ class TemplateHandler(map: Map<String, TypeMirror>) {
      * @param expectType TypeMirror?
      * @return ScopeVariable
      */
-    fun createInternalVariableByContextValue(path: String, expectType: TypeMirror? = null): Pair<String, TypeMirror> {
+    fun createInternalVariableByContextValue(path: String, expectType: LazyType? = null): Pair<String, LazyType> {
         val (text, type) = createInvokeChain(path, expectType)
         val tmpVar = newTmpVar()
         currentScope {
-            addStatement("\$T $tmpVar = $text", type)
+            addStatement("\$T $tmpVar = $text", type.className)
         }
         return tmpVar to type
     }
@@ -190,21 +193,21 @@ class TemplateHandler(map: Map<String, TypeMirror>) {
      * @param defaultValue Any? 默认值
      * @return ScopeVariable
      */
-    fun createTemplateVariable(name: String, type: TypeMirror, defaultValue: Any?): String {
+    fun createTemplateVariable(name: String, type: LazyType, defaultValue: Any?): String {
         if (getContextVar(name) != null) {
             throw HandlerException("Property '$name' already exists")
         }
         val varName = name.toVarName()
         parameterStack.first[varName] = type
         currentScope {
-            addStatement("\$T $varName = \$L", type.typeName, defaultValue)
+            addStatement("\$T $varName = \$L", type.className, defaultValue)
         }
         return varName
     }
 
-    fun createInternalFlag(type: TypeMirror, initValue: Any?): String {
+    fun createInternalFlag(type: LazyType, initValue: Any?): String {
         val varName = newTmpVar()
-        codeBlock.addStatement("\$T $varName = \$L", type, initValue)
+        codeBlock.addStatement("\$T $varName = \$L", type.className, initValue)
         return varName
     }
 
@@ -237,8 +240,8 @@ class TemplateHandler(map: Map<String, TypeMirror>) {
 
         private val indexRegex = "\\d+".toRegex()
 
-        private fun String.isKey(): Boolean = startsWith("\"")
-        private fun String.isIndex(): Boolean = matches(indexRegex)
+        private fun String.isMapKey(): Boolean = startsWith("\"")
+        private fun String.isListIndex(): Boolean = matches(indexRegex)
 
         /**
          * 生成模板中可用的属性名对应的变量名

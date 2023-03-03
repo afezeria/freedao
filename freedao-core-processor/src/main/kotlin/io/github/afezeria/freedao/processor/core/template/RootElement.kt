@@ -1,9 +1,9 @@
 package io.github.afezeria.freedao.processor.core.template
 
 import com.squareup.javapoet.CodeBlock
-import io.github.afezeria.freedao.processor.core.method.MethodHandler
+import io.github.afezeria.freedao.processor.core.method.AbstractMethodDefinition
 
-class RootElement(methodHandler: MethodHandler) : XmlElement() {
+class RootElement(methodHandler: AbstractMethodDefinition) : XmlElement() {
 
     override val context: TemplateHandler
 
@@ -11,7 +11,7 @@ class RootElement(methodHandler: MethodHandler) : XmlElement() {
         context =
             TemplateHandler(
                 methodHandler.parameters
-                    .associate { it.name to it.type}
+                    .associate { it.simpleName to it.type }
             )
 
         init(methodHandler.xmlDocument.childNodes.item(0))

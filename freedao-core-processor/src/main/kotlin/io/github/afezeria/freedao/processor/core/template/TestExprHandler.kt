@@ -1,9 +1,10 @@
 package io.github.afezeria.freedao.processor.core.template
 
 import io.github.afezeria.freedao.processor.core.HandlerException
-import io.github.afezeria.freedao.processor.core.isAssignable
-import io.github.afezeria.freedao.processor.core.isSameType
-import io.github.afezeria.freedao.processor.core.type
+import io.github.afezeria.freedao.processor.core.antlr.TestExprParser
+import io.github.afezeria.freedao.processor.core.processor.isAssignable
+import io.github.afezeria.freedao.processor.core.processor.isSameType
+import io.github.afezeria.freedao.processor.core.processor.typeLA
 import org.antlr.v4.runtime.*
 import org.antlr.v4.runtime.tree.ParseTree
 import java.util.*
@@ -12,9 +13,10 @@ import java.util.*
 /**
  *
  */
-class TestExprHandler(val context: TemplateHandler, val test: String) : io.github.afezeria.freedao.processor.core.antlr.TestExprBaseVisitor<Unit>() {
+class TestExprHandler(val context: TemplateHandler, val test: String) :
+    io.github.afezeria.freedao.processor.core.antlr.TestExprBaseVisitor<Unit>() {
     private val builder = StringBuilder()
-    private val condFlag = context.createInternalFlag(Boolean::class.type, false)
+    private val condFlag = context.createInternalFlag(Boolean::class.typeLA, false)
     private val parameters = mutableListOf<Any>()
 
     fun handle(): String {
@@ -37,7 +39,7 @@ class TestExprHandler(val context: TemplateHandler, val test: String) : io.githu
             addErrorListener(listener)
         }
         val tokens = CommonTokenStream(lexer)
-        val parser = io.github.afezeria.freedao.processor.core.antlr.TestExprParser(tokens).apply {
+        val parser = TestExprParser(tokens).apply {
             removeErrorListeners()
             addErrorListener(listener)
         }
@@ -54,7 +56,7 @@ class TestExprHandler(val context: TemplateHandler, val test: String) : io.githu
         throw HandlerException("[$test] $msg")
     }
 
-    override fun visitExpr(ctx: io.github.afezeria.freedao.processor.core.antlr.TestExprParser.ExprContext) {
+    override fun visitExpr(ctx: TestExprParser.ExprContext) {
         ctx.apply {
             if (childCount == 3) {
                 if (children[0].text == "(") {
@@ -74,9 +76,9 @@ class TestExprHandler(val context: TemplateHandler, val test: String) : io.githu
         }
     }
 
-    override fun visitLiteralComparisonOperation(ctx: io.github.afezeria.freedao.processor.core.antlr.TestExprParser.LiteralComparisonOperationContext) {
+    override fun visitLiteralComparisonOperation(ctx: TestExprParser.LiteralComparisonOperationContext) {
         val expectType = when (ctx.right.type) {
-            io.github.afezeria.freedao.processor.core.antlr.TestExprParser.NUMBER -> {
+            TestExprParser.NUMBER -> {
                 if (ctx.right.text.endsWith("L")) {
                     Long::class
                 } else if (ctx.right.text.contains(".")) {
@@ -85,18 +87,21 @@ class TestExprHandler(val context: TemplateHandler, val test: String) : io.githu
                     Int::class
                 }
             }
-            io.github.afezeria.freedao.processor.core.antlr.TestExprParser.TEXT -> {
+
+            TestExprParser.TEXT -> {
                 String::class
             }
-            io.github.afezeria.freedao.processor.core.antlr.TestExprParser.CHAR -> {
+
+            TestExprParser.CHAR -> {
                 Char::class
             }
+
             else -> {
                 throw IllegalStateException("unreachable")
             }
-        }.type
+        }.typeLA
         val (chainText, _) = context.createInvokeChain(ctx.INVOKE_CHAIN().text, expectType)
-        if (ctx.op.type == io.github.afezeria.freedao.processor.core.antlr.TestExprParser.EQUAL_OP) {
+        if (ctx.op.type == TestExprParser.EQUAL_OP) {
             builder.append("${if (ctx.op.text == "==") "" else "!"}\$T.equals(${chainText}, ${ctx.right.text})")
             parameters.add(Objects::class.java)
         } else {
@@ -105,30 +110,32 @@ class TestExprHandler(val context: TemplateHandler, val test: String) : io.githu
 
     }
 
-    override fun visitLiteralLogicalOperation(ctx: io.github.afezeria.freedao.processor.core.antlr.TestExprParser.LiteralLogicalOperationContext) {
-        val (chainText, _) = context.createInvokeChain(ctx.INVOKE_CHAIN().text, Boolean::class.type)
+    override fun visitLiteralLogicalOperation(ctx: TestExprParser.LiteralLogicalOperationContext) {
+        val (chainText, _) = context.createInvokeChain(ctx.INVOKE_CHAIN().text, Boolean::class.typeLA)
         builder.append("$chainText ${logicalOp(ctx.getChild(1).text)} ${ctx.getChild(2).text}")
     }
 
-    override fun visitNullCheck(ctx: io.github.afezeria.freedao.processor.core.antlr.TestExprParser.NullCheckContext) {
+    override fun visitNullCheck(ctx: TestExprParser.NullCheckContext) {
         val (chainText, _) = context.createInvokeChain(ctx.INVOKE_CHAIN().text)
         builder.append("$chainText ${ctx.getChild(1).text} null")
     }
 
-    override fun visitVarOperation(ctx: io.github.afezeria.freedao.processor.core.antlr.TestExprParser.VarOperationContext) {
+    override fun visitVarOperation(ctx: TestExprParser.VarOperationContext) {
         when (ctx.op.type) {
-            io.github.afezeria.freedao.processor.core.antlr.TestExprParser.EQUAL_OP -> {
+            TestExprParser.EQUAL_OP -> {
                 val (leftText, _) = context.createInvokeChain(ctx.INVOKE_CHAIN(0).text)
                 val (rightText, _) = context.createInvokeChain(ctx.INVOKE_CHAIN(1).text)
                 builder.append("${if (ctx.op.text == "==") "" else "!"}\$T.equals(${leftText}, ${rightText})")
                 parameters.add(Objects::class.java)
             }
-            io.github.afezeria.freedao.processor.core.antlr.TestExprParser.LOGICAL_OP -> {
-                val (leftText, _) = context.createInvokeChain(ctx.INVOKE_CHAIN(0).text, Boolean::class.type)
-                val (rightText, _) = context.createInvokeChain(ctx.INVOKE_CHAIN(1).text, Boolean::class.type)
+
+            TestExprParser.LOGICAL_OP -> {
+                val (leftText, _) = context.createInvokeChain(ctx.INVOKE_CHAIN(0).text, Boolean::class.typeLA)
+                val (rightText, _) = context.createInvokeChain(ctx.INVOKE_CHAIN(1).text, Boolean::class.typeLA)
                 builder.append("$leftText ${logicalOp(ctx.op.text)} $rightText")
             }
-            io.github.afezeria.freedao.processor.core.antlr.TestExprParser.COMPARISON_OP -> {
+
+            TestExprParser.COMPARISON_OP -> {
                 val (leftText, leftType) = context.createInvokeChain(ctx.INVOKE_CHAIN(0).text)
                 val (rightText, rightType) = context.createInvokeChain(ctx.INVOKE_CHAIN(1).text)
                 if (!leftType.isSameType(Any::class) && !leftType.isAssignable(Comparable::class)) {
@@ -138,14 +145,18 @@ class TestExprHandler(val context: TemplateHandler, val test: String) : io.githu
                     throwWithExpr("${ctx.INVOKE_CHAIN(1).text} is not comparable")
                 }
                 if (!leftType.isSameType(Any::class) && !rightType.isSameType(Any::class) && !leftType.isSameType(
-                        rightType)
+                        rightType
+                    )
                 ) {
-                    throwWithExpr("Unable to compare ${ctx.INVOKE_CHAIN(0)}:${leftType} and ${
-                        ctx.INVOKE_CHAIN(1)
-                    }:${rightType}")
+                    throwWithExpr(
+                        "Unable to compare ${ctx.INVOKE_CHAIN(0)}:${leftType} and ${
+                            ctx.INVOKE_CHAIN(1)
+                        }:${rightType}"
+                    )
                 }
                 builder.append("((Comparable)$leftText).compareTo(${rightText}) ${ctx.op.text} 0")
             }
+
             else -> throw IllegalStateException("unreachable")
         }
     }

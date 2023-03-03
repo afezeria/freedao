@@ -72,13 +72,16 @@ class MainProcessor : AbstractProcessor() {
         super.init(processingEnv)
         processingEnvironment = processingEnv
         GlobalState.init()
+        typeService = AptTypeService(processingEnv)
     }
 
 
     private fun processElement(element: Element) {
         try {
+            println()
+//            typeService.get(ArrayList::class.javaObjectType.canonicalName!!)
             runCatchingHandlerExceptionOrThrow(element) {
-                DaoHandler(element as TypeElement, typeService.get(element.toString())).render()
+                DaoHandler(typeService.get(element.toString())).render()
             }
         } catch (e: Exception) {
             val stringWriter = StringWriter()

@@ -12,6 +12,9 @@ dependencies {
     api(libs.javapoet)
     api(libs.antlr)
 
+    implementation("io.kotest:kotest-assertions-core:5.5.5")
+    implementation("io.kotest:kotest-property:5.5.5")
+
 }
 kotlin {
     jvmToolchain {

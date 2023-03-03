@@ -1,10 +1,8 @@
 package io.github.afezeria.freedao.processor.core.template.element
 
-import io.github.afezeria.freedao.ParameterTypeHandler
-import io.github.afezeria.freedao.processor.core.HandlerException
-import io.github.afezeria.freedao.processor.core.elementUtils
-import io.github.afezeria.freedao.processor.core.isParameterTypeHandlerAndMatchType
-import io.github.afezeria.freedao.processor.core.isSameType
+import io.github.afezeria.freedao.processor.core.processor.isSameType
+import io.github.afezeria.freedao.processor.core.processor.throwIfNotParameterTypeHandlerOrNotMatchType
+import io.github.afezeria.freedao.processor.core.processor.typeService
 import io.github.afezeria.freedao.processor.core.template.TemplateHandler
 import io.github.afezeria.freedao.processor.core.template.XmlElement
 import java.util.*
@@ -53,11 +51,10 @@ class TextElement : XmlElement() {
                         val pair =
                             it.groupValues[2].takeIf { it.isNotBlank() }
                                 ?.run {
-                                    (elementUtils.getTypeElement(this)
-                                        ?: throw HandlerException("class not found:$this")).asType()
-                                        .isParameterTypeHandlerAndMatchType(exprType)
+                                    typeService.get(this)
+                                        .throwIfNotParameterTypeHandlerOrNotMatchType(exprType)
                                 }
-                        if (pair == null || pair.first.isSameType(ParameterTypeHandler::class)) {
+                        if (pair == null) {
                             addStatement("${TemplateHandler.sqlArgsVarName}.add(${tmpVar})")
                         } else {
                             val (handlerType, handleMethodParameterType) = pair
@@ -67,6 +64,24 @@ class TextElement : XmlElement() {
                                 addStatement("${TemplateHandler.sqlArgsVarName}.add($handlerType.handleParameter(${tmpVar}))")
                             }
                         }
+//                        val pair =
+//                            it.groupValues[2].takeIf { it.isNotBlank() }
+//                                ?.run {
+//
+//                                    (elementUtils.getTypeElement(this)
+//                                        ?: throw HandlerException("class not found:$this")).asType()
+//                                        .isParameterTypeHandlerAndMatchType(exprType)
+//                                }
+//                        if (pair == null || pair.first.isSameType(ParameterTypeHandler::class)) {
+//                            addStatement("${TemplateHandler.sqlArgsVarName}.add(${tmpVar})")
+//                        } else {
+//                            val (handlerType, handleMethodParameterType) = pair
+//                            if (exprType.isSameType(Any::class) && !handleMethodParameterType.isSameType(Any::class)) {
+//                                addStatement("${TemplateHandler.sqlArgsVarName}.add($handlerType.handleParameter(($handleMethodParameterType) ${tmpVar}))")
+//                            } else {
+//                                addStatement("${TemplateHandler.sqlArgsVarName}.add($handlerType.handleParameter(${tmpVar}))")
+//                            }
+//                        }
                         context.placeholderGen.gen()
                     }
                 }

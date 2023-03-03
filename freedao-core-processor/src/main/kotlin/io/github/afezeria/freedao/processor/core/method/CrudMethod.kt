@@ -1,34 +1,44 @@
 package io.github.afezeria.freedao.processor.core.method
 
 import io.github.afezeria.freedao.Long2IntegerResultHandler
-import io.github.afezeria.freedao.processor.core.*
-import javax.lang.model.element.ExecutableElement
-import javax.lang.model.type.TypeKind
+import io.github.afezeria.freedao.processor.core.DaoHandler
+import io.github.afezeria.freedao.processor.core.HandlerException
+import io.github.afezeria.freedao.processor.core.MappingData
+import io.github.afezeria.freedao.processor.core.processor.*
+import io.github.afezeria.freedao.processor.core.sqlQuote
 
 
-abstract class CrudMethod private constructor(element: ExecutableElement, daoHandler: DaoHandler) :
-    MethodHandler(element, daoHandler) {
+abstract class CrudMethod private constructor(
+    daoHandler: DaoHandler,
+    method: LazyMethod,
+) : AbstractMethodDefinition(daoHandler, method) {
 
-    val crudEntity: EntityObjectModel
+    //    val crudEntity: EntityObjectModel
+    val crudEntity: EntityType
 
     val parameterName: String
 
     init {
-        crudEntity = daoHandler.crudEntity
-            ?: throw HandlerException("Method $name requires Dao.crudEntity to be specified")
+//        crudEntity = daoHandler.crudEntity
+//            ?: throw HandlerException("Method $name requires Dao.crudEntity to be specified")
 
-        val parameter = parameters.find { it.type.isAssignable(crudEntity.type) }
-            ?: throw HandlerException("Missing parameter of type ${crudEntity.type}")
-        parameterName = parameter.name
+        crudEntity = EntityType(
+            daoHandler.crudEntityType
+                ?: throw HandlerException("Method $qualifiedName requires Dao.crudEntity to be specified")
+        )
+
+        val parameter = parameters.find { it.type.isAssignable(crudEntity) }
+            ?: throw HandlerException("Missing parameter of type ${crudEntity.qualifiedName}")
+        parameterName = parameter.simpleName
     }
 
 
     val where: String by lazy {
-        crudEntity.properties.joinToString(separator = "\n") {
+        crudEntity.allFields.joinToString(separator = "\n") {
             //language=Xml
             """
-                    <if test='${parameterName}.${it.name} != null'>
-                    and ${it.column.name.sqlQuote()} = ${it.sqlParameterStr(parameterName)}
+                    <if test='${parameterName}.${it.simpleName} != null'>
+                    and ${it.columnName.sqlQuote()} = ${it.templateParameterStr(parameterName)}
                     </if>
             """.trimIndent()
         }
@@ -37,47 +47,43 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
 
     companion object {
         operator fun invoke(
-            element: ExecutableElement,
             daoHandler: DaoHandler,
+            method: LazyMethod,
         ): CrudMethod? {
-            return when (element.simpleName.toString()) {
-                "count" -> Count(element, daoHandler)
-                "delete" -> Delete(element, daoHandler)
-                "insert" -> Insert(element, daoHandler)
-                "insertNonNullFields" -> InsertNonNullFields(element, daoHandler)
-                "update" -> Update(element, daoHandler)
-                "updateNonNullFields" -> UpdateNonNullFields(element, daoHandler)
-                "list" -> ListMethod(element, daoHandler)
+            return when (method.simpleName) {
+                "count" -> Count(daoHandler, method)
+                "delete" -> Delete(daoHandler, method)
+                "insert" -> Insert(daoHandler, method)
+                "insertNonNullFields" -> InsertNonNullFields(daoHandler, method)
+                "update" -> Update(daoHandler, method)
+                "updateNonNullFields" -> UpdateNonNullFields(daoHandler, method)
+                "list" -> ListMethod(daoHandler, method)
                 else -> null
             }
         }
     }
 
-    class Count(element: ExecutableElement, daoHandler: DaoHandler) : CrudMethod(element, daoHandler) {
+    class Count(daoHandler: DaoHandler, method: LazyMethod) : CrudMethod(daoHandler, method) {
         init {
-            resultHelper.returnType.apply {
+            returnTypeItemType.apply {
                 if (!isSameType(Int::class)
-                    && !isSameType(typeUtils.getPrimitiveType(TypeKind.INT))
                     && !isSameType(Long::class)
-                    && !isSameType(typeUtils.getPrimitiveType(TypeKind.LONG))
                 ) {
                     throw HandlerException("The return type of count method must be Integer/int or Long/long")
                 }
             }
-            mappings +=
-                MappingData(
-                    source = "_cot",
-                    target = "",
-                    typeHandler = Long2IntegerResultHandler::class.type.takeIf {
-                        resultHelper.returnType.isSameType(Int::class)
-                                || resultHelper.returnType.isSameType(typeUtils.getPrimitiveType(TypeKind.INT))
-                    },
-                    targetType = Int::class.type.takeIf {
-                        resultHelper.returnType.isSameType(Int::class)
-                                || resultHelper.returnType.isSameType(typeUtils.getPrimitiveType(TypeKind.INT))
-                    },
-                    constructorParameterIndex = -1
-                )
+            mappings += MappingData(
+                source = "_cot",
+                target = "",
+                //count默认返回值为Long，如果当前函数返回类型为long/Long则不需要handler处理
+                typeHandlerLA = Long2IntegerResultHandler::class.typeLA.takeIf {
+                    returnTypeItemType.isSameType(Int::class)
+                },
+                targetTypeLA = Int::class.typeLA.takeIf {
+                    returnTypeItemType.isSameType(Int::class)
+                },
+                constructorParameterIndex = -1
+            )
         }
 
         override fun getTemplate(): String {
@@ -95,8 +101,7 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
         }
     }
 
-    class Delete(element: ExecutableElement, daoHandler: DaoHandler) :
-        CrudMethod(element, daoHandler) {
+    class Delete(daoHandler: DaoHandler, method: LazyMethod) : CrudMethod(daoHandler, method) {
         init {
             returnUpdateCount = true
         }
@@ -117,15 +122,11 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
         }
     }
 
-    class ListMethod(element: ExecutableElement, daoHandler: DaoHandler) :
-        CrudMethod(element, daoHandler) {
+    class ListMethod(daoHandler: DaoHandler, method: LazyMethod) : CrudMethod(daoHandler, method) {
 
         init {
-            if (
-                !(resultHelper.returnType.isAssignable(Collection::class.type) &&
-                        resultHelper.itemType.isSameType(crudEntity.type))
-            ) {
-                throw HandlerException("The return type must be assignable to Collection<${crudEntity.type.typeName}>")
+            if (returnTypeContainerType == null || !returnTypeItemType.isSameType(crudEntity)) {
+                throw HandlerException("The return type must be assignable to Collection<${crudEntity}>")
             }
         }
 
@@ -144,14 +145,12 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
         }
     }
 
-    open class Insert(element: ExecutableElement, daoHandler: DaoHandler) :
-        CrudMethod(element, daoHandler) {
+    open class Insert(daoHandler: DaoHandler, method: LazyMethod) : CrudMethod(daoHandler, method) {
         val insertProperties: List<BeanProperty>
 
         init {
             returnUpdateCount = true
-            insertProperties = crudEntity.properties
-                .filter { it.column.run { exist && insert } }
+            insertProperties = crudEntity.allFields.filter { it.exist && it.supportInsert }
             if (insertProperties.isEmpty()) {
                 throw HandlerException("The entity class specified by Dao.crudEntity has no property that can be used for insertion")
             }
@@ -162,36 +161,31 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
             //language=xml
             return """
                 <insert>
-                insert into ${crudEntity.dbFullyQualifiedName} (${insertProperties.joinToString { it.column.name.sqlQuote() }})
-                values (${insertProperties.joinToString { it.sqlParameterStr(parameterName) }})
+                insert into ${crudEntity.dbFullyQualifiedName} (${insertProperties.joinToString { it.columnName.sqlQuote() }})
+                values (${insertProperties.joinToString { it.templateParameterStr(parameterName) }})
                 </insert>
             """.trimIndent()
         }
 
     }
 
-    class InsertNonNullFields(element: ExecutableElement, daoHandler: DaoHandler) :
-        Insert(element, daoHandler) {
+    class InsertNonNullFields(daoHandler: DaoHandler, method: LazyMethod) : Insert(daoHandler, method) {
 
         override fun getTemplate(): String {
             val columns = insertProperties.joinToString(
-                separator = "",
-                prefix = "<trim prefixOverrides='' suffixOverrides=','>",
-                postfix = "</trim>"
+                separator = "", prefix = "<trim prefixOverrides='' suffixOverrides=','>", postfix = "</trim>"
             ) {
                 //language=xml
                 """
-                    <if test="$parameterName.${it.name} != null">${it.column.name.sqlQuote()}, </if>
+                    <if test="$parameterName.${it.simpleName} != null">${it.columnName.sqlQuote()}, </if>
                 """.trimIndent()
             }
             val values = insertProperties.joinToString(
-                separator = "",
-                prefix = "<trim prefixOverrides='' suffixOverrides=','>",
-                postfix = "</trim>"
+                separator = "", prefix = "<trim prefixOverrides='' suffixOverrides=','>", postfix = "</trim>"
             ) {
                 //language=xml
                 """
-                    <if test="$parameterName.${it.name} != null">${it.sqlParameterStr(parameterName)}, </if>
+                    <if test="$parameterName.${it.simpleName} != null">${it.templateParameterStr(parameterName)}, </if>
                 """.trimIndent()
             }
             //language=xml
@@ -204,8 +198,7 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
         }
     }
 
-    open class Update(element: ExecutableElement, daoHandler: DaoHandler) :
-        CrudMethod(element, daoHandler) {
+    open class Update(daoHandler: DaoHandler, method: LazyMethod) : CrudMethod(daoHandler, method) {
 
         val updateProperties: List<BeanProperty>
 
@@ -216,10 +209,9 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
                     "The update method requires that the class specified by Dao.crudEntity must have primary key",
                 )
             }
-            updateProperties = crudEntity.properties
-                .filter {
-                    it.column.run { exist && update } && it !in crudEntity.primaryKey
-                }
+            updateProperties = crudEntity.allFields.filter {
+                it.exist && it.supportUpdate && it !in crudEntity.primaryKey
+            }
             if (updateProperties.isEmpty()) {
                 throw HandlerException("The entity class specified by Dao.crudEntity has no property that can be used for update")
             }
@@ -227,13 +219,13 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
 
         open fun setClause(): String {
             return updateProperties.joinToString {
-                "${it.column.name.sqlQuote()} = ${it.sqlParameterStr(parameterName)}"
+                "${it.columnName.sqlQuote()} = ${it.templateParameterStr(parameterName)}"
             }
         }
 
         override fun getTemplate(): String {
             val where = crudEntity.primaryKey.joinToString(" and ") {
-                "${it.column.name.sqlQuote()} = ${it.sqlParameterStr(parameterName)}"
+                "${it.columnName.sqlQuote()} = ${it.templateParameterStr(parameterName)}"
             }
             //language=xml
             return """
@@ -248,15 +240,14 @@ abstract class CrudMethod private constructor(element: ExecutableElement, daoHan
         }
     }
 
-    class UpdateNonNullFields(element: ExecutableElement, daoHandler: DaoHandler) :
-        Update(element, daoHandler) {
+    class UpdateNonNullFields(daoHandler: DaoHandler, method: LazyMethod) : Update(daoHandler, method) {
 
         override fun setClause(): String {
             return updateProperties.joinToString(separator = "") {
                 //language=xml
                 """
-                    <if test="$parameterName.${it.name} != null">
-                        ${it.column.name.sqlQuote()} = ${it.sqlParameterStr(parameterName)},
+                    <if test="$parameterName.${it.simpleName} != null">
+                        ${it.columnName.sqlQuote()} = ${it.templateParameterStr(parameterName)},
                     </if>
                 """.trimIndent()
             }

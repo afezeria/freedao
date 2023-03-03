@@ -3,7 +3,7 @@ package test
 import com.google.testing.compile.CompilationSubject
 import com.google.testing.compile.Compiler
 import com.google.testing.compile.JavaFileObjects
-import io.github.afezeria.freedao.processor.core.MainProcessor
+import io.github.afezeria.freedao.processor.core.processor.apt.MainProcessor
 import javax.annotation.processing.AbstractProcessor
 import kotlin.io.path.Path
 

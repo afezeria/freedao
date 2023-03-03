@@ -2,14 +2,9 @@ package io.github.afezeria.freedao.classic.processor
 
 import io.github.afezeria.freedao.classic.runtime.AutoFill
 import io.github.afezeria.freedao.classic.runtime.DbGenerator
-import io.github.afezeria.freedao.processor.core.*
-import io.github.afezeria.freedao.processor.core.method.MethodHandler
-import javax.lang.model.element.ElementKind
-import javax.lang.model.element.ExecutableElement
-import javax.lang.model.element.Modifier
-import javax.lang.model.element.VariableElement
-import javax.lang.model.type.DeclaredType
-import javax.lang.model.type.TypeMirror
+import io.github.afezeria.freedao.processor.core.HandlerException
+import io.github.afezeria.freedao.processor.core.method.AbstractMethodDefinition
+import io.github.afezeria.freedao.processor.core.processor.*
 
 /**
  * @author afezeria
@@ -22,17 +17,21 @@ class AutoFillStruct private constructor(
     /**
      * 如果参数是集合时集合的类型
      */
-    val collectionType: DeclaredType?,
+    val collectionType: LazyType?,
     /**
      * 对象参数的类型
      */
-    val type: DeclaredType,
+    val type: LazyType,
 ) {
+
+    /**
+     * 填充目标类型是集合类型
+     */
     val isCollection: Boolean = collectionType != null
-    val autoFillProperties: List<BeanProperty> = type.asElement().enclosedElements.filter {
-        it.hasSetter() && it.getAnnotation(AutoFill::class.java) != null
+    val autoFillProperties: List<BeanProperty> = type.allFields.filter {
+        it.hasSetter() && it.annotationNames.contains(AutoFill::class.simpleName)
     }.map {
-        BeanProperty(it as VariableElement)
+        BeanProperty(it)
     }
 
     companion object {
@@ -41,69 +40,65 @@ class AutoFillStruct private constructor(
          * @param method MethodModel
          * @return Triple<Int, DeclaredType?, DeclaredType>? first:在参数中的位置，second：容器类型，third：对象类型
          */
-        private fun findAutoFillParameter(method: MethodHandler): AutoFillStruct? {
-            return method.parameters.indexOfFirst {
+        private fun findAutoFillParameter(method: AbstractMethodDefinition): AutoFillStruct? {
+            return method.parameters.firstOrNull {
                 it.type.run {
-                    this is DeclaredType && (
-                            isCustomJavaBean() || (
-                                    isAssignable(Collection::class)
-                                            && findTypeArgument(Collection::class.type, "E").isCustomJavaBean()
-                                    )
+                    isBeanType() || (
+                            isAssignable(Collection::class)
+                                    && findTypeArgument(Collection::class.typeLA, "E").isBeanType()
                             )
                 }
-            }.takeIf { it != -1 }?.let { idx ->
-                val type = method.parameters[idx].type as DeclaredType
-                if (type.isCustomJavaBean()) {
+            }?.let {
+                val type = it.type
+                if (type.isBeanType()) {
                     //单对象更新或插入
-                    AutoFillStruct(idx, null, type)
+                    AutoFillStruct(it.index, null, type)
                 } else {
                     //批量更新或插入
-                    AutoFillStruct(idx, type, type.findTypeArgument(Collection::class.type, "E"))
+                    AutoFillStruct(it.index, type, type.findTypeArgument(Collection::class.typeLA, "E"))
                 }
             }
         }
 
-        fun validation(method: MethodHandler) {
+        fun validation(method: AbstractMethodDefinition) {
             findAutoFillParameter(method)?.apply {
-                type.asElement().enclosedElements.forEach { element ->
-                    if (element is VariableElement) {
-                        val autoFillAnn = element.getAnnotation(AutoFill::class.java)
-                        if (autoFillAnn != null) {
-                            if (!element.hasSetter()) {
-                                throw HandlerException("AutoFill property must have setter method")
-                            }
-                            checkGenerator(autoFillAnn.mirroredType { generator })
+                type.allFields.forEach {
+                    val annotation = it.getAnnotation(AutoFill::class)
+                    if (annotation != null) {
+                        if (!it.hasSetter()) {
+                            throw HandlerException("AutoFill property must have setter method")
                         }
+                        checkGenerator(typeService.getMirroredType(annotation) { generator })
                     }
+
                 }
             }
         }
 
-        private fun checkGenerator(type: TypeMirror) {
-            if (type !is DeclaredType) {
-                throw HandlerException("AutoFill.generator must be Object")
-            }
+        private fun checkGenerator(type: LazyType) {
             if (type.isSameType(DbGenerator::class)) {
                 return
             }
-            type.asElement().enclosedElements
-                .find {
-                    it is ExecutableElement
-                            && it.kind == ElementKind.METHOD
-                            && it.simpleName.toString() == "gen"
-                            && it.parameters.size == 3
-                            && it.parameters[0].asType().isSameType(Any::class.type)
-                            && it.parameters[1].asType().isSameType(String::class.type)
-                            && it.parameters[2].asType()
-                        .isSameType(Class::class.type(typeUtils.getWildcardType(null, null)))
-                            && it.returnType.isSameType(Any::class.type)
-                            && it.modifiers.containsAll(listOf(Modifier.PUBLIC, Modifier.STATIC))
-                } as ExecutableElement?
+            type.declaredMethods.find {
+                it.simpleName == "gen"
+                        && it.parameters.size == 3
+                        && it.parameters[0].type.isSameType(Any::class)
+                        && it.parameters[1].type.isSameType(String::class)
+                        && it.parameters[2].type.isSameType(
+                    Class::class.typeLA(
+                        typeService.getWildcardType(
+                            null,
+                            null
+                        )
+                    )
+                )
+                        && it.returnType.isSameType(Any::class)
+                        && it.modifiers.containsAll(listOf(Modifier.PUBLIC, Modifier.STATIC))
+            }
                 ?: throw HandlerException("Invalid generator:${type}, missing method:public static Object gen(Object, String, Class<?>)")
-
         }
 
-        operator fun invoke(method: MethodHandler): AutoFillStruct? {
+        operator fun invoke(method: AbstractMethodDefinition): AutoFillStruct? {
             return findAutoFillParameter(method)?.takeIf { it.autoFillProperties.isNotEmpty() }
         }
     }

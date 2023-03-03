@@ -1,8 +1,7 @@
 package io.github.afezeria.freedao.processor.core.template.element
 
+import io.github.afezeria.freedao.processor.core.processor.typeLA
 import io.github.afezeria.freedao.processor.core.template.XmlElement
-import io.github.afezeria.freedao.processor.core.type
-import javax.lang.model.type.DeclaredType
 
 open class Foreach : XmlElement() {
     private val collection by Attribute()
@@ -30,22 +29,22 @@ open class Foreach : XmlElement() {
         context.newScope { builderName ->
             val (iterableVar, iterableType) = context.createInternalVariableByContextValue(
                 collection,
-                Iterable::class.type
+                Iterable::class.typeLA
             )
             val indexVar = if (index.isNotEmpty()) {
-                context.createTemplateVariable(index, Int::class.type, 0)
+                context.createTemplateVariable(index, Int::class.typeLA, 0)
             } else {
-                context.createInternalFlag(Int::class.type, 0)
+                context.createInternalFlag(Int::class.typeLA, 0)
             }
             val loopVar = context.createTemplateVariable(
                 item,
-                (iterableType as DeclaredType).typeArguments[0],
+                iterableType.typeParameters[0],
                 null
             )
 
             addStatement("$builderName.append(\$S)", open)
             val iteratorVar = context.createInternalFlag(
-                Iterator::class.type(iterableType.typeArguments[0]),
+                Iterator::class.typeLA(iterableType.typeParameters[0]),
                 null
             )
             addStatement("$iteratorVar = $iterableVar.iterator()")
