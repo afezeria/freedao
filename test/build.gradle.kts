@@ -1,8 +1,11 @@
+@Suppress("DSL_SCOPE_VIOLATION")
 plugins {
-    kotlin("jvm")
-    kotlin("plugin.lombok")
-    id("io.freefair.lombok")
-    id("com.bnorm.power.kotlin-power-assert")
+    libs.plugins.apply {
+        alias(kotlin.jvm)
+        alias(kotlin.lombok)
+        alias(lombok)
+        alias(kotlinPowerAssert)
+    }
     jacoco
 }
 
@@ -20,23 +23,24 @@ configure<com.bnorm.power.PowerAssertGradleExtension> {
 dependencies {
     implementation(projects.freedaoCore)
     implementation(projects.freedaoClassicRuntime)
-    implementation("io.mockk:mockk:1.12.3")
-
     testImplementation(projects.freedaoCoreProcessor)
     testImplementation(projects.freedaoClassicProcessor)
 
-    testImplementation(libs.logback)
+    libs.apply {
+        testImplementation(logback)
 
-    testImplementation(libs.kotlin.compile.test)
-    testImplementation(libs.kotlin.test)
+        testImplementation(kotlin.compile.test)
+        testImplementation(kotlin.test)
 //    testImplementation(kotlin("test"))
-    testImplementation(libs.junit4)
+        testImplementation(junit4)
 
-    testImplementation(libs.compileTesting)
-    testImplementation(libs.hikaricp)
+        testImplementation(compileTesting)
+        testImplementation(hikaricp)
 
-    testImplementation(libs.bundles.dbDrivers)
-    testImplementation(libs.bundles.testcontainers)
+        testImplementation(bundles.dbDrivers)
+        testImplementation(bundles.testcontainers)
+    }
+
 }
 java {
     toolchain {

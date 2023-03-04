@@ -1,6 +1,7 @@
+@Suppress("DSL_SCOPE_VIOLATION")
 plugins {
     `java-library`
-    id("io.freefair.lombok")
+    alias(libs.plugins.lombok)
 }
 
 dependencies {

@@ -1,9 +1,12 @@
+@Suppress("DSL_SCOPE_VIOLATION")
 plugins {
-    id("org.springframework.boot")
-    id("io.spring.dependency-management")
-    kotlin("plugin.spring")
-    kotlin("jvm")
-    id("io.freefair.lombok")
+    libs.plugins.apply {
+        alias(kotlin.jvm)
+        alias(kotlin.spring)
+        alias(spring.boot)
+        alias(spring.dependencyManagement)
+        alias(lombok)
+    }
 }
 
 dependencies {

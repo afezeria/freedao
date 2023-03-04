@@ -1,10 +1,13 @@
 import org.springframework.boot.gradle.tasks.bundling.BootJar
 
+@Suppress("DSL_SCOPE_VIOLATION")
 plugins {
     `java-library`
-    id("org.springframework.boot")
-    id("io.spring.dependency-management")
-    id("io.freefair.lombok")
+    libs.plugins.apply {
+        alias(spring.boot)
+        alias(spring.dependencyManagement)
+        alias(lombok)
+    }
 
 }
 

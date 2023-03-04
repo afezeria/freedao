@@ -1,16 +1,9 @@
+@Suppress("DSL_SCOPE_VIOLATION")
 plugins {
-    val ktVersion = "1.7.20"
-    id("org.springframework.boot") version "2.6.2" apply false
-    id("io.spring.dependency-management") version "1.0.11.RELEASE" apply false
-    kotlin("plugin.spring") version ktVersion apply false
-    kotlin("jvm") version ktVersion apply false
-    kotlin("kapt") version ktVersion apply false
-    kotlin("plugin.lombok") version ktVersion apply false
-    kotlin("plugin.allopen") version ktVersion apply false
-    id("io.freefair.lombok") version "6.4.2" apply false
-    id("com.bnorm.power.kotlin-power-assert") version "0.12.0" apply false
-    id("io.github.afezeria.serial-task") version "1.0"
-
+    libs.plugins.apply {
+        alias(kotlin.jvm) apply false
+        alias(serialTask)
+    }
 }
 
 val ossrhUsername: String by project
