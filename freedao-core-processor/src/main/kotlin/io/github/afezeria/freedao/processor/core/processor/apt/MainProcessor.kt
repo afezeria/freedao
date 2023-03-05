@@ -81,7 +81,7 @@ class MainProcessor : AbstractProcessor() {
             println()
 //            typeService.get(ArrayList::class.javaObjectType.canonicalName!!)
             runCatchingHandlerExceptionOrThrow(element) {
-                DaoHandler(typeService.get(element.toString())).render()
+                DaoHandler(typeService.getByClassName(element.toString())).render()
             }
         } catch (e: Exception) {
             val stringWriter = StringWriter()

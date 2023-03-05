@@ -1,6 +1,8 @@
 package io.github.afezeria.freedao.processor.core.processor
 
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 /**
  *
@@ -16,3 +18,17 @@ import java.util.concurrent.ConcurrentHashMap
  * @author afezeria
  */
 var typeCache: ConcurrentHashMap<String, LazyType> = ConcurrentHashMap()
+
+/**
+ * key格式：type:type
+ */
+var typeAssignableCache = ConcurrentHashMap<String, Boolean>()
+
+val lock = ReentrantLock()
+
+inline fun <T> sync(fn: () -> T): T {
+    return lock.withLock(fn)
+}
+
+
+

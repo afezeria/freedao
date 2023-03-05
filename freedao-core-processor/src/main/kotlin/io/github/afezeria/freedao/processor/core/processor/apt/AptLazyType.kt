@@ -17,6 +17,9 @@ class AptLazyType(val declaredType: DeclaredType) : AptAnnotated(declaredType.as
     override val isTopLevelType: Boolean by lazy { element.enclosingElement != null && element.enclosingElement is PackageElement }
 
     override val simpleName: String = element.simpleName.toString()
+
+    override val id: String = declaredType.toString()
+
     override val packageName: String by lazy {
         var enclosingElement: Element? = element.enclosingElement
         var limit = 100

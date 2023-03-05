@@ -20,11 +20,24 @@ interface TypeService {
      * @param string String
      * @return LazyType
      */
-    fun get(className: String): LazyType
-    fun get(clazz: Class<*>): LazyType
+    fun getByClassName(className: String): LazyType
+
+    /**
+     * 根据类型字符串来获取字符
+     * @param str String 类型描述字符串，类名必须是全限定名，可以包含嵌套的范型参数，
+     * 例如：java.util.Map<java.lang.String,java.lang.Integer>
+     * @return LazyType
+     */
+    fun getByTypeStr(str: String): LazyType {
+        return TypeDescription(str).toLazyType(this)
+    }
+
+    fun get(clazz: Class<*>): LazyType {
+        return getByClassName(clazz.canonicalName)
+    }
 
     fun get(clazz: KClass<*>): LazyType {
-        return this.get(clazz.javaObjectType)
+        return get(clazz.javaObjectType)
     }
 
     fun getPrimitiveType(enum: PrimitiveTypeEnum): PrimitiveType
@@ -41,12 +54,27 @@ interface TypeService {
     fun getParameterizedType(target: LazyType, vararg typeArgs: LazyType): LazyType
 
     fun boxed(type: LazyType): LazyType
+
+    /**
+     * 获取删除类型参数后的类型
+     * @param type LazyType
+     * @return LazyType
+     */
     fun erasure(type: LazyType): LazyType
 
+    /**
+     * 是否是同一类型
+     */
     fun isSameType(t1: LazyType, t2: LazyType): Boolean
 
     fun isAssignable(t1: LazyType, t2: LazyType): Boolean
 
+    /**
+     * 捕获[io.github.afezeria.freedao.processor.core.HandlerException]并打印异常信息
+     * @param position Any? 平台相关的位置标识，当使用apt时参数应该为[javax.lang.model.element.Element]类型
+     * @param block Function0<Unit>
+     * @return Exception?
+     */
     fun catchHandlerException(position: Any?, block: () -> Unit): Exception?
 
     fun <T : Annotation> getMirroredType(annotation: T, block: T.() -> Unit): LazyType
@@ -86,6 +114,7 @@ interface LAnnotated {
  * @property isAbstract Boolean
  */
 interface LazyType : LAnnotated {
+    val id: String
     val packageName: String
     val simpleName: String
     val qualifiedName: String
@@ -240,6 +269,9 @@ interface LazyParameter : LazyVariable {
     val index: Int
 }
 
+/**
+ * 虚拟参数，在参数列表中占位，用于不通过方法参数参数，比如classic模块的context参数
+ */
 class VirtualLazyParameterImpl(
     override val simpleName: String,
     override val type: LazyType,
@@ -261,6 +293,8 @@ class VirtualLazyParameterImpl(
 }
 
 class NoType : LazyType {
+    override val id: String
+        get() = TODO("Not yet implemented")
     override val packageName: String
         get() = TODO("Not yet implemented")
     override val simpleName: String
@@ -309,7 +343,7 @@ enum class PrimitiveTypeEnum {
     BOOLEAN, BYTE, SHORT, INT, LONG, CHAR, FLOAT, DOUBLE,
 }
 
-sealed interface PrimitiveType : LazyType {
+interface PrimitiveType : LazyType {
     val typeEnumValue: PrimitiveTypeEnum
     override val annotationNames: List<String>
         get() = TODO("Not yet implemented")
@@ -328,17 +362,27 @@ sealed interface PrimitiveType : LazyType {
         get() = TODO("Not yet implemented")
     override val qualifiedName: String
         get() = TODO("Not yet implemented")
+    override val superClass: LazyType
+        get() = TODO("Not yet implemented")
+    override val interfaces: List<LazyType>
+        get() = TODO("Not yet implemented")
+    override val typeParameters: List<TypeParameter>
+        get() = TODO("Not yet implemented")
     override val declaredFields: List<LazyVariable>
         get() = TODO("Not yet implemented")
     override val declaredMethods: List<LazyMethod>
         get() = TODO("Not yet implemented")
     override val constructors: MutableList<LazyMethod>
         get() = TODO("Not yet implemented")
-    override val allFields: MutableList<out LazyVariable>
+    override val modifiers: List<Modifier>
         get() = TODO("Not yet implemented")
-    override val allMethods: MutableList<LazyMethod>
+    override val allFields: List<LazyVariable>
+        get() = TODO("Not yet implemented")
+    override val allMethods: List<LazyMethod>
         get() = TODO("Not yet implemented")
     override val isAbstract: Boolean
+        get() = TODO("Not yet implemented")
+    override val isTopLevelType: Boolean
         get() = TODO("Not yet implemented")
 }
 
@@ -458,6 +502,8 @@ class BeanProperty(variable: LazyVariable) : LazyVariable by variable, ColumnAnn
 }
 
 object ErrorLazyType : LazyType {
+    override val id: String
+        get() = TODO("Not yet implemented")
     override val packageName: String
         get() = TODO("Not yet implemented")
     override val simpleName: String

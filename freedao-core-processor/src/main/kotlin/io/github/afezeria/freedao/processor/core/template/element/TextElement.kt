@@ -51,7 +51,7 @@ class TextElement : XmlElement() {
                         val pair =
                             it.groupValues[2].takeIf { it.isNotBlank() }
                                 ?.run {
-                                    typeService.get(this)
+                                    typeService.getByClassName(this)
                                         .throwIfNotParameterTypeHandlerOrNotMatchType(exprType)
                                 }
                         if (pair == null) {

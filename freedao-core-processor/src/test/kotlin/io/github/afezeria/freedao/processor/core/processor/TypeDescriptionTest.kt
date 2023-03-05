@@ -1,4 +1,4 @@
-package io.github.afezeria.freedao.processor.core.processor.apt
+package io.github.afezeria.freedao.processor.core.processor
 
 import io.kotest.assertions.assertSoftly
 import io.kotest.matchers.shouldBe
@@ -8,7 +8,7 @@ import org.junit.Test
  *
  * @author afezeria
  */
-class TypeDeclarationTest {
+class TypeDescriptionTest {
     @Test
     fun abc() {
         assertSoftly {
@@ -18,7 +18,7 @@ class TypeDeclarationTest {
                 "java.util.Map<java.lang.String,java.lang.String>",
                 "a<b<c<f<d,g>>>,C<d>>",
             ).forEach {
-                it shouldBe TypeDeclaration(it).toString()
+                it shouldBe TypeDescription(it).toString()
             }
         }
     }
