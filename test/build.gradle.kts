@@ -31,8 +31,6 @@ dependencies {
 
         testImplementation(kotlin.compile.test)
         testImplementation(kotlin.test)
-//    testImplementation(kotlin("test"))
-        testImplementation(junit4)
 
         testImplementation(compileTesting)
         testImplementation(hikaricp)
