@@ -10,7 +10,7 @@ import kotlin.reflect.KClass
  * @author afezeria
  */
 abstract class AptAnnotated(open val element: Element) : LAnnotated {
-    val annotationCache: ConcurrentHashMap<KClass<*>, Any?> = ConcurrentHashMap()
+    private val annotationCache: ConcurrentHashMap<KClass<*>, Any?> = ConcurrentHashMap()
 
     override val annotationNames: List<String> by lazy {
         element.annotationMirrors.map { it.annotationType.toString() }

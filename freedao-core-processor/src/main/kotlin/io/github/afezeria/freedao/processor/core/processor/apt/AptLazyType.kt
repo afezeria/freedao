@@ -2,6 +2,7 @@ package io.github.afezeria.freedao.processor.core.processor.apt
 
 import io.github.afezeria.freedao.processor.core.processor.*
 import io.github.afezeria.freedao.processor.core.processor.Modifier
+import java.util.concurrent.ConcurrentHashMap
 import javax.lang.model.element.*
 import javax.lang.model.type.DeclaredType
 
@@ -9,40 +10,51 @@ import javax.lang.model.type.DeclaredType
  *
  * @author afezeria
  */
-class AptLazyType(val declaredType: DeclaredType) : AptAnnotated(declaredType.asElement()), LazyType {
-    override val element: TypeElement = declaredType.asElement() as TypeElement
+class AptLazyType private constructor(
+    val declaredType: DeclaredType,
+) : AptAnnotated(safe { declaredType.asElement() }), LazyType {
+    override val element: TypeElement = super.element as TypeElement
 
-    override val delegate: Any = declaredType
+    override val delegate: DeclaredType = declaredType
 
-    override val isTopLevelType: Boolean by lazy { element.enclosingElement != null && element.enclosingElement is PackageElement }
+    override val isTopLevelType: Boolean by lazy {
+        element.enclosingElement != null && element.enclosingElement is PackageElement
+    }
 
     override val simpleName: String = element.simpleName.toString()
 
     override val id: String = declaredType.toString()
 
     override val packageName: String by lazy {
-        var enclosingElement: Element? = element.enclosingElement
+        var enclosingElement: Element? = safe { element.enclosingElement }
         var limit = 100
         while (limit-- > 0) {
             if (enclosingElement == null) {
                 return@lazy ""
             }
             if (enclosingElement is PackageElement) {
-                return@lazy enclosingElement.toString()
+                return@lazy sync { enclosingElement.toString() }
             }
-            enclosingElement = enclosingElement.enclosingElement
+            enclosingElement = safe { enclosingElement!!.enclosingElement }
         }
         throw RuntimeException()
     }
-    override val qualifiedName: String = element.toString()
+    override val qualifiedName: String = sync { element.toString() }
 
-    override val superClass: LazyType by lazy {
-        AptLazyType(element.superclass as DeclaredType)
+    override val superClass: LazyType by lazy(lock) {
+        valueOf(element.superclass as DeclaredType)
     }
     override val interfaces: List<LazyType> by lazy {
-        element.interfaces.map {
-            AptLazyType(it as DeclaredType)
+        sync {
+            element.interfaces
+        }.map {
+            valueOf(it as DeclaredType)
         }
+    }
+
+    override val typeParameters: List<TypeArgument> by lazy {
+        element.typeParameters
+        TODO("Not yet implemented")
     }
 
     override val declaredFields: List<LazyVariable> by lazy {
@@ -84,16 +96,25 @@ class AptLazyType(val declaredType: DeclaredType) : AptAnnotated(declaredType.as
             current.superClass.let { doWalkTree(it, targetAccessFn) },
             *current.interfaces.map { doWalkTree(it, targetAccessFn) }.toTypedArray(),
             targetAccessFn(current)
-        ).filterNotNull()
-            .flatten()
+        ).filterNotNull().flatten()
     }
 
-    override val typeParameters: List<TypeArgument>
-        get() = TODO("Not yet implemented")
 
     companion object {
-        operator fun invoke() {
-
+        val typeCache = ConcurrentHashMap<String, AptLazyType>()
+        fun valueOf(declaredType: DeclaredType): AptLazyType {
+            val id = declaredType.toString()
+            var type = typeCache[id]
+            if (type == null) {
+                sync {
+                    type = typeCache[id]
+                    if (type == null) {
+                        type = AptLazyType(declaredType)
+                        typeCache[id] = type!!
+                    }
+                }
+            }
+            return type!!
         }
     }
 

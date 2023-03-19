@@ -11,6 +11,10 @@ import javax.tools.Diagnostic
 /**
  *
  */
+fun <T> Any.cast(): T {
+    @Suppress("UNCHECKED_CAST")
+    return this as T
+}
 lateinit var processingEnvironment: ProcessingEnvironment
 val elementUtils: Elements
     get() = processingEnvironment.elementUtils

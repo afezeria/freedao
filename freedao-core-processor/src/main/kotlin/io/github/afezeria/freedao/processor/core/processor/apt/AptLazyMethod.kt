@@ -1,23 +1,20 @@
 package io.github.afezeria.freedao.processor.core.processor.apt
 
 import com.squareup.javapoet.MethodSpec
-import io.github.afezeria.freedao.processor.core.processor.LazyMethod
-import io.github.afezeria.freedao.processor.core.processor.LazyParameter
-import io.github.afezeria.freedao.processor.core.processor.LazyType
-import io.github.afezeria.freedao.processor.core.processor.Modifier
+import io.github.afezeria.freedao.processor.core.processor.*
 import javax.lang.model.element.ExecutableElement
 
 /**
  *
  * @author afezeria
  */
-class AptLazyMethod(val executableElement: ExecutableElement, override val owner: LazyType) :
+class AptLazyMethod(executableElement: ExecutableElement, override val owner: LazyType) :
     AptAnnotated(executableElement), LazyMethod {
-    override val delegate: Any
-        get() = TODO("Not yet implemented")
+
+    override val delegate: ExecutableElement = executableElement
 
     override fun buildMethodSpec(): MethodSpec.Builder {
-        TODO("Not yet implemented")
+        return typeService.createMethodSpecBuilder(this)
     }
 
     override val typeParameters: List<LazyType>

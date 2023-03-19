@@ -37,7 +37,7 @@ interface TypeService {
     }
 
     fun get(clazz: KClass<*>): LazyType {
-        return get(clazz.javaObjectType)
+        return getByClassName(clazz.qualifiedName!!)
     }
 
     fun getPrimitiveType(enum: PrimitiveTypeEnum): PrimitiveType
@@ -79,7 +79,14 @@ interface TypeService {
 
     fun <T : Annotation> getMirroredType(annotation: T, block: T.() -> Unit): LazyType
     fun createMethodSpecBuilder(method: LazyMethod): MethodSpec.Builder
-    fun createTypeSpecBuilder(type: LazyType): TypeSpec.Builder
+
+    /**
+     * 给
+     * @param interfaceType Any
+     * @param implementClassName String
+     * @return TypeSpec.Builder
+     */
+    fun createImplementClassTypeSpecBuilder(interfaceType: Any, implementClassName: String): TypeSpec.Builder
 }
 
 
@@ -150,12 +157,12 @@ open class TypeParameter(
     val type: LazyType = ANY_TYPE,
 ) : LazyType by type
 
-class TypePlaceholder(val placeholderName: String, parameterName: String) : TypeParameter(parameterName)
 class TypeArgument(
     parameterName: String,
     val argumentType: LazyType,
 ) : TypeParameter(parameterName, argumentType)
 
+class TypePlaceholder(val placeholderName: String, parameterName: String) : TypeParameter(parameterName)
 
 interface AnnotationType : LazyType
 

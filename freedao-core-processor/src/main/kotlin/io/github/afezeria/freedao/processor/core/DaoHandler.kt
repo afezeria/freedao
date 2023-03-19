@@ -32,7 +32,13 @@ class DaoHandler(
 
     var isJavaCode: Boolean = true
 
-    var classBuilder: TypeSpec.Builder = typeService.createTypeSpecBuilder(type)
+    var classBuilder: TypeSpec.Builder = typeService.createImplementClassTypeSpecBuilder(type, implClassName)
+        .apply {
+            annotations.removeIf {
+                val className = it.type.toString()
+                className == Dao::class.qualifiedName || className == Metadata::class.qualifiedName
+            }
+        }
 
     fun render() {
         val exceptions = type.allMethods

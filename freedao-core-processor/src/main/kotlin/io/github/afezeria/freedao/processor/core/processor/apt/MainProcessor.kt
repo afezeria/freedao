@@ -78,9 +78,8 @@ class MainProcessor : AbstractProcessor() {
 
     private fun processElement(element: Element) {
         try {
-            println()
-//            typeService.get(ArrayList::class.javaObjectType.canonicalName!!)
             runCatchingHandlerExceptionOrThrow(element) {
+                element as TypeElement
                 DaoHandler(typeService.getByClassName(element.toString())).render()
             }
         } catch (e: Exception) {

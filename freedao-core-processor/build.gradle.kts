@@ -27,6 +27,7 @@ dependencies {
         api(javapoet)
         api(antlr)
 
+        testImplementation(compileTesting)
         testImplementation(bundles.kotest)
         testImplementation(kotlin.test)
     }

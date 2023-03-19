@@ -1,5 +1,6 @@
 package io.github.afezeria.freedao.processor.core.processor.apt
 
+import com.squareup.javapoet.AnnotationSpec
 import com.squareup.javapoet.MethodSpec
 import com.squareup.javapoet.TypeSpec
 import io.github.afezeria.freedao.processor.core.HandlerException
@@ -10,7 +11,8 @@ import java.io.PrintWriter
 import java.io.StringWriter
 import javax.annotation.processing.ProcessingEnvironment
 import javax.lang.model.element.Element
-import javax.lang.model.element.TypeElement
+import javax.lang.model.element.ExecutableElement
+import javax.lang.model.element.Modifier
 import javax.lang.model.type.DeclaredType
 import javax.lang.model.type.MirroredTypeException
 import javax.lang.model.type.TypeKind
@@ -21,19 +23,9 @@ class AptTypeService(val processingEnv: ProcessingEnvironment) : TypeService {
     val typeUtils = processingEnv.typeUtils
     val elementUtils = processingEnv.elementUtils
     override fun getByClassName(className: String): LazyType {
-        TypeDescription(className)
         val element = sync { elementUtils.getTypeElement(className) }
-        return getLazyTypeByTypeElement(element)
-    }
-
-    override fun get(clazz: Class<*>): LazyType {
-        val element = sync { elementUtils.getTypeElement(clazz.name) }
-        return getLazyTypeByTypeElement(element)
-    }
-
-    private fun getLazyTypeByTypeElement(typeElement: TypeElement): LazyType {
-        val declaredType = sync { typeUtils.getDeclaredType(typeElement) }
-        return AptLazyType(declaredType)
+        val declaredType = sync { typeUtils.getDeclaredType(element) }
+        return AptLazyType.valueOf(declaredType)
     }
 
     override fun getPrimitiveType(enum: PrimitiveTypeEnum): PrimitiveType {
@@ -87,6 +79,8 @@ class AptTypeService(val processingEnv: ProcessingEnvironment) : TypeService {
     }
 
     override fun erasure(type: LazyType): LazyType {
+        type.typeParameters
+
         TODO("Not yet implemented")
     }
 
@@ -133,15 +127,24 @@ class AptTypeService(val processingEnv: ProcessingEnvironment) : TypeService {
                 e.typeMirror as DeclaredType
             }
         }
-        return AptLazyType(declaredType)
+        return AptLazyType.valueOf(declaredType)
     }
 
     override fun createMethodSpecBuilder(method: LazyMethod): MethodSpec.Builder {
-
-        TODO("Not yet implemented")
+        return MethodSpec.overriding(method.delegate as ExecutableElement)
     }
 
-    override fun createTypeSpecBuilder(type: LazyType): TypeSpec.Builder {
-        TODO("Not yet implemented")
+    override fun createImplementClassTypeSpecBuilder(interfaceType: Any, implementClassName: String): TypeSpec.Builder {
+        interfaceType as DeclaredType
+        return TypeSpec.classBuilder(implementClassName).apply {
+            addSuperinterface(interfaceType)
+            addModifiers(Modifier.PUBLIC)
+
+            addAnnotations(
+                interfaceType.asElement().annotationMirrors
+                    .map { AnnotationSpec.get(it) }
+            )
+        }
     }
+
 }
