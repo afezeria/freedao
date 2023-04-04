@@ -1,10 +1,12 @@
 package io.github.afezeria.freedao.processor.core.processor.apt
 
+import io.github.afezeria.freedao.processor.core.UnreachableException
 import io.github.afezeria.freedao.processor.core.processor.*
 import io.github.afezeria.freedao.processor.core.processor.Modifier
 import java.util.concurrent.ConcurrentHashMap
 import javax.lang.model.element.*
 import javax.lang.model.type.DeclaredType
+import javax.lang.model.type.TypeVariable
 
 /**
  *
@@ -18,7 +20,7 @@ class AptLazyType private constructor(
     override val delegate: DeclaredType = declaredType
 
     override val isTopLevelType: Boolean by lazy {
-        element.enclosingElement != null && element.enclosingElement is PackageElement
+        safe { element.enclosingElement != null && element.enclosingElement is PackageElement }
     }
 
     override val simpleName: String = element.simpleName.toString()
@@ -37,7 +39,7 @@ class AptLazyType private constructor(
             }
             enclosingElement = safe { enclosingElement!!.enclosingElement }
         }
-        throw RuntimeException()
+        throw UnreachableException()
     }
     override val qualifiedName: String = sync { element.toString() }
 
@@ -52,56 +54,80 @@ class AptLazyType private constructor(
         }
     }
 
-    override val typeParameters: List<TypeArgument> by lazy {
-        element.typeParameters
-        TODO("Not yet implemented")
+    override val typeParameters: List<TypeParameter> by lazy {
+        sync {
+            element.typeParameters.mapIndexed { idx, el ->
+                when (val argument = declaredType.typeArguments[idx]) {
+                    is DeclaredType -> TypeArgument(
+                        el.simpleName.toString(),
+                        valueOf(argument)
+                    )
+
+                    is TypeVariable -> TypePlaceholder(
+                        parameterName = argument.toString(),
+                        placeholderName = el.simpleName.toString(),
+                        delegate = argument,
+                    )
+
+                    else -> throw UnreachableException()
+                }
+            }
+        }
     }
 
     override val declaredFields: List<LazyVariable> by lazy {
-        element.enclosedElements.filter { it.kind == ElementKind.FIELD }
-            .mapTo(mutableListOf()) { AptLazyVariable(it as VariableElement, this) }
+        sync {
+            element.enclosedElements.filter { it.kind == ElementKind.FIELD }
+                .mapTo(mutableListOf()) { AptLazyVariable(it as VariableElement, this) }
+        }
     }
 
     override val declaredMethods: List<LazyMethod> by lazy {
-        element.enclosedElements.filter { it.kind == ElementKind.METHOD }
-            .mapTo(mutableListOf()) { AptLazyMethod(it as ExecutableElement, this) }
+        sync {
+            element.enclosedElements.filter { it.kind == ElementKind.METHOD }
+                .mapTo(mutableListOf()) { AptLazyMethod(it as ExecutableElement, this) }
+        }
     }
 
     override val constructors: MutableList<LazyMethod> by lazy {
-        element.enclosedElements.filter { it.kind == ElementKind.CONSTRUCTOR }
-            .mapTo(mutableListOf()) { AptLazyMethod(it as ExecutableElement, this) }
+        sync {
+            element.enclosedElements.filter { it.kind == ElementKind.CONSTRUCTOR }
+                .mapTo(mutableListOf()) { AptLazyMethod(it as ExecutableElement, this) }
+        }
     }
+
     override val allFields: List<LazyVariable> by lazy {
-        doWalkTree(this) { it.declaredFields }
+        walkInheritanceTree(this) { it.declaredFields }
     }
     override val allMethods: List<LazyMethod> by lazy {
-        doWalkTree(this) { it.declaredMethods }
+        walkInheritanceTree(this) { it.declaredMethods }
     }
 
     override val modifiers: List<Modifier> by lazy {
-        element.modifiers.map { AptHelper.modifierConvert(it) }
-    }
-    override val isAbstract: Boolean = element.modifiers.contains(javax.lang.model.element.Modifier.ABSTRACT)
-
-    init {
-        println()
-        typeCache[declaredType.toString()] = this
+        sync {
+            element.modifiers.map { Modifier.valueOf(it) }
+        }
     }
 
-    private fun <T> doWalkTree(
+    override val isAbstract: Boolean by lazy {
+        modifiers.contains(Modifier.ABSTRACT)
+    }
+
+    private fun <T> walkInheritanceTree(
         current: LazyType,
         targetAccessFn: (LazyType) -> List<T>,
     ): List<T> {
         return mutableListOf(
-            current.superClass.let { doWalkTree(it, targetAccessFn) },
-            *current.interfaces.map { doWalkTree(it, targetAccessFn) }.toTypedArray(),
+            walkInheritanceTree(current.superClass, targetAccessFn),
+            *current.interfaces.map { walkInheritanceTree(it, targetAccessFn) }.toTypedArray(),
             targetAccessFn(current)
-        ).filterNotNull().flatten()
+        ).toList()
+            .flatten()
     }
 
 
     companion object {
-        val typeCache = ConcurrentHashMap<String, AptLazyType>()
+        lateinit var typeCache: ConcurrentHashMap<String, AptLazyType>
         fun valueOf(declaredType: DeclaredType): AptLazyType {
             val id = declaredType.toString()
             var type = typeCache[id]

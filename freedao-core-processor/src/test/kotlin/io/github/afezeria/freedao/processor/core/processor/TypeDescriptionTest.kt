@@ -18,7 +18,7 @@ class TypeDescriptionTest {
                 "java.util.Map<java.lang.String,java.lang.String>",
                 "a<b<c<f<d,g>>>,C<d>>",
             ).forEach {
-                it shouldBe TypeDescription(it).toString()
+                assert(it == TypeDescription(it).toString())
             }
         }
     }

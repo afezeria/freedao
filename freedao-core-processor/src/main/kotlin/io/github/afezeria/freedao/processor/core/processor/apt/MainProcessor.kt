@@ -2,19 +2,19 @@ package io.github.afezeria.freedao.processor.core.processor.apt
 
 import io.github.afezeria.freedao.annotation.Dao
 import io.github.afezeria.freedao.annotation.Table
-import io.github.afezeria.freedao.processor.core.DaoHandler
-import io.github.afezeria.freedao.processor.core.GlobalState
-import io.github.afezeria.freedao.processor.core.processingEnvironment
+import io.github.afezeria.freedao.processor.core.*
+import io.github.afezeria.freedao.processor.core.processor.ANY_TYPE
 import io.github.afezeria.freedao.processor.core.processor.typeService
-import io.github.afezeria.freedao.processor.core.runCatchingHandlerExceptionOrThrow
 import java.io.PrintWriter
 import java.io.StringWriter
+import java.util.concurrent.ConcurrentHashMap
 import javax.annotation.processing.AbstractProcessor
 import javax.annotation.processing.ProcessingEnvironment
 import javax.annotation.processing.RoundEnvironment
 import javax.lang.model.SourceVersion
 import javax.lang.model.element.Element
 import javax.lang.model.element.TypeElement
+import javax.lang.model.type.DeclaredType
 import javax.tools.Diagnostic
 import kotlin.reflect.full.memberProperties
 import kotlin.system.measureTimeMillis
@@ -24,6 +24,21 @@ import kotlin.system.measureTimeMillis
  *
  */
 class MainProcessor : AbstractProcessor() {
+
+    override fun init(processingEnv: ProcessingEnvironment) {
+        super.init(processingEnv)
+        processingEnvironment = processingEnv
+        GlobalState.init()
+
+        typeService = AptTypeService(processingEnv)
+        AptLazyType.typeCache = ConcurrentHashMap()
+        ANY_TYPE = AptLazyType.valueOf(elementUtils.getTypeElement("java.lang.Object").asType() as DeclaredType)
+    }
+
+    fun resetCache() {
+        AptLazyType.typeCache = ConcurrentHashMap()
+    }
+
     override fun getSupportedOptions(): MutableSet<String> {
         return mutableSetOf(
             *GlobalState::class.memberProperties.map {
@@ -52,6 +67,21 @@ class MainProcessor : AbstractProcessor() {
                 val interfaceCot = elements.size + elementCache.size
                 val time = measureTimeMillis {
                     elements.forEach {
+                        it as TypeElement
+                        val declaredType = it.asType() as DeclaredType
+                        val strMap = typeUtils.getDeclaredType(
+                            it,
+                            elementUtils.getTypeElement(String::class.java.canonicalName).asType()
+                        )
+
+                        val type = AptLazyType.valueOf(it.superclass as DeclaredType)
+                        type.typeParameters
+                        type.superClass
+                        println()
+//                        val myMapString = typeUtils.getDeclaredType(
+//                            declaredType,
+//                            elementUtils.getTypeElement(String::class.java.canonicalName)
+//                        )
                         processElement(it)
                     }
                     elementCache.removeAll {
@@ -66,13 +96,6 @@ class MainProcessor : AbstractProcessor() {
             elementCache.addAll(roundEnv.getElementsAnnotatedWith(Dao::class.java))
         }
         return false
-    }
-
-    override fun init(processingEnv: ProcessingEnvironment) {
-        super.init(processingEnv)
-        processingEnvironment = processingEnv
-        GlobalState.init()
-        typeService = AptTypeService(processingEnv)
     }
 
 

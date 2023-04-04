@@ -14,6 +14,11 @@ import kotlin.reflect.KClass
  */
 lateinit var typeService: TypeService
 
+/**
+ * mapping of java.lang.Object
+ */
+lateinit var ANY_TYPE: LazyType
+
 interface TypeService {
     /**
      * @throws HandlerException 类名 [className] 不存在时抛出
@@ -90,8 +95,6 @@ interface TypeService {
 }
 
 
-lateinit var ANY_TYPE: LazyType
-
 interface LAnnotated {
     val delegate: Any
 
@@ -162,9 +165,15 @@ class TypeArgument(
     val argumentType: LazyType,
 ) : TypeParameter(parameterName, argumentType)
 
-class TypePlaceholder(val placeholderName: String, parameterName: String) : TypeParameter(parameterName)
+class TypePlaceholder(
+    parameterName: String,
+    val placeholderName: String,
+    override val delegate:Any,
+) : TypeParameter(parameterName)
 
 interface AnnotationType : LazyType
+
+private typealias AptModifier = javax.lang.model.element.Modifier
 
 enum class Modifier {
     /**
@@ -239,6 +248,14 @@ enum class Modifier {
      *  The modifier `strictfp`
      */
     STRICTFP,
+    ;
+
+    companion object {
+
+        fun valueOf(enum: AptModifier): Modifier {
+            return valueOf(enum.name)
+        }
+    }
 
 }
 

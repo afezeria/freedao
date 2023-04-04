@@ -17,12 +17,14 @@ abstract class AptAnnotated(open val element: Element) : LAnnotated {
     }
 
     override fun <T : Annotation> getAnnotation(clazz: KClass<T>): T? {
+        @Suppress("UNCHECKED_CAST")
         return annotationCache.getOrPut(clazz) {
             element.getAnnotation(clazz.javaObjectType)
         } as T?
     }
 
     override fun <T : Annotation> getAnnotations(clazz: KClass<T>): List<T> {
+        @Suppress("UNCHECKED_CAST")
         return annotationCache.getOrPut(clazz) {
             element.getAnnotationsByType(clazz.javaObjectType).toList()
         } as List<T>
